@@ -3,16 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Second Page</title>
+    <title>Explore Japan</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <header>
+        <h1>Your Japan Travel Itinerary</h1>
+        <p>Discover the best restaurants, landmarks, and cultural activities in Japan!</p>
+    </header>
     <div class="container">
-        <h1 class="page-title">Explore Your Trip</h1>
+        <div id="preferences-summary">
+            <h2>Your Preferences</h2>
+            <ul id="preferences-list"></ul>
+        </div>
         <div class="toggle-buttons">
             <button class="toggle-button active" data-table="restaurant-table">Restaurants</button>
-            <button class="toggle-button" data-table="hotel-table">Hotels</button>
-            <button class="toggle-button" data-table="activity-table">Activities</button>
+            <button class="toggle-button" data-table="landmark-table">Landmarks</button>
+            <button class="toggle-button" data-table="culture-table">Culture</button>
         </div>
         <div class="tables">
             <!-- Restaurant Table -->
@@ -21,72 +28,126 @@
                     <tr>
                         <th>Name</th>
                         <th>Location</th>
-                        <th>Rating</th>
-                        <th>Select/Unselect</th>
+                        <th>Specialty</th>
+                        <th>Select</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td>Restaurant A</td>
-                        <td>City Center</td>
-                        <td>4.5</td>
+                        <td>Sukiyabashi Jiro</td>
+                        <td>Tokyo</td>
+                        <td>Sushi</td>
                         <td><input type="checkbox" class="row-checkbox"></td>
                     </tr>
                     <tr>
-                        <td>Restaurant B</td>
-                        <td>Downtown</td>
-                        <td>4.0</td>
+                        <td>Ichiran Ramen</td>
+                        <td>Osaka</td>
+                        <td>Tonkotsu Ramen</td>
+                        <td><input type="checkbox" class="row-checkbox"></td>
+                    </tr>
+                    <tr>
+                        <td>Kyoto Kitcho</td>
+                        <td>Kyoto</td>
+                        <td>Kaiseki Cuisine</td>
+                        <td><input type="checkbox" class="row-checkbox"></td>
+                    </tr>
+                    <tr>
+                        <td>Ginza Kojyu</td>
+                        <td>Tokyo</td>
+                        <td>Traditional Japanese</td>
+                        <td><input type="checkbox" class="row-checkbox"></td>
+                    </tr>
+                    <tr>
+                        <td>Ramen Street</td>
+                        <td>Tokyo Station</td>
+                        <td>Variety of Ramen</td>
                         <td><input type="checkbox" class="row-checkbox"></td>
                     </tr>
                 </tbody>
             </table>
 
-            <!-- Hotel Table -->
-            <table id="hotel-table" class="table">
+            <!-- Landmark Table -->
+            <table id="landmark-table" class="table">
                 <thead>
                     <tr>
                         <th>Name</th>
                         <th>Location</th>
-                        <th>Price</th>
-                        <th>Select/Unselect</th>
+                        <th>Type</th>
+                        <th>Select</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td>Hotel X</td>
-                        <td>Near Beach</td>
-                        <td>$200</td>
+                        <td>Mount Fuji</td>
+                        <td>Shizuoka</td>
+                        <td>Natural Landmark</td>
                         <td><input type="checkbox" class="row-checkbox"></td>
                     </tr>
                     <tr>
-                        <td>Hotel Y</td>
-                        <td>City Center</td>
-                        <td>$150</td>
+                        <td>Fushimi Inari Shrine</td>
+                        <td>Kyoto</td>
+                        <td>Historical Shrine</td>
+                        <td><input type="checkbox" class="row-checkbox"></td>
+                    </tr>
+                    <tr>
+                        <td>Tokyo Tower</td>
+                        <td>Tokyo</td>
+                        <td>Modern Landmark</td>
+                        <td><input type="checkbox" class="row-checkbox"></td>
+                    </tr>
+                    <tr>
+                        <td>Arashiyama Bamboo Grove</td>
+                        <td>Kyoto</td>
+                        <td>Natural Landmark</td>
+                        <td><input type="checkbox" class="row-checkbox"></td>
+                    </tr>
+                    <tr>
+                        <td>Himeji Castle</td>
+                        <td>Hyogo</td>
+                        <td>Historical Castle</td>
                         <td><input type="checkbox" class="row-checkbox"></td>
                     </tr>
                 </tbody>
             </table>
 
-            <!-- Activity Table -->
-            <table id="activity-table" class="table">
+            <!-- Culture Table -->
+            <table id="culture-table" class="table">
                 <thead>
                     <tr>
                         <th>Activity</th>
                         <th>Location</th>
                         <th>Duration</th>
-                        <th>Select/Unselect</th>
+                        <th>Select</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td>Hiking</td>
-                        <td>Mountain Trails</td>
+                        <td>Tea Ceremony</td>
+                        <td>Kyoto</td>
+                        <td>1 hour</td>
+                        <td><input type="checkbox" class="row-checkbox"></td>
+                    </tr>
+                    <tr>
+                        <td>Kimono Experience</td>
+                        <td>Tokyo</td>
+                        <td>2 hours</td>
+                        <td><input type="checkbox" class="row-checkbox"></td>
+                    </tr>
+                    <tr>
+                        <td>Sumo Wrestling Match</td>
+                        <td>Tokyo</td>
                         <td>3 hours</td>
                         <td><input type="checkbox" class="row-checkbox"></td>
                     </tr>
                     <tr>
-                        <td>City Tour</td>
-                        <td>Downtown</td>
+                        <td>Calligraphy Workshop</td>
+                        <td>Osaka</td>
+                        <td>1.5 hours</td>
+                        <td><input type="checkbox" class="row-checkbox"></td>
+                    </tr>
+                    <tr>
+                        <td>Geisha Performance</td>
+                        <td>Kyoto</td>
                         <td>2 hours</td>
                         <td><input type="checkbox" class="row-checkbox"></td>
                     </tr>
@@ -94,6 +155,9 @@
             </table>
         </div>
     </div>
+    <footer>
+        <p>&copy; 2025 Japan Travel Planner. All rights reserved.</p>
+    </footer>
     <script src="second-page.js"></script>
 </body>
 </html>
