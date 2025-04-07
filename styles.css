@@ -1,101 +1,151 @@
-body {
-    font-family: Arial, sans-serif;
+/* General Reset */
+* {
     margin: 0;
     padding: 0;
-    background-color: #f9f9f9;
-    color: #333;
+    box-sizing: border-box;
 }
 
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f7f7f7;
+    color: #333;
+    line-height: 1.6;
+}
+
+/* Container */
 .container {
-    max-width: 800px;
-    margin: 20px auto;
+    max-width: 1200px;
+    margin: 0 auto;
     padding: 20px;
-    background: #ffffff;
-    border-radius: 8px;
+}
+
+/* Header */
+header {
+    background-color: #e63946; /* Subtle red shade */
+    color: white;
+    padding: 20px 0;
+    text-align: center;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.page-title {
+header h1 {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+header p {
+    font-size: 1.2rem;
+    font-weight: 300;
+}
+
+/* Footer */
+footer {
     text-align: center;
-    margin-bottom: 20px;
-    color: #444;
-}
-
-.toggle-buttons {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 20px;
-}
-
-.toggle-button {
-    padding: 10px 20px;
-    margin: 0 5px;
-    border: none;
-    border-radius: 5px;
-    background-color: #007bff;
+    padding: 20px;
+    background-color: #333;
     color: white;
+    font-size: 0.9rem;
+    margin-top: 20px;
+}
+
+/* Buttons */
+button {
+    background-color: #e63946; /* Subtle red shade */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 1rem;
     cursor: pointer;
     transition: background-color 0.3s ease;
 }
 
+button:hover {
+    background-color: #d62828;
+}
+
+/* Toggle Buttons */
+.toggle-buttons {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.toggle-button {
+    background-color: #f0f0f0; /* Light gray for untoggled buttons */
+    border: 1px solid #ddd;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 1rem;
+    margin: 0 5px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    color: #555; /* Darker text for visibility */
+}
+
 .toggle-button.active {
-    background-color: #0056b3;
+    background-color: #e63946; /* Subtle red shade for active buttons */
+    color: white;
+    border-color: #e63946;
 }
 
 .toggle-button:hover {
-    background-color: #0056b3;
-}
-
-.table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 20px;
-    display: none;
-}
-
-.table.active {
-    display: table;
-}
-
-.table th, .table td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
-}
-
-.table th {
-    background-color: #007bff;
+    background-color: #d62828;
     color: white;
 }
 
+/* Tables */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    background-color: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: none; /* Hide all tables by default */
+}
+
+.table.active {
+    display: table; /* Show only the table with the active class */
+}
+
+.table th, .table td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.table th {
+    background-color: #e63946; /* Subtle red shade */
+    color: white;
+    font-weight: bold;
+}
+
 .table tr:nth-child(even) {
-    background-color: #f2f2f2;
+    background-color: #f7f7f7;
 }
 
 .table tr:hover {
-    background-color: #ddd;
+    background-color: #f1f1f1;
 }
 
-header h1 {
-    text-align: center;
-    color: #333;
-    margin-bottom: 20px;
+/* Center Checkboxes in Select Column */
+.table td input[type="checkbox"] {
+    display: block;
+    margin: 0 auto;
+    cursor: pointer;
 }
 
-footer {
-    text-align: center;
-    margin-top: 20px;
-    color: #666;
-    font-size: 14px;
-}
-
+/* Form Styles */
 .form-container {
-    background: #ffffff;
+    background: white;
+    padding: 30px;
     border-radius: 10px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    padding: 20px 30px;
-    width: 100%;
-    max-width: 400px;
+    max-width: 500px;
+    margin: 20px auto;
 }
 
 .form-container label {
@@ -106,98 +156,27 @@ footer {
 }
 
 .form-container input[type="text"],
-.form-container input[type="date"] {
+.form-container input[type="date"],
+.form-container select {
     width: 100%;
     padding: 10px;
     margin-bottom: 15px;
     border: 1px solid #ddd;
     border-radius: 5px;
-    font-size: 14px;
-}
-
-.form-container fieldset {
-    border: none;
-    margin-bottom: 15px;
-}
-
-.form-container legend {
-    font-size: 16px;
-    font-weight: bold;
-    margin-bottom: 10px;
-    color: #333;
-}
-
-.form-container label input[type="checkbox"] {
-    margin-right: 10px;
+    font-size: 1rem;
 }
 
 .form-container button {
-    background-color: #ff385c;
-    color: #fff;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 5px;
-    font-size: 16px;
-    cursor: pointer;
     width: 100%;
+    padding: 10px;
+    font-size: 1.2rem;
 }
 
-.form-container button:hover {
-    background-color: #e63950;
-}
-
+/* Tabs */
 .tabs-container {
     display: flex;
     justify-content: center;
     margin: 20px 0;
-}
-
-.tab-button {
-    background-color: #f7f7f7;
-    border: 1px solid #ddd;
-    padding: 10px 20px;
-    cursor: pointer;
-    font-size: 16px;
-    margin: 0 5px;
-    border-radius: 5px;
-    transition: background-color 0.3s;
-}
-
-.tab-button.active {
-    background-color: #ff385c;
-    color: white;
-    border-color: #ff385c;
-}
-
-.tab-button:hover {
-    background-color: #ff6b81;
-    color: white;
-}
-
-.styled-table {
-    width: 80%;
-    margin: 0 auto;
-    border-collapse: collapse;
-    font-size: 16px;
-    text-align: left;
-}
-
-.styled-table th, .styled-table td {
-    padding: 12px 15px;
-    border: 1px solid #ddd;
-}
-
-.styled-table th {
-    background-color: #ff385c;
-    color: white;
-}
-
-.styled-table tr:nth-child(even) {
-    background-color: #f7f7f7;
-}
-
-.styled-table tr:hover {
-    background-color: #f1f1f1;
 }
 
 .tab-content {
@@ -208,8 +187,17 @@ footer {
     display: block;
 }
 
-.row-checkbox {
-    display: block;
-    margin: 0 auto;
-    cursor: pointer;
+/* Responsive Design */
+@media (max-width: 768px) {
+    .toggle-buttons {
+        flex-direction: column;
+    }
+
+    .toggle-button {
+        margin: 5px 0;
+    }
+
+    .table {
+        font-size: 0.9rem;
+    }
 }
