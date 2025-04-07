@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Planner</title>
+    <!-- Link to your CSS file -->
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js" defer></script>
+</head>
+<body>
+    <form id="trip-form" class="form-container">
+        <label for="destination">Destination:</label>
+        <input type="text" id="destination" name="destination" placeholder="Enter your destination" required>
+        
+        <label for="departure-date">Departure Date:</label>
+        <input type="date" id="departure-date" name="departure-date" required>
+        
+        <label for="arrival-date">Arrival Date:</label>
+        <input type="date" id="arrival-date" name="arrival-date" required>
+        
+        <fieldset>
+            <legend>Vacation Preferences:</legend>
+            <label>
+                <input type="checkbox" name="preferences" value="Culture"> Culture
+            </label>
+            <label>
+                <input type="checkbox" name="preferences" value="Landmarks"> Landmarks
+            </label>
+            <label>
+                <input type="checkbox" name="preferences" value="Restaurants"> Restaurants
+            </label>
+            <label>
+                <input type="checkbox" name="preferences" value="Historical"> Historical
+            </label>
+            <label>
+                <input type="checkbox" name="preferences" value="Art"> Art
+            </label>
+            <label>
+                <input type="checkbox" name="preferences" value="Night life"> Night life
+            </label>
+        </fieldset>
+        
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>
