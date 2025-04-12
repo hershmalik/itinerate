@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explore Your Trip</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .loading-spinner {
+            display: none; /* Hidden by default */
+            text-align: center;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid #3498db;
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 15px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            display: none;
+        }
+
+        /* Professional itinerary table styling */
+        #itinerary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-family: Arial, sans-serif;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        #itinerary-table thead {
+            background-color: #2a2a5a;
+            color: white;
+        }
+
+        #itinerary-table th {
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: bold;
+            border: 1px solid #ddd;
+        }
+
+        #itinerary-table td {
+            padding: 10px 15px;
+            border: 1px solid #e0e0e0;
+            vertical-align: top;
+        }
+
+        /* Day headers - colored backgrounds */
+        #itinerary-table tr.day-header {
+            background-color: #d4e2f9;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        #itinerary-table tr.day-header td {
+            padding: 8px;
+            font-size: 15px;
+        }
+
+        /* Alternating colors for rows */
+        #itinerary-table tbody tr:nth-child(even):not(.day-header) {
+            background-color: #f9f9f9;
+        }
+        
+        #itinerary-table tbody tr:hover:not(.day-header) {
+            background-color: #f0f7ff;
+        }
+
+        /* Day 1 activities - light purple like in screenshot */
+        tr.day-1 td:first-child {
+            background-color: #b5a2d0;
+            color: white;
+            text-align: center;
+            width: 100px;
+            font-weight: bold;
+        }
+
+        /* Day 2 activities - blue like in screenshot */
+        tr.day-2 td:first-child {
+            background-color: #0047cc;
+            color: white;
+            text-align: center;
+            width: 100px;
+            font-weight: bold;
+        }
+
+        /* Day 3 activities - green like in screenshot */
+        tr.day-3 td:first-child {
+            background-color: #669966;
+            color: white;
+            text-align: center;
+            width: 100px;
+            font-weight: bold;
+        }
+
+        /* Add to your existing CSS */
+        #itinerary {
+            display: block !important;
+            width: 100% !important;
+            margin: 20px 0 !important;
+            padding: 10px !important;
+            background-color: white !important;
+        }
+
+        /* Force table visibility */
+        #itinerary {
+            display: block !important;
+            width: 100% !important;
+            margin: 20px 0 !important;
+        }
+        
+        #itinerary-table {
+            display: table !important;
+            width: 100% !important;
+            border-collapse: collapse !important;
+            visibility: visible !important;
+            margin: 20px 0 !important;
+        }
+        
+        #itinerary-table th,
+        #itinerary-table td {
+            padding: 10px !important;
+            border: 1px solid #ddd !important;
+            text-align: left !important;
+        }
+        
+        #itinerary-table tr:nth-child(even) {
+            background-color: #f9f9f9 !important;
+        }
+    </style>
+    <script src="second-page.js"></script>
+    <script src="app.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Your Trip Itinerary</h1>
+        <p>Discover the best restaurants, landmarks, and cultural activities based on your preferences!</p>
+    </header>
+    <div class="container">
+        <div id="preferences-summary">
+            <h2>Your Preferences</h2>
+            <ul id="preferences-list"></ul>
+        </div>
+
+        <!-- Chatbot Section -->
+        <div id="itinerary-chatbot">
+            <h2>Itinerary Generator</h2>
+            <div class="trip-details">
+                <h2>Your Itinerary for <span id="selected-destination-header">your destination</span></h2>
+                
+                <div id="loading-indicator" class="loading-spinner">
+                    <div class="spinner"></div>
+                    <p>Generating your AI-powered itinerary...</p>
+                </div>
+                
+                <div id="error-message" class="error-message"></div>
+            </div>
+            <div id="itinerary-display">
+                <div id="loading" style="display: none;">
+                    Please wait a moment<span id="loading-dots">...</span>
+                </div>
+                <div id="error-message-alt" class="error-message"></div>
+                <div id="itinerary">
+                    <table id="itinerary-table" class="table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Activity</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Itinerary data will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="toggle-buttons">
+            <button class="toggle-button active" data-table="restaurant-table">Restaurants</button>
+            <button class="toggle-button" data-table="landmark-table">Landmarks</button>
+            <button class="toggle-button" data-table="culture-table">Culture</button>
+        </div>
+        <div class="tables">
+            <!-- Restaurant Table -->
+            <table id="restaurant-table" class="table active">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Location</th>
+                        <th>Rating</th>
+                        <th>Select</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Restaurant data will be populated here -->
+                </tbody>
+            </table>
+
+            <!-- Landmark Table -->
+            <table id="landmark-table" class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Location</th>
+                        <th>Rating</th>
+                        <th>Select</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Landmark data will be populated here -->
+                </tbody>
+            </table>
+
+            <!-- Culture Table -->
+            <table id="culture-table" class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Location</th>
+                        <th>Rating</th>
+                        <th>Select</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Culture data will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+</body>
+</html>
