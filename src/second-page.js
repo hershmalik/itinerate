@@ -83,12 +83,24 @@ function handleInitializationError(message) {
 function displayPreferences() {
     const preferencesList = document.getElementById("preferences-list");
     if (preferencesList) {
-        const preferences = JSON.parse(localStorage.getItem("tripPreferences") || "[]"); // Changed "selectedPreferences" to "tripPreferences"
+        let preferences = [];
+        
+        // Try using the override first if available
+        if (window.getTripDetailsFromStorageOverride) {
+            const details = window.getTripDetailsFromStorageOverride();
+            if (details && details.preferences) {
+                preferences = details.preferences;
+            }
+        } else {
+            // Fall back to regular localStorage
+            preferences = JSON.parse(localStorage.getItem("tripPreferences") || "[]");
+        }
+        
         if (preferences.length === 0) {
             preferencesList.innerHTML = "<li>No preferences selected</li>";
         } else {
             preferencesList.innerHTML = preferences
-                .map(pref => `<li class="preference-item">${pref}</li>`) // Added class for potential styling
+                .map(pref => `<li class="preference-item">${pref}</li>`)
                 .join("");
         }
     }
@@ -309,6 +321,12 @@ function buildMarkerContent(labelIndex) {
 
 function getTripDetailsFromStorage() {
     console.log('[second-page.js] Attempting to get trip details from localStorage...');
+    
+    // Use the override function if it exists
+    if (window.getTripDetailsFromStorageOverride) {
+        return window.getTripDetailsFromStorageOverride();
+    }
+    
     try {
         const destination = localStorage.getItem('tripDestination');
         const departureDate = localStorage.getItem('tripDepartureDate');
@@ -321,32 +339,31 @@ function getTripDetailsFromStorage() {
         console.log(`[second-page.js] Arrival Date: '${arrivalDate}' (Type: ${typeof arrivalDate})`);
         console.log(`[second-page.js] Preferences JSON: '${preferencesJson}' (Type: ${typeof preferencesJson})`);
 
-        const preferences = preferencesJson ? JSON.parse(preferencesJson) : [];
-
-        // Check if any of the crucial string values are null, undefined, or empty strings
-        if (destination === "null" || departureDate === "null" || arrivalDate === "null") {
-            console.warn("[second-page.js] One or more values in localStorage are the string 'null'.");
+        // First check if ANY values are null or the string "null"
+        if (!destination || !departureDate || !arrivalDate || 
+            destination === "null" || departureDate === "null" || arrivalDate === "null") {
+            console.warn("[second-page.js] One or more values in localStorage are null or the string 'null'.");
             return null;
         }
 
-        if (destination && destination.trim() !== "" && 
-            departureDate && departureDate.trim() !== "" && 
-            arrivalDate && arrivalDate.trim() !== "") {
-            console.log('[second-page.js] All required details (destination, departureDate, arrivalDate) are present and non-empty.');
-            return {
-                destination,
-                departureDate,
-                arrivalDate,
-                preferences
-            };
+        // Now check for empty strings
+        if (destination.trim() === "" || departureDate.trim() === "" || arrivalDate.trim() === "") {
+            console.warn('[second-page.js] One or more values in localStorage are empty strings.');
+            return null;
         }
-        console.warn('[second-page.js] Validation FAILED in getTripDetailsFromStorage: One or more required details (destination, departureDate, arrivalDate) are missing or empty from localStorage.');
-        if (!destination || destination.trim() === "") console.warn("[second-page.js] Destination is missing or empty.");
-        if (!departureDate || departureDate.trim() === "") console.warn("[second-page.js] Departure Date is missing or empty.");
-        if (!arrivalDate || arrivalDate.trim() === "") console.warn("[second-page.js] Arrival Date is missing or empty.");
-        return null;
+
+        // Parse preferences
+        const preferences = preferencesJson ? JSON.parse(preferencesJson) : [];
+
+        console.log('[second-page.js] All required details are present and non-empty.');
+        return {
+            destination,
+            departureDate,
+            arrivalDate,
+            preferences
+        };
     } catch (e) {
-        console.error("[second-page.js] Error in getTripDetailsFromStorage (e.g., parsing preferences):", e);
+        console.error("[second-page.js] Error in getTripDetailsFromStorage:", e);
         return null;
     }
 }

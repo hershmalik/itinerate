@@ -227,6 +227,33 @@
     </div>
 
     <script src="second-page.js"></script>
-    <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDsiIuDg6F3hT2Oj871DQYzH7RMXhJ5JKg&libraries=marker,geometry&loading=async&callback=initMapAndItinerary"></script>
+    <script>
+      // Store trip details in variables right away
+      const storedDestination = localStorage.getItem('tripDestination');
+      const storedDepartureDate = localStorage.getItem('tripDepartureDate');
+      const storedArrivalDate = localStorage.getItem('tripArrivalDate');
+      const storedPreferences = localStorage.getItem('tripPreferences');
+      
+      // Override getTripDetailsFromStorage to use these stored values
+      window.getTripDetailsFromStorageOverride = function() {
+        console.log('[second-page.js] Using pre-stored values instead of reading from localStorage again');
+        
+        if (!storedDestination || !storedDepartureDate || !storedArrivalDate) {
+          console.warn('[second-page.js] One or more stored values are missing');
+          return null;
+        }
+        
+        const preferences = storedPreferences ? JSON.parse(storedPreferences) : [];
+        console.log('[second-page.js] Using stored preferences:', preferences);
+        
+        return {
+          destination: storedDestination,
+          departureDate: storedDepartureDate,
+          arrivalDate: storedArrivalDate,
+          preferences: preferences  // Make sure this is properly passed
+        };
+      };
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDsiIuDg6F3hT2Oj871DQYzH7RMXhJ5JKg&libraries=marker,geometry&loading=async&callback=initMapAndItinerary"></script>
 </body>
 </html>
