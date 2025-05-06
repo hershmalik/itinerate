@@ -1,4 +1,41 @@
-.env
+# macOS
+.DS_Store
+
+# Node
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json # If you prefer not to commit it, though often it is committed.
+                  # If you commit it, remove this line.
+
+# Parcel cache & build output
+.cache/
 .parcel-cache/
 dist/
+src/.cache/
+src/.parcel-cache/
+src/dist/
+src/node_modules/ # If this nested node_modules exists
+
+# Logs
+*.log
+logs
+*.log.*
+
+# Environment variables
+.env
+.env.*
+!.env.example # If you have an example env file you want to commit
+
+# User-specific shell configuration (should not be in project folder)
+# These are listed to prevent accidental commits if they were ever copied in.
+# The actual files should be DELETED from your project folder.
+.zshrc
+.zshrc.save
+
+# IDE / Editor specific
+.vscode/
+.idea/
+*.swp
+*~
