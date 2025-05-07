@@ -5,7 +5,11 @@
   "type": "module",
   "main": "server/server.js",
   "scripts": {
-    "start": "nodemon server/server.js"
+    "start": "node server/server.js",
+    "dev": "nodemon server/server.js",
+    "debug": "node --inspect server/server.js",
+    "build": "parcel build src/index.html --dist-dir ./dist",
+    "killport": "kill $(lsof -t -i:9876) || true"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
