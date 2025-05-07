@@ -9,113 +9,217 @@
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <style>
-        /* Simple Reset */
+        /* Modern Reset */
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
 
-        /* Custom styles for the form */
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             margin: 0;
             padding: 0;
-            display: flex;
-            flex-direction: column; /* Stack elements vertically */
-            align-items: center; /* Center horizontally */
+            color: #333;
+            background-color: #f5f7fa;
+            line-height: 1.6;
             min-height: 100vh;
-            background-color: #f9f9f9;
+            max-width: 100%; /* Ensure body uses full width */
+            overflow-x: hidden; /* Prevent horizontal scrolling */
         }
 
         header {
-            background-color: #FF4C4C;
+            background: linear-gradient(135deg, #FF4C4C 0%, #FF7676 100%);
             color: white;
-            padding: 20px;
+            padding: 40px 0;
             text-align: center;
-            margin-bottom: 20px;
-            width: 100%; /* Full width header */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            width: 100%; /* Ensure header uses full width */
         }
 
         .header-content {
-            max-width: 800px; /* Control the content width */
+            max-width: 100%; /* Changed from 1200px to 100% */
             margin: 0 auto;
+            padding: 0 20px;
         }
 
         h1 {
             margin: 0;
-            font-size: 28px;
+            font-size: 36px;
+            font-weight: 700;
         }
 
         .subtitle {
-            margin-top: 8px;
-            font-size: 16px;
+            margin-top: 12px;
+            font-size: 18px;
             font-weight: normal;
+            opacity: 0.9;
+        }
+
+        .feature-nav-container {
+            background: white;
+            padding: 0 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            margin-bottom: 30px;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .feature-nav {
+            display: flex;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-nav-item {
+            padding: 15px 25px;
+            color: #555;
+            text-decoration: none;
+            font-weight: 500;
+            position: relative;
+            transition: color 0.2s;
+        }
+
+        .feature-nav-item:hover {
+            color: #FF4C4C;
+        }
+
+        .feature-nav-item.active {
+            color: #FF4C4C;
+            border-bottom: 3px solid #FF4C4C;
+        }
+
+        .feature-nav-item.coming-soon {
+            opacity: 0.7;
+            cursor: default;
+        }
+
+        .coming-soon-badge {
+            position: absolute;
+            top: -8px;
+            right: -10px;
+            background: #FF4C4C;
+            color: white;
+            font-size: 10px;
+            padding: 3px 6px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        .main-container {
+            max-width: 100%; /* Changed from 1200px to 100% */
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 60px;
         }
 
         .form-container {
-            width: 450px;
-            margin-top: 20px;
-            margin-bottom: 30px;
+            width: 100%;
+            max-width: 95%; /* Changed from 800px to 95% */
         }
 
         main {
             width: 100%;
             background: white;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
         }
 
         .trip-details-title {
-            font-size: 20px;
+            font-size: 24px;
             font-weight: bold;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            color: #333;
+            position: relative;
+        }
+
+        .trip-details-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background-color: #FF4C4C;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
 
         label {
             display: block;
             margin-bottom: 8px;
             font-weight: 500;
+            color: #444;
         }
 
         input[type="text"], .flatpickr-input {
             width: 100%;
-            padding: 10px;
-            box-sizing: border-box;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 12px 16px;
+            border: 2px solid #e1e5ea;
+            border-radius: 6px;
             font-size: 16px;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus, .flatpickr-input:focus {
+            border-color: #FF4C4C;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 76, 76, 0.15);
         }
 
         .preferences-list {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-gap: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 16px;
+            margin-top: 10px;
+        }
+
+        .preferences-list label {
+            display: flex;
+            align-items: center;
+            font-weight: normal;
+            cursor: pointer;
+        }
+
+        .preferences-list input[type="checkbox"] {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+            accent-color: #FF4C4C;
         }
 
         button {
-            background-color: #FF4C4C; /* Changed to match header color */
+            background-color: #FF4C4C;
             color: white;
             border: none;
-            padding: 12px;
+            padding: 14px;
             width: 100%;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 500;
+            transition: background-color 0.2s, transform 0.1s;
+            margin-top: 15px;
         }
 
         button:hover {
-            background-color: #e63c3c; /* Slightly darker red on hover */
+            background-color: #ff3333;
+        }
+
+        button:active {
+            transform: translateY(2px);
         }
 
         .flatpickr-calendar {
             z-index: 9999 !important;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         }
 
         /* Error message styling */
@@ -123,11 +227,144 @@
             color: #e74c3c;
             font-weight: bold;
             background-color: #fadbd8;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 6px;
             display: none;
             text-align: center;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            header {
+                padding: 30px 0;
+            }
+            
+            h1 {
+                font-size: 28px;
+            }
+            
+            .subtitle {
+                font-size: 16px;
+            }
+            
+            main {
+                padding: 25px;
+            }
+            
+            .preferences-list {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .future-features-container {
+            background-color: #f9f9fd;
+            padding: 60px 20px;
+            margin-top: 50px;
+        }
+
+        .future-features {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .future-features h2 {
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 28px;
+            color: #333;
+        }
+
+        .feature-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+        }
+
+        .feature-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            position: relative;
+            transition: transform 0.3s, box-shadow 0.3s;
+            overflow: hidden;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.1);
+        }
+
+        .feature-icon {
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            margin-bottom: 12px;
+            font-size: 20px;
+        }
+
+        .feature-card p {
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .coming-soon-label {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: #FF4C4C;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            transform: rotate(5deg);
+        }
+
+        @media (max-width: 768px) {
+            .feature-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .advanced-preferences {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px dashed #ddd;
+            position: relative;
+        }
+
+        .advanced-prefs-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .advanced-prefs-header h4 {
+            font-size: 16px;
+            margin: 0;
+            color: #555;
+        }
+
+        .coming-soon-tag {
+            margin-left: 10px;
+            background: #FF4C4C;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .preferences-list.grayed-out {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .disabled-option {
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -139,55 +376,144 @@
         </div>
     </header>
 
-    <div class="form-container">
-        <main>
-            <div class="trip-details-title">Trip Details</div>
-            <form id="trip-form">
-                <div class="form-group">
-                    <label for="destination">Destination</label>
-                    <input type="text" id="destination" name="destination" placeholder="Enter your destination" required>
-                </div>
+    <div class="feature-nav-container">
+        <div class="feature-nav">
+            <a href="#" class="feature-nav-item active">Plan Trip</a>
+            <a href="#" class="feature-nav-item coming-soon">
+                Smart Routes
+                <span class="coming-soon-badge">Coming Soon</span>
+            </a>
+            <a href="#" class="feature-nav-item coming-soon">
+                Bookings
+                <span class="coming-soon-badge">Coming Soon</span>
+            </a>
+            <a href="#" class="feature-nav-item coming-soon">
+                Share & Collaborate
+                <span class="coming-soon-badge">Coming Soon</span>
+            </a>
+            <a href="#" class="feature-nav-item coming-soon">
+                Insights
+                <span class="coming-soon-badge">Coming Soon</span>
+            </a>
+        </div>
+    </div>
 
-                <div class="form-group">
-                    <label for="departure-date">Departure Date</label>
-                    <input type="text" id="departure-date" name="departure-date" placeholder="mm/dd/yyyy" class="flatpickr-input" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="arrival-date">Arrival Date</label>
-                    <input type="text" id="arrival-date" name="arrival-date" placeholder="mm/dd/yyyy" class="flatpickr-input" required>
-                </div>
-
-                <div class="form-group">
-                    <label>Preferences</label>
-                    <div class="preferences-list">
-                        <label>
-                            <input type="checkbox" name="preferences" value="culture"> Culture
-                        </label>
-                        <label>
-                            <input type="checkbox" name="preferences" value="landmarks"> Landmarks
-                        </label>
-                        <label>
-                            <input type="checkbox" name="preferences" value="food"> Foodie
-                        </label>
-                        <label>
-                            <input type="checkbox" name="preferences" value="historical"> Historical
-                        </label>
-                        <label>
-                            <input type="checkbox" name="preferences" value="art"> Art
-                        </label>
-                        <label>
-                            <input type="checkbox" name="preferences" value="nature"> Nature
-                        </label>
-                        <label>
-                            <input type="checkbox" name="preferences" value="nightlife"> Nightlife
-                        </label>
+    <div class="main-container">
+        <div class="form-container">
+            <main>
+                <div class="trip-details-title">Trip Details</div>
+                <form id="trip-form">
+                    <div class="form-group">
+                        <label for="destination">Destination</label>
+                        <input type="text" id="destination" name="destination" placeholder="Enter your destination" required>
                     </div>
-                </div>
 
-                <button type="submit">Submit</button>
-            </form>
-        </main>
+                    <div class="form-group">
+                        <label for="departure-date">Departure Date</label>
+                        <input type="text" id="departure-date" name="departure-date" placeholder="mm/dd/yyyy" class="flatpickr-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="arrival-date">Arrival Date</label>
+                        <input type="text" id="arrival-date" name="arrival-date" placeholder="mm/dd/yyyy" class="flatpickr-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Preferences</label>
+                        <div class="preferences-list">
+                            <label>
+                                <input type="checkbox" name="preferences" value="culture"> Culture
+                            </label>
+                            <label>
+                                <input type="checkbox" name="preferences" value="landmarks"> Landmarks
+                            </label>
+                            <label>
+                                <input type="checkbox" name="preferences" value="food"> Foodie
+                            </label>
+                            <label>
+                                <input type="checkbox" name="preferences" value="historical"> Historical
+                            </label>
+                            <label>
+                                <input type="checkbox" name="preferences" value="art"> Art
+                            </label>
+                            <label>
+                                <input type="checkbox" name="preferences" value="nature"> Nature
+                            </label>
+                            <label>
+                                <input type="checkbox" name="preferences" value="nightlife"> Nightlife
+                            </label>
+                        </div>
+                        <div class="advanced-preferences">
+                            <div class="advanced-prefs-header">
+                                <h4>Advanced Options</h4>
+                                <span class="coming-soon-tag">Coming Soon</span>
+                            </div>
+                            
+                            <div class="preferences-list grayed-out">
+                                <label class="disabled-option" title="This feature is coming soon">
+                                    <input type="checkbox" name="advanced-preferences" disabled> 
+                                    Explore multiple cities
+                                </label>
+                                <label class="disabled-option" title="This feature is coming soon">
+                                    <input type="checkbox" name="advanced-preferences" disabled> 
+                                    Minimize travel between destinations
+                                </label>
+                                <label class="disabled-option" title="This feature is coming soon">
+                                    <input type="checkbox" name="advanced-preferences" disabled> 
+                                    Include local events
+                                </label>
+                                <label class="disabled-option" title="This feature is coming soon">
+                                    <input type="checkbox" name="advanced-preferences" disabled> 
+                                    Discover trending experiences
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit">Submit</button>
+                </form>
+            </main>
+        </div>
+    </div>
+    
+    <div class="future-features-container">
+        <div class="future-features">
+            <h2>Coming Soon to Enhance Your Trip Planning</h2>
+            
+            <div class="feature-cards">
+                <!-- Smart Travel Card -->
+                <div class="feature-card">
+                    <div class="feature-icon">🗺️</div>
+                    <h3>Smart Routing</h3>
+                    <p>Optimize travel between cities and minimize transit time with AI-powered route suggestions.</p>
+                    <div class="coming-soon-label">Coming Soon</div>
+                </div>
+                
+                <!-- Easy Booking Card -->
+                <div class="feature-card">
+                    <div class="feature-icon">🏨</div>
+                    <h3>Instant Bookings</h3>
+                    <p>Book flights and hotels directly from your itinerary with one click.</p>
+                    <div class="coming-soon-label">Coming Soon</div>
+                </div>
+                
+                <!-- Sharing Card -->
+                <div class="feature-card">
+                    <div class="feature-icon">📅</div>
+                    <h3>Export & Share</h3>
+                    <p>Export to Google Calendar, share with friends, or collaborate on group trips.</p>
+                    <div class="coming-soon-label">Coming Soon</div>
+                </div>
+                
+                <!-- Real-time Data Card -->
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Real-time Insights</h3>
+                    <p>Get alerts about closures, delays, and crowd levels at popular destinations.</p>
+                    <div class="coming-soon-label">Coming Soon</div>
+                </div>
+            </div>
+        </div>
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>

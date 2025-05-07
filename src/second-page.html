@@ -6,53 +6,88 @@
     <title>Your Trip Itinerary</title>
     <link rel="stylesheet" href="styles.css">
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        /* Modern Reset */
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            background-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f7fa;
             color: #333;
+            line-height: 1.6;
+            max-width: 100%;
+            overflow-x: hidden;
         }
 
         header {
-            background-color: #FF4C4C;
+            background: linear-gradient(135deg, #FF4C4C 0%, #FF7676 100%);
             color: white;
-            padding: 20px 0;
+            padding: 40px 0;
             text-align: center;
-            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 40px;
         }
 
         header h1 {
             margin: 0;
-            font-size: 2em;
+            font-size: 36px;
+            font-weight: 700;
         }
+        
         header p {
-            margin-top: 5px;
-            font-size: 1.1em;
+            margin-top: 12px;
+            font-size: 18px;
+            opacity: 0.9;
         }
 
         .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 0 20px;
+            width: 100%;
+            max-width: 100%;
+            padding: 0;
+        }
+
+        .content-section {
             background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
             padding: 20px;
             margin-bottom: 30px;
+            width: 100%;
+            overflow-x: visible;
+            max-width: 100%;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 50px;
+            height: 3px;
+            background-color: #FF4C4C;
         }
 
         #preferences-summary {
-            margin-bottom: 25px;
-            padding: 15px;
-            background-color: #eef;
-            border-radius: 5px;
+            background-color: #f0f7ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
         }
-        #preferences-summary h2 {
-            margin-top: 0;
-            margin-bottom: 10px;
-            color: #335;
-        }
+        
         #preferences-list {
             list-style: none;
             padding: 0;
@@ -60,29 +95,13 @@
             flex-wrap: wrap;
             gap: 10px;
         }
+        
         #preferences-list li {
-            background-color: #d4e2f9;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 0.9em;
-        }
-
-        #itinerary-chatbot h2 {
-             margin-top: 0;
-             margin-bottom: 15px;
-             border-bottom: 2px solid #FF4C4C;
-             padding-bottom: 5px;
-             color: #FF4C4C;
-        }
-
-        .trip-details h2 {
-            font-size: 1.4em;
-            margin-bottom: 20px;
-            color: #555;
-        }
-        #selected-destination-header {
-            font-weight: bold;
-            color: #000;
+            background-color: #e1e9f8;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
         .loading-spinner {
@@ -91,7 +110,7 @@
             padding: 40px 20px;
             margin: 20px 0;
             background-color: #f9f9f9;
-            border-radius: 5px;
+            border-radius: 8px;
         }
         
         .spinner {
@@ -103,57 +122,44 @@
             margin: 0 auto 20px;
             animation: spin 1s linear infinite;
         }
-        .loading-spinner p {
-            font-size: 1.1em;
-            color: #555;
-        }
         
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        
-        .error-message {
-            color: #D8000C;
-            background-color: #FFD2D2;
-            border: 1px solid #D8000C;
-            font-weight: bold;
-            text-align: center;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 5px;
-            display: none;
-        }
 
         #itinerary-table {
             width: 100%;
+            table-layout: fixed;
             border-collapse: collapse;
             margin-top: 20px;
-            font-family: Arial, sans-serif;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            border-radius: 5px;
+            border-radius: 8px;
             overflow: hidden;
         }
 
         #itinerary-table th {
-            background-color: #003366; /* Explicitly set Dark Blue background for th */
-            color: white; /* Explicitly set white text for th */
-            padding: 12px 15px; 
+            background-color: #003366;
+            color: white;
+            padding: 12px 8px;
             text-align: left;
-            font-weight: normal; 
-            border-bottom: 1px solid #002244; 
-            font-size: 0.95em; 
-            text-transform: none; 
+            font-weight: 600;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            position: sticky;
+            top: 0;
+            background-color: #003366;
+            z-index: 1;
         }
 
         #itinerary-table td {
-            padding: 12px 15px;
+            padding: 12px 10px;
             border-bottom: 1px solid #eee;
             vertical-align: top;
-        }
-
-        #itinerary-table tbody tr:last-child td {
-            border-bottom: none;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+            hyphens: auto;
+            font-size: 14px;
         }
 
         #itinerary-table tbody tr:nth-child(even) {
@@ -164,64 +170,347 @@
             background-color: #f0f7ff;
         }
 
+        .day-header-row {
+            background-color: #e8f0fe !important;
+        }
+
+        #itinerary-table th:nth-child(1), /* Time column */
+        #itinerary-table td:nth-child(1) {
+            width: 10%;
+            white-space: nowrap;
+        }
+        
+        #itinerary-table th:nth-child(2), /* Activity column */
+        #itinerary-table td:nth-child(2) {
+            width: 25%;
+        }
+        
+        #itinerary-table th:nth-child(3), /* Location column */
+        #itinerary-table td:nth-child(3) {
+            width: 30%;
+        }
+        
+        #itinerary-table th:nth-child(4), /* Rating column */
+        #itinerary-table td:nth-child(4) {
+            width: 15%;
+        }
+        
+        #itinerary-table th:nth-child(5), /* Hours column */
+        #itinerary-table td:nth-child(5) {
+            width: 20%;
+        }
+
+        .day-header-row td:first-child {
+            white-space: nowrap;
+            padding: 12px 10px;
+        }
+
         #map-container {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
+            margin-top: 40px;
         }
-        #map-container h2 {
-             margin-bottom: 15px;
-             color: #333;
-        }
+        
         #map {
-            height: 500px;
+            height: 600px;
             width: 100%;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .map-controls {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .day-filter {
+            background: white;
+            padding: 12px 16px;
+            border-radius: 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+        }
+
+        .day-filter label {
+            margin-right: 12px;
+            font-weight: 600;
+            color: #444;
+        }
+
+        .day-filter select {
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-size: 15px;
+            min-width: 180px;
+        }
+
+        /* Additional styles for place details */
+        .place-rating {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .stars {
+            color: #FF9800;
+            font-size: 18px;
+            line-height: 1;
+        }
+        
+        .rating-value {
+            font-weight: bold;
+            margin-top: 4px;
+        }
+        
+        .rating-count {
+            color: #666;
+            font-size: 12px;
+        }
+        
+        .place-hours {
+            font-size: 14px;
+            line-height: 1.3;
+            color: #333;
+        }
+        
+        .open-now {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        
+        .closed-now {
+            color: #F44336;
+            font-weight: bold;
+        }
+        
+        .view-hours-btn {
+            background-color: #f0f0f0;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .view-hours-btn:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .google-maps-link {
+            display: inline-block;
+            margin-top: 8px;
+            color: #1a73e8;
+            font-size: 12px;
+            text-decoration: none;
+        }
+        
+        .google-maps-link:hover {
+            text-decoration: underline;
+        }
+        
+        .loading-place-data {
+            color: #999;
+            font-style: italic;
+            font-size: 13px;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            header {
+                padding: 25px 0;
+            }
+            
+            .container {
+                padding: 0 15px;
+            }
+            
+            .content-section {
+                padding: 15px;
+            }
+            
+            #map {
+                height: 400px;
+            }
+            
+            #itinerary-table {
+                font-size: 14px;
+            }
+            
+            .place-rating .stars {
+                font-size: 16px;
+            }
+            
+            .place-rating .rating-count {
+                font-size: 11px;
+            }
+        }
+
+        @media (max-width: 1000px) {
+            .content-section::after {
+                display: none;
+            }
+        }
+
+        /* Add this to your existing styles */
+        #itinerary-display {
+            max-height: 800px; /* Adjust as needed */
+            overflow-y: auto;
+            margin-bottom: 30px;
+        }
+        
+        /* Make sure horizontal scrolling works too */
+        #itinerary-table {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+        }
+        
+        /* Keep table headers visible when scrolling */
+        #itinerary-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+
+        /* Add to your style section */
+        .actions-preview-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            padding: 15px 0;
+            z-index: 100;
+        }
+
+        .actions-container {
+            display: flex;
+            justify-content: center;
+            max-width: 900px;
+            margin: 0 auto;
+            gap: 20px;
+        }
+
+        .action-button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .action-disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .action-icon {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .soon-pill {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #FF4C4C;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .actions-container {
+                gap: 10px;
+            }
+            
+            .action-button {
+                padding: 10px;
+            }
+            
+            .action-button span:not(.soon-pill) {
+                font-size: 12px;
+            }
         }
     </style>
 </head>
 <body>
     <header>
-        <h1>Your Trip Itinerary</h1>
-        <p>Discover the best activities based on your preferences!</p>
+        <div class="container">
+            <h1>Your Trip Itinerary</h1>
+            <p>Discover the best activities based on your preferences!</p>
+        </div>
     </header>
+    
     <div class="container">
-        <div id="preferences-summary">
-            <h2>Your Preferences</h2>
-            <ul id="preferences-list"></ul>
-        </div>
+        <div class="content-section">
+            <div id="preferences-summary">
+                <h2 class="section-title">Your Preferences</h2>
+                <ul id="preferences-list"></ul>
+            </div>
 
-        <div id="itinerary-chatbot">
-            <h2>Itinerary Generator</h2>
-            <div class="trip-details">
-                <h2>Your Itinerary for <span id="selected-destination-header">your destination</span></h2>
-                
-                <div id="loading-indicator" class="loading-spinner">
-                    <div class="spinner"></div>
-                    <p>Generating your AI-powered itinerary...</p>
+            <div id="weather-loading" class="loading-spinner" style="display: none;">
+                <div class="spinner"></div>
+                <p>Loading weather data...</p>
+            </div>
+            <div id="weather-error" class="error-message"></div>
+
+            <div id="itinerary-chatbot">
+                <h2 class="section-title">Itinerary Generator</h2>
+                <div class="trip-details">
+                    <h3>Your Itinerary for <span id="selected-destination-header">your destination</span></h3>
+                    
+                    <div id="loading-indicator" class="loading-spinner">
+                        <div class="spinner"></div>
+                        <p>Generating your AI-powered itinerary...</p>
+                        <p id="chunking-progress" style="margin-top: 10px; font-size: 14px; color: #666;"></p>
+                    </div>
+                    
+                    <div id="error-message" class="error-message"></div>
                 </div>
-                
-                <div id="error-message" class="error-message"></div>
-            </div>
-            <div id="itinerary-display" style="display: none;">
-                <table id="itinerary-table">
-                    <thead>
-                        <tr>
-                            <th>Time</th>
-                            <th>Activity</th>
-                            <th>Location Details</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Itinerary data will be populated here -->
-                    </tbody>
-                </table>
+                <div id="itinerary-display" style="display: none;">
+                    <div id="day-navigation" style="margin-bottom: 15px; display: none;">
+                        <label for="jump-to-day">Jump to day: </label>
+                        <select id="jump-to-day">
+                            <!-- Will be populated dynamically -->
+                        </select>
+                    </div>
+                    <table id="itinerary-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Activity</th>
+                                <th>Location Details</th>
+                                <th>Rating</th>
+                                <th>Hours</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Itinerary data will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <div id="map-container">
-             <h2>Trip Map</h2>
+        <div class="content-section" id="map-container">
+             <h2 class="section-title">Trip Map</h2>
+             <div class="map-controls">
+                 <div class="day-filter">
+                     <label for="day-selector">Filter by day:</label>
+                     <select id="day-selector">
+                         <option value="all">Show all days</option>
+                         <!-- Days will be added dynamically -->
+                     </select>
+                 </div>
+             </div>
              <div id="map"></div>
         </div>
     </div>
@@ -255,5 +544,30 @@
       };
     </script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDsiIuDg6F3hT2Oj871DQYzH7RMXhJ5JKg&libraries=marker,geometry&loading=async&callback=initMapAndItinerary"></script>
+
+    <div class="actions-preview-bar">
+        <div class="actions-container">
+            <button class="action-button action-disabled">
+                <i class="action-icon">📅</i>
+                <span>Export to Calendar</span>
+                <span class="soon-pill">Soon</span>
+            </button>
+            <button class="action-button action-disabled">
+                <i class="action-icon">📤</i>
+                <span>Share Itinerary</span>
+                <span class="soon-pill">Soon</span>
+            </button>
+            <button class="action-button action-disabled">
+                <i class="action-icon">✈️</i>
+                <span>Book Travel</span>
+                <span class="soon-pill">Soon</span>
+            </button>
+            <button class="action-button action-disabled">
+                <i class="action-icon">👥</i>
+                <span>Collaborate</span>
+                <span class="soon-pill">Soon</span>
+            </button>
+        </div>
+    </div>
 </body>
 </html>
