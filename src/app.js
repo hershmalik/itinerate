@@ -29,6 +29,74 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     window.initMap = initMap;
 
+    // Handle advanced options toggle
+    const advancedOptionsToggle = document.getElementById('toggle-advanced-options');
+    const advancedOptionsContainer = document.getElementById('advanced-options-container');
+    const expandIcon = document.querySelector('.expand-icon');
+
+    if (advancedOptionsToggle && advancedOptionsContainer) {
+        advancedOptionsToggle.addEventListener('click', () => {
+            advancedOptionsContainer.classList.toggle('expanded');
+            expandIcon.classList.toggle('expanded');
+        });
+    }
+
+    // Populate preference options
+    const preferenceOptions = [
+        { id: 'culture', label: 'Culture' },
+        { id: 'landmarks', label: 'Landmarks' },
+        { id: 'food', label: 'Foodie' },
+        { id: 'historical', label: 'Historical' },
+        { id: 'art', label: 'Art' },
+        { id: 'nature', label: 'Nature' },
+        { id: 'nightlife', label: 'Nightlife' },
+        { id: 'theme_parks', label: 'Theme Parks' } // <-- Add this
+    ];
+
+    const preferencesList = document.querySelector('.preferences-list');
+    if (preferencesList) {
+        preferenceOptions.forEach(option => {
+            const label = document.createElement('label');
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.name = 'preferences';
+            input.value = option.id;
+            label.appendChild(input);
+            label.appendChild(document.createTextNode(option.label));
+            preferencesList.appendChild(label);
+        });
+    }
+
+    // Handle slider inputs
+    const sliders = document.querySelectorAll('.preference-slider');
+    sliders.forEach(slider => {
+        slider.addEventListener('input', function() {
+            const value = parseInt(this.value);
+            const minValue = this.dataset.min;
+            const maxValue = this.dataset.max;
+            
+            // Remove any previous selections for this pair
+            if (minValue) {
+                const minCheckbox = document.querySelector(`input[name="advanced-prefs"][value="${minValue}"]`);
+                if (minCheckbox) minCheckbox.checked = false;
+            }
+            
+            if (maxValue) {
+                const maxCheckbox = document.querySelector(`input[name="advanced-prefs"][value="${maxValue}"]`);
+                if (maxCheckbox) maxCheckbox.checked = false;
+            }
+            
+            // Set the appropriate checkbox based on the slider value
+            if (value === 1 && minValue) {
+                const minCheckbox = document.querySelector(`input[name="advanced-prefs"][value="${minValue}"]`);
+                if (minCheckbox) minCheckbox.checked = true;
+            } else if (value === 5 && maxValue) {
+                const maxCheckbox = document.querySelector(`input[name="advanced-prefs"][value="${maxValue}"]`);
+                if (maxCheckbox) maxCheckbox.checked = true;
+            }
+        });
+    });
+
     if (tripForm) {
         tripForm.addEventListener('submit', function(event) {
             event.preventDefault(); 
@@ -47,48 +115,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 selectedPreferences.push(checkbox.value);
             });
             console.log('[app.js] Selected Preferences:', selectedPreferences);
-
-            if (!destination || !departureDate || !arrivalDate) {
-                console.error('[app.js] Validation FAILED: One or more required fields are empty.');
-                alert("Please fill in all required fields: Destination, Departure Date, and Arrival Date.");
-                return;
-            }
-            console.log('[app.js] Validation PASSED.');
-
+            
+            // Get advanced preferences
+            const advancedPreferences = [];
+            document.querySelectorAll('input[name="advanced-prefs"]:checked').forEach((checkbox) => {
+                advancedPreferences.push(checkbox.value);
+            });
+            console.log('[app.js] Advanced Preferences:', advancedPreferences);
+            
+            // Store in localStorage
             localStorage.setItem('tripDestination', destination);
             localStorage.setItem('tripDepartureDate', departureDate);
             localStorage.setItem('tripArrivalDate', arrivalDate);
             localStorage.setItem('tripPreferences', JSON.stringify(selectedPreferences));
-
-            console.log('[app.js] Data supposedly saved to localStorage. Verifying by reading back immediately:');
-            console.log(`[app.js] Read back tripDestination: '${localStorage.getItem('tripDestination')}'`);
-            console.log(`[app.js] Read back tripDepartureDate: '${localStorage.getItem('tripDepartureDate')}'`);
-            console.log(`[app.js] Read back tripArrivalDate: '${localStorage.getItem('tripArrivalDate')}'`);
-            console.log(`[app.js] Read back tripPreferences: '${localStorage.getItem('tripPreferences')}'`);
-
-            // Ensure the redirect line is active
-            console.log('[app.js] REDIRECTING TO second-page.html');
-            window.location.href = 'second-page.html'; 
+            localStorage.setItem('advancedPreferences', JSON.stringify(advancedPreferences));
+            
+            // Redirect to the next page
+            window.location.href = 'second-page.html';
         });
-    } else {
-        console.error("[app.js] Trip form not found.");
     }
 });
-
-document.querySelectorAll('.tab-button').forEach(button => {
-    button.addEventListener('click', () => {
-        const tabId = button.getAttribute('data-tab-id');
-        showTab(tabId);
-    });
-});
-
-function showTab(tabId) {
-    const tabs = document.querySelectorAll('.tab-content');
-    tabs.forEach(tab => tab.classList.remove('active'));
-
-    const buttons = document.querySelectorAll('.tab-button');
-    buttons.forEach(button => button.classList.remove('active'));
-
-    document.getElementById(tabId)?.classList.add('active');
-    document.querySelector(`.tab-button[data-tab-id="${tabId}"]`)?.classList.add('active');
-}

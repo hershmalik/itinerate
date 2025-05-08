@@ -10,6 +10,100 @@ console.log("All localStorage keys/values at script start:", {...localStorage});
 console.log("[second-page.js] TOP OF FILE: tripDestination =", localStorage.getItem('tripDestination'));
 window.addEventListener('DOMContentLoaded', () => {
   console.log("[second-page.js] DOMContentLoaded: tripDestination =", localStorage.getItem('tripDestination'));
+  
+  // Handle examples dropdown toggle
+  const examplesToggle = document.querySelector('.examples-toggle');
+  const examplesContent = document.querySelector('.examples-content');
+  
+  if (examplesToggle && examplesContent) {
+    examplesToggle.addEventListener('click', function() {
+      examplesContent.classList.toggle('visible');
+      examplesToggle.textContent = examplesContent.classList.contains('visible') ? 'Hide examples ▴' : 'See examples ▾';
+    });
+  }
+  
+  // Handle slider inputs on second page
+  const sliders = document.querySelectorAll('.preference-slider');
+  sliders.forEach(slider => {
+    slider.addEventListener('input', function() {
+      const value = parseInt(this.value);
+      const minValue = this.dataset.min;
+      const maxValue = this.dataset.max;
+      
+      // Remove any previous selections for this pair
+      if (minValue) {
+        const minCheckbox = document.querySelector(`input[name="advanced-prefs-second"][value="${minValue}"]`);
+        if (minCheckbox) minCheckbox.checked = false;
+      }
+      
+      if (maxValue) {
+        const maxCheckbox = document.querySelector(`input[name="advanced-prefs-second"][value="${maxValue}"]`);
+        if (maxCheckbox) maxCheckbox.checked = false;
+      }
+      
+      // Set the appropriate checkbox based on the slider value
+      if (value === 1 && minValue) {
+        const minCheckbox = document.querySelector(`input[name="advanced-prefs-second"][value="${minValue}"]`);
+        if (minCheckbox) minCheckbox.checked = true;
+      } else if (value === 5 && maxValue) {
+        const maxCheckbox = document.querySelector(`input[name="advanced-prefs-second"][value="${maxValue}"]`);
+        if (maxCheckbox) maxCheckbox.checked = true;
+      }
+    });
+  });
+  
+  // Initialize advanced preferences from localStorage (if they exist)
+  const storedAdvancedPrefs = localStorage.getItem('advancedPreferences');
+  if (storedAdvancedPrefs) {
+    try {
+      const advancedPrefs = JSON.parse(storedAdvancedPrefs);
+      advancedPrefs.forEach(pref => {
+        const checkbox = document.querySelector(`input[name="advanced-prefs-second"][value="${pref}"]`);
+        if (checkbox) checkbox.checked = true;
+        
+        // Also update sliders if needed
+        const minSlider = document.querySelector(`.preference-slider[data-min="${pref}"]`);
+        if (minSlider) minSlider.value = 1;
+        
+        const maxSlider = document.querySelector(`.preference-slider[data-max="${pref}"]`);
+        if (maxSlider) maxSlider.value = 5;
+      });
+    } catch (e) {
+      console.error('Error parsing stored advanced preferences:', e);
+    }
+  }
+
+  // Initialize collapse sections
+  const collapseSections = document.querySelectorAll('.collapse-header');
+  collapseSections.forEach(header => {
+    const contentId = header.nextElementSibling.id;
+    header.setAttribute('aria-controls', contentId);
+    header.setAttribute('aria-expanded', 'false');
+  });
+ 
+  const toggleHours = document.getElementById('toggle-hours');
+  if (toggleHours) {
+    toggleHours.checked = false; // Off by default
+    toggleHours.addEventListener('change', function(e) {
+      const show = e.target.checked;
+      document.querySelectorAll('#itinerary-table th:nth-child(5), #itinerary-table td:nth-child(5)').forEach(el => {
+        el.style.display = show ? '' : 'none'; // Empty string reverts to default display (table-cell)
+      });
+    });
+  }
+
+  // ADD THIS NEW BLOCK FOR RATINGS TOGGLE
+  const toggleRatings = document.getElementById('toggle-ratings');
+  if (toggleRatings) {
+    toggleRatings.checked = false; // Off by default
+    toggleRatings.addEventListener('change', function(e) {
+      const show = e.target.checked;
+      // The Ratings column is the 4th column
+      document.querySelectorAll('#itinerary-table th:nth-child(4), #itinerary-table td:nth-child(4)').forEach(el => {
+        el.style.display = show ? '' : 'none';
+      });
+    });
+  }
 });
 window.addEventListener('load', () => {
   console.log("[second-page.js] window.load: tripDestination =", localStorage.getItem('tripDestination'));
@@ -35,7 +129,7 @@ let dayGroups = {}; // Store activities grouped by day
 const markerData = new WeakMap(); // Store marker data that can't be directly attached
 let weatherForecasts = []; // Store weather forecasts globally
 
-// Fix the completely broken getSeasonalWeatherData function
+// Replace the broken function with this fixed version
 function getSeasonalWeatherData(location, month) {
   // Get hemisphere based on location (rough approximation)
   const isNorthernHemisphere = true; // Default to Northern hemisphere
@@ -84,6 +178,47 @@ function getSeasonalWeatherData(location, month) {
   return seasonalPatterns[season];
 }
 
+// Replace the weather icon mapping function
+function getWeatherIconClass(iconCode) {
+  const iconMap = {
+    '01d': 'wi wi-day-sunny',
+    '01n': 'wi wi-night-clear',
+    '02d': 'wi wi-day-cloudy',
+    '02n': 'wi wi-night-alt-cloudy',
+    '03d': 'wi wi-cloud',
+    '03n': 'wi wi-cloud',
+    '04d': 'wi wi-cloudy',
+    '04n': 'wi wi-cloudy',
+    '09d': 'wi wi-showers',
+    '09n': 'wi wi-showers',
+    '10d': 'wi wi-day-rain',
+    '10n': 'wi wi-night-alt-rain',
+    '11d': 'wi wi-thunderstorm',
+    '11n': 'wi wi-thunderstorm',
+    '13d': 'wi wi-snow',
+    '13n': 'wi wi-snow',
+    '50d': 'wi wi-fog',
+    '50n': 'wi wi-fog'
+  };
+  
+  return iconMap[iconCode] || 'wi wi-day-sunny';
+}
+
+// Update the createWeatherDisplay function
+
+function createWeatherDisplay(forecast) {
+  if (!forecast) return '';
+  
+  return `
+    <div class="weather-display">
+      <i class="${getWeatherIconClass(forecast.icon)}" aria-hidden="true"></i>
+      <div class="weather-temps">
+        ${Math.round(forecast.high)}°F / ${Math.round(forecast.low)}°F
+      </div>
+    </div>
+  `;
+}
+
 // Fix the fetchWeatherData function
 async function fetchWeatherData() {
   const weatherError = document.getElementById('weather-error');
@@ -103,10 +238,9 @@ async function fetchWeatherData() {
     // Construct proper API URL
     let baseUrl;
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      baseUrl = 'http://localhost:9876';
+      baseUrl = 'http://localhost:5000'; // Change to match your new port
     } else {
-      // For production deployment - use relative URL
-      baseUrl = '';
+      baseUrl = window.location.origin;
     }
     
     console.log(`Weather API URL: ${baseUrl}/api/weather?location=${encodeURIComponent(tripDetails.destination)}`);
@@ -226,10 +360,9 @@ async function fetchHistoricalWeather(location, date) {
     // PRIORITY 2: Visual Crossing API for historical data
     let baseUrl;
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      baseUrl = 'http://localhost:9876';
+      baseUrl = 'http://localhost:5000'; // Change to match your new port
     } else {
-      // For production deployment - use relative URL
-      baseUrl = '';
+      baseUrl = window.location.origin;
     }
       
     console.log(`Fetching historical weather from Visual Crossing for ${location} on ${date}`);
@@ -285,10 +418,9 @@ async function fetchPlaceDetails(activity, location) {
     // Construct proper API URL
     let baseUrl;
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      baseUrl = 'http://localhost:9876';
+      baseUrl = 'http://localhost:5000'; // Change to match your new port
     } else {
-      // For production deployment - use relative URL
-      baseUrl = '';
+      baseUrl = window.location.origin;
     }
       
     console.log(`Fetching place details for: ${activity} at ${location}`);
@@ -333,25 +465,19 @@ async function initMapAndItinerary() {
 
     // Now that map is ready, proceed with loading itinerary
     try {
-        displayPreferences(); // Ensure this doesn't clear or interfere with tripDetails
-        const tripDetails = getTripDetailsFromStorage(); // This is the critical call
-
+        displayPreferences();
+        // Initialize preference toggles after displaying preferences
+        initializePreferenceToggles();
+        
+        const tripDetails = getTripDetailsFromStorage();
         if (tripDetails) {
-            console.log("[second-page.js] Successfully loaded trip details from storage:", tripDetails);
-            const destinationElements = document.querySelectorAll("[id^='selected-destination']");
-            destinationElements.forEach(element => {
-                if (element) element.textContent = tripDetails.destination || "your destination";
+            document.querySelectorAll("[id^='selected-destination']").forEach(el => {
+                el.textContent = tripDetails.destination;
             });
-            
-            // Fetch weather data in parallel with the itinerary
-            fetchWeatherData().catch(error => {
-                console.error("Weather data fetch failed:", error);
-            });
-            
-            await generateItinerary(); // Wait for itinerary generation
+            await generateItinerary();
+            await fetchWeatherData();
         } else {
-            console.error("[second-page.js] getTripDetailsFromStorage returned null or undefined.");
-            handleInitializationError("Could not load your trip details. Please go back and try again.");
+            handleInitializationError("Trip details not found. Please return to the previous page and try again.");
         }
     } catch (error) {
         console.error("[second-page.js] Error initializing page:", error);
@@ -371,7 +497,7 @@ function handleInitializationError(message) {
      if (loadingIndicator) loadingIndicator.style.display = "none";
 }
 
-// Display preferences from localStorage
+// Replace the existing displayPreferences function
 function displayPreferences() {
     const preferencesList = document.getElementById("preferences-list");
     if (preferencesList) {
@@ -379,105 +505,365 @@ function displayPreferences() {
         
         // Try using the override first if available
         if (window.getTripDetailsFromStorageOverride) {
-            const details = window.getTripDetailsFromStorageOverride();
-            if (details && details.preferences) {
-                preferences = details.preferences;
+            const tripDetails = window.getTripDetailsFromStorageOverride();
+            if (tripDetails && tripDetails.preferences) {
+                preferences = tripDetails.preferences;
             }
         } else {
-            // Fall back to regular localStorage
-            preferences = JSON.parse(localStorage.getItem("tripPreferences") || "[]");
+            const preferencesJson = localStorage.getItem('tripPreferences');
+            if (preferencesJson) {
+                try {
+                    preferences = JSON.parse(preferencesJson);
+                } catch (e) {
+                    console.error("Error parsing preferences:", e);
+                }
+            }
         }
         
+        console.log("Displaying preferences:", preferences);
+        
+        // Clear existing preferences
+        preferencesList.innerHTML = "";
+        
         if (preferences.length === 0) {
-            preferencesList.innerHTML = "<li>No preferences selected</li>";
+            const li = document.createElement("li");
+            li.textContent = "No preferences selected";
+            preferencesList.appendChild(li);
         } else {
-            preferencesList.innerHTML = preferences
-                .map(pref => `<li class="preference-item">${pref}</li>`)
-                .join("");
+            // Create a list item for each preference
+            preferences.forEach(pref => {
+                const li = document.createElement("li");
+                // Capitalize first letter of preference
+                const formattedPref = pref.charAt(0).toUpperCase() + pref.slice(1);
+                li.textContent = formattedPref;
+                preferencesList.appendChild(li);
+            });
         }
+        
+        // Also update the toggle buttons
+        document.querySelectorAll('.preference-toggle').forEach(toggle => {
+            const preference = toggle.dataset.preference;
+            if (preferences.includes(preference)) {
+                toggle.classList.add('active');
+            } else {
+                toggle.classList.remove('active');
+            }
+        });
     }
 }
 
-// Fetch itinerary data from server
+// Add this function after displayPreferences()
+function initializePreferenceToggles() {
+    const toggles = document.querySelectorAll('.preference-toggle');
+    const regenerateButton = document.getElementById('regenerate-itinerary');
+    
+    console.log("Found toggles:", toggles.length);
+    
+    // Get current preferences from storage
+    const tripDetails = getTripDetailsFromStorage();
+    const currentPreferences = tripDetails ? tripDetails.preferences || [] : [];
+    
+    console.log("Current preferences:", currentPreferences);
+    
+    // Set initial active state based on stored preferences
+    toggles.forEach(toggle => {
+        const preference = toggle.dataset.preference;
+        if (currentPreferences.includes(preference)) {
+            toggle.classList.add('active');
+        }
+        
+        // Add click event listener with proper toggle behavior
+        toggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            this.classList.toggle('active');
+            console.log(`Toggle ${preference}: ${this.classList.contains('active') ? 'active' : 'inactive'}`);
+        });
+    });
+    
+    // Add event listener for regenerate button
+    if (regenerateButton) {
+        regenerateButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log("Regenerate button clicked");
+            regenerateItineraryWithUpdatedPreferences();
+        });
+    } else {
+        console.error("Regenerate button not found");
+    }
+}
+
+// Fix the regenerateItineraryWithUpdatedPreferences function
+async function regenerateItineraryWithUpdatedPreferences() {
+  // Get current trip details
+  const tripDetails = getTripDetailsFromStorage();
+  if (!tripDetails) {
+    alert("Could not retrieve trip details. Please try again.");
+    return;
+  }
+  
+  // Get selected preferences from toggle buttons
+  const selectedPreferences = [];
+  document.querySelectorAll('.preference-toggle.active').forEach(toggle => {
+    selectedPreferences.push(toggle.dataset.preference);
+  });
+  
+  // Get selected advanced preferences
+  const advancedPreferences = [];
+  document.querySelectorAll('input[name="advanced-prefs-second"]:checked').forEach((checkbox) => {
+    advancedPreferences.push(checkbox.value);
+  });
+  
+  // Get custom instructions
+  const customInstructions = document.getElementById('custom-instructions').value.trim();
+  
+  // Debug logging
+  console.log("Selected preferences for regeneration:", selectedPreferences);
+  console.log("Advanced preferences for regeneration:", advancedPreferences);
+  console.log("Custom instructions for regeneration:", customInstructions);
+  
+  // If no preferences selected, show an alert
+  if (selectedPreferences.length === 0) {
+    alert("Please select at least one preference before regenerating the itinerary.");
+    return;
+  }
+  
+  // Update tripDetails object with new preferences
+  tripDetails.preferences = selectedPreferences;
+  
+  // Update localStorage with new preferences
+  localStorage.setItem('tripPreferences', JSON.stringify(selectedPreferences));
+  localStorage.setItem('advancedPreferences', JSON.stringify(advancedPreferences));
+  console.log("Updated preferences in localStorage:", selectedPreferences);
+  
+  // Show loading state
+  const loadingIndicator = document.getElementById("loading-indicator");
+  const itineraryDisplayDiv = document.getElementById("itinerary-display");
+  if (loadingIndicator) loadingIndicator.style.display = "flex";
+  if (itineraryDisplayDiv) itineraryDisplayDiv.style.display = "none";
+  
+  try {
+    // Store updated trip details for the API call
+    window.getTripDetailsFromStorageOverride = function() {
+      return {
+        destination: tripDetails.destination,
+        departureDate: tripDetails.departureDate,
+        arrivalDate: tripDetails.arrivalDate,
+        preferences: selectedPreferences,
+        advancedPreferences: advancedPreferences,
+        customInstructions: customInstructions
+      };
+    };
+    
+    // Call the generateItinerary function 
+    await generateItinerary();
+    
+    // Update preference list display
+    displayPreferences();
+  } catch (error) {
+    console.error("Error regenerating itinerary:", error);
+    alert("Failed to regenerate itinerary. Please try again.");
+  }
+}
+
+// Update the generateItinerary function to include custom instructions
+
 async function generateItinerary() {
     const loadingIndicator = document.getElementById("loading-indicator");
     const errorMessageDiv = document.getElementById("error-message");
     const itineraryTableBody = document.querySelector("#itinerary-table tbody");
-    const itineraryDisplayDiv = document.getElementById("itinerary-display"); 
+    const itineraryDisplayDiv = document.getElementById("itinerary-display");
     const mapContainer = document.getElementById("map-container");
 
     try {
-        // Hide content, show loading, clear previous errors/table
-        if (itineraryDisplayDiv) itineraryDisplayDiv.style.display = "none"; // Hide table display
-        if (mapContainer) mapContainer.style.display = "none";
+        // Hide content, show loading
+        if (itineraryDisplayDiv) itineraryDisplayDiv.style.display = "none";
+        if (loadingIndicator) loadingIndicator.style.display = "flex";
         if (errorMessageDiv) errorMessageDiv.style.display = "none";
-        if (loadingIndicator) loadingIndicator.style.display = "block";
-        if (itineraryTableBody) itineraryTableBody.innerHTML = ""; 
 
+        // Get trip details from storage
         const tripDetails = getTripDetailsFromStorage();
-        if (!tripDetails || !tripDetails.destination || !tripDetails.departureDate || !tripDetails.arrivalDate) {
-            throw new Error("Missing destination or dates for generating itinerary.");
+        if (!tripDetails) {
+            throw new Error("Trip details not found. Please return to the previous page and try again.");
         }
+
+        // Get advanced preferences
+        const advancedPreferences = tripDetails.advancedPreferences || 
+            (localStorage.getItem('advancedPreferences') ? JSON.parse(localStorage.getItem('advancedPreferences')) : []);
         
-        const { destination, preferences, departureDate, arrivalDate } = tripDetails;
-        console.log("Generating itinerary for:", destination, preferences, departureDate, arrivalDate);
+        // Get custom instructions
+        const customInstructions = tripDetails.customInstructions || 
+            document.getElementById('custom-instructions')?.value?.trim() || "";
         
-        const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-            ? 'http://localhost:9876' 
-            : '';
-        const apiUrl = `${baseUrl}/generate-itinerary?destination=${encodeURIComponent(destination)}&preferences=${encodeURIComponent(JSON.stringify(preferences || []))}&departureDate=${encodeURIComponent(departureDate)}&arrivalDate=${encodeURIComponent(arrivalDate)}`;
-        
-        const response = await fetch(apiUrl);
-        
+        // Log for debugging
+        console.log(`Generating itinerary for: ${tripDetails.destination} ${tripDetails.preferences} ${tripDetails.departureDate} ${tripDetails.arrivalDate}`);
+        console.log(`Advanced preferences: ${advancedPreferences}`);
+        console.log(`Custom instructions: ${customInstructions}`);
+
+        // Construct proper API URL
+        let baseUrl;
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            baseUrl = 'http://localhost:5000'; // Change to match your new port
+        } else {
+            baseUrl = window.location.origin;
+        }
+
+        // Make the API request, including advanced preferences and custom instructions
+        const response = await fetch(
+            `${baseUrl}/generate-itinerary?destination=${encodeURIComponent(tripDetails.destination)}` +
+            `&preferences=${encodeURIComponent(JSON.stringify(tripDetails.preferences))}` +
+            `&departureDate=${encodeURIComponent(tripDetails.departureDate)}` +
+            `&arrivalDate=${encodeURIComponent(tripDetails.arrivalDate)}` +
+            `&advancedPreferences=${encodeURIComponent(JSON.stringify(advancedPreferences))}` +
+            `&customInstructions=${encodeURIComponent(customInstructions)}`
+        );
+
         if (!response.ok) {
-            let errorBody = "API request failed";
-            try { errorBody = await response.text(); } catch (e) {}
-            throw new Error(`API error: ${response.status} - ${response.statusText}. Details: ${errorBody}`);
-        }
+            throw new Error(`Failed to generate itinerary. Server responded with ${response.status}: ${response.statusText}`);
+        } 
 
         const data = await response.json();
-        itineraryData = data.itinerary || [];
-        
-        // Add this debug section:
         console.log("Received itinerary data from server:");
-        console.log("Total items:", itineraryData.length);
-        console.log("Days covered:", new Set(itineraryData.map(item => item.day)).size);
-        console.log("Days are:", [...new Set(itineraryData.map(item => item.day))]);
+        console.log("Total items:", data.itinerary.length);
+        console.log("Days covered:", new Set(data.itinerary.map(item => item.day)).size);
+        console.log("Days are:", [...new Set(data.itinerary.map(item => item.day))]);
 
-        document.querySelectorAll("[id^='selected-destination']").forEach(el => {
-            if (el) el.textContent = destination;
-        });
+        // Store itinerary data globally
+        itineraryData = data.itinerary;
         
-        if (itineraryData.length > 0) {
-            populateItineraryTable(itineraryData);
-            populateDayNavigation(); // Add this after populating the itinerary table
-            if (itineraryDisplayDiv) itineraryDisplayDiv.style.display = "block"; // Show table display
-            await displayMapAndMarkers(itineraryData); 
-            if (mapContainer) mapContainer.style.display = "block";
-        } else {
-            if (itineraryTableBody) itineraryTableBody.innerHTML = '<tr><td colspan="3">No itinerary details were generated.</td></tr>'; // Colspan is 3
-            if (itineraryDisplayDiv) itineraryDisplayDiv.style.display = "block"; // Show table display even for "no details" message
-            if (mapContainer) mapContainer.style.display = "none"; 
+        // Update destination header
+        const destinationHeader = document.getElementById("selected-destination-header");
+        if (destinationHeader) {
+            destinationHeader.textContent = data.destination;
+        }
+
+        // Populate itinerary table and display
+        await populateItineraryTable(data.itinerary);
+
+        // Show itinerary display
+        if (itineraryDisplayDiv) {
+            itineraryDisplayDiv.style.display = "block";
+        }
+
+        // Populate day navigation
+        populateDayNavigation();
+
+        // Display map with markers for each location
+        displayMapAndMarkers(data.itinerary);
+
+        // Fetch place details for each location
+        for (const item of data.itinerary) {
+            fetchPlaceDetails(item.activity, item.location)
+                .then(details => {
+                    // Update the UI with place details
+                    const activityRow = document.querySelector(`tr[data-activity="${item.activity}"]`);
+                    if (activityRow) {
+                        const ratingCell = activityRow.querySelector('.place-rating');
+                        const hoursCell = activityRow.querySelector('.place-hours');
+                        
+                        if (ratingCell && details.found) {
+                            // Update rating display
+                            if (details.rating) {
+                                const stars = '★'.repeat(Math.round(details.rating)) + '☆'.repeat(5 - Math.round(details.rating));
+                                ratingCell.innerHTML = `
+                                    <div class="stars">${stars}</div>
+                                    <div class="rating-value">${details.rating}</div>
+                                    <div class="rating-count">(${details.totalRatings} reviews)</div>
+                                `;
+                            }
+                        }
+                        
+                        if (hoursCell && details.found) {
+                            // Update hours display
+                            if (details.hours) {
+                                hoursCell.innerHTML = `
+                                    <div class="${details.openNow ? 'open-now' : 'closed-now'}">
+                                        ${details.openNow ? 'Open Now' : 'Closed Now'}
+                                    </div>
+                                `;
+                                
+                                if (details.url) {
+                                    hoursCell.innerHTML += `
+                                        <a href="${details.url}" target="_blank" class="google-maps-link">View on Google Maps</a>
+                                    `;
+                                }
+                            }
+                        }
+                    }
+                })
+                .catch(err => console.error(`Error fetching details for ${item.activity}:`, err));
         }
         
     } catch (error) {
         console.error("Error generating itinerary:", error);
         if (errorMessageDiv) {
-            errorMessageDiv.textContent = `Failed to generate itinerary: ${error.message}`;
+            errorMessageDiv.textContent = error.message || "Failed to generate itinerary. Please try again.";
             errorMessageDiv.style.display = "block";
         }
-        if (itineraryDisplayDiv) itineraryDisplayDiv.style.display = "none"; // Hide table on error
-        if (mapContainer) mapContainer.style.display = "none";
     } finally {
-        if (loadingIndicator) loadingIndicator.style.display = "none";
+        if (loadingIndicator) {
+            loadingIndicator.style.display = "none";
+        }
     }
 }
+
+// Add this function after generateItinerary
+function displayItinerarySummary(itineraryData) {
+    const uniqueDays = [...new Set(itineraryData.map(item => item.day))];
+    const summaryDiv = document.createElement('div');
+    summaryDiv.className = 'itinerary-summary';
+    summaryDiv.innerHTML = `
+        <p>Your itinerary covers ${uniqueDays.length} days with ${itineraryData.length} activities</p>
+        <div class="itinerary-days-list">
+            ${uniqueDays.map(day => `<span class="day-chip">${day}</span>`).join('')}
+        </div>
+    `;
+    
+    const itineraryDisplay = document.getElementById('itinerary-display');
+    if (itineraryDisplay) {
+        // Insert summary at the top of the itinerary display
+        const firstChild = itineraryDisplay.firstChild;
+        if (firstChild) {
+            itineraryDisplay.insertBefore(summaryDiv, firstChild);
+        } else {
+            itineraryDisplay.appendChild(summaryDiv);
+        }
+    }
+}
+
+// Add this CSS to style the summary
+const styleElement = document.createElement('style');
+styleElement.textContent = `
+    .itinerary-summary {
+        background: #f0f7ff;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .itinerary-days-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+    }
+    
+    .day-chip {
+        background: #e1e9f8;
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 13px;
+    }
+`;
+document.head.appendChild(styleElement);
 
 // Update populateItineraryTable function to fix issue with hours and weather source
 async function populateItineraryTable(itineraryItems) {
     const itineraryTableBody = document.querySelector("#itinerary-table tbody");
-    if (!itineraryTableBody) return;
-    itineraryTableBody.innerHTML = ""; 
+    if (!itineraryTableBody) {
+        console.error("Itinerary table body not found!");
+        return;
+    }
+    itineraryTableBody.innerHTML = ""; // Clear previous items
 
     // Group by day first
     const groupedByDay = itineraryItems.reduce((acc, item) => {
@@ -512,87 +898,38 @@ async function populateItineraryTable(itineraryItems) {
 
     // Process each day in the itinerary
     for (const dayHeader of Object.keys(groupedByDay)) {
-        // Parse the date from the day header (e.g., "Friday, May 27")
-        const dateMatch = dayHeader.match(/([A-Za-z]+),\s+([A-Za-z]+)\s+(\d+)/);
-        let matchingForecast = null;
-        let dayOfWeek = "";
-        
-        if (dateMatch) {
-            dayOfWeek = dateMatch[1]; // Extract day name (e.g., "Friday")
-            const monthName = dateMatch[2];
-            const day = dateMatch[3];
-            
-            // Convert month name to month number
-            const months = {
-                'January': '01', 'February': '02', 'March': '03', 'April': '04',
-                'May': '05', 'June': '06', 'July': '07', 'August': '08',
-                'September': '09', 'October': '10', 'November': '11', 'December': '12'
-            };
-            
-            // Assume current year for simplicity
-            const currentYear = new Date().getFullYear();
-            const formattedDate = `${currentYear}-${months[monthName]}-${day.padStart(2, '0')}`;
-            
-            // Find matching forecast
-            matchingForecast = forecastByDate[formattedDate];
-        }
+        // Render day header row (no weather here)
+        const dayRow = document.createElement('tr');
+        dayRow.className = 'day-header-row';
+        const dayCell = document.createElement('td');
+        dayCell.colSpan = 5; // Adjust if you have more/less columns
+        dayCell.innerHTML = `<span class="day-title">${dayHeader}</span>`;
+        dayRow.appendChild(dayCell);
+        itineraryTableBody.appendChild(dayRow);
 
-        // Add a header row for the day with weather information
-        const dayHeaderRow = itineraryTableBody.insertRow();
-        dayHeaderRow.classList.add('day-header-row');
-        dayHeaderRow.setAttribute('data-day', dayHeader); // Add data attribute for navigation
-        
-        if (matchingForecast) {
-            // Create a day header with weather information (REMOVED SOURCE)
-            
-            // Create a table row with columns for day header
-            const dayCell = dayHeaderRow.insertCell();
-            dayCell.textContent = dayHeader;
-            dayCell.className = 'day-header';
-            
-            // Weather information in the Activity column
-            const weatherCell = dayHeaderRow.insertCell();
-            weatherCell.innerHTML = `${matchingForecast.high}°F / ${matchingForecast.low}°F`;
-            
-            // Weather description in the Location column
-            const descCell = dayHeaderRow.insertCell();
-            descCell.innerHTML = `${matchingForecast.description}`;
-            
-            // Empty cells for rating and hours columns in header row
-            dayHeaderRow.insertCell();
-            dayHeaderRow.insertCell();
-            
-            // Apply styling to the entire row
-            dayHeaderRow.style.backgroundColor = '#e8f0fe';
-            dayHeaderRow.style.fontWeight = 'bold';
-            
-            // Add weather icon
-            const iconSpan = document.createElement('span');
-            iconSpan.style.marginLeft = '5px';
-            iconSpan.style.position = 'relative';
-            iconSpan.style.top = '5px';
-            const iconImg = document.createElement('img');
-            iconImg.src = `https://openweathermap.org/img/wn/${matchingForecast.icon}.png`;
-            iconImg.alt = matchingForecast.description;
-            iconImg.style.width = '25px';
-            iconImg.style.height = '25px';
-            iconSpan.appendChild(iconImg);
-            weatherCell.appendChild(iconSpan);
-        } else {
-            // Default header without weather
-            const dayCell = dayHeaderRow.insertCell();
-            dayCell.colSpan = 5; // Span all columns
-            dayCell.textContent = dayHeader;
-            dayCell.classList.add('day-header');
-            dayCell.style.textAlign = "center";
-            dayCell.style.backgroundColor = "#e8f0fe";
-            dayCell.style.fontWeight = "bold";
-            dayCell.style.padding = "10px";
+        // After rendering the day header row:
+        const dayHeaderParts = dayHeader.split(',');
+        if (dayHeaderParts.length === 2) {
+          const [weekday, monthDay] = dayHeaderParts;
+          const [monthName, dayNum] = monthDay.trim().split(' ');
+          const year = (new Date()).getFullYear(); // Or get from trip details
+          const dateObj = new Date(`${monthName} ${dayNum}, ${year}`);
+          const dateKey = dateObj.toISOString().split('T')[0];
+          const forecast = forecastByDate[dateKey];
+          if (forecast) {
+            const weatherRow = document.createElement('tr');
+            weatherRow.className = 'weather-row';
+            const weatherCell = document.createElement('td');
+            weatherCell.colSpan = 5;
+            weatherCell.innerHTML = createWeatherDisplay(forecast);
+            weatherRow.appendChild(weatherCell);
+            itineraryTableBody.appendChild(weatherRow);
+          }
         }
-
+  
         // Get day of week for hours display
         const dayOfWeekIndex = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
-            .findIndex(day => day === dayOfWeek.toLowerCase());
+            .findIndex(day => day === dayHeader.toLowerCase());
 
         // Add the activities for this day
         for (const item of groupedByDay[dayHeader]) {
@@ -603,7 +940,7 @@ async function populateItineraryTable(itineraryItems) {
             activityCell.textContent = item.activity || "N/A";
             
             const locationCell = row.insertCell();
-            locationCell.textContent = item.location || "N/A";
+            locationCell.innerHTML = '<div class="loading-place-data">Loading...</div>';
             
             // Add placeholder cells for rating and hours
             const ratingCell = row.insertCell();
@@ -615,6 +952,11 @@ async function populateItineraryTable(itineraryItems) {
             // Fetch place details asynchronously
             fetchPlaceDetails(item.activity, item.location).then(placeDetails => {
                 if (placeDetails.found) {
+                    // Update location cell
+                    const displayAddress = placeDetails.address || item.location || "Address not available";
+                    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(displayAddress)}`;
+                    locationCell.innerHTML = `<a href="${mapsUrl}" target="_blank" rel="noopener">${displayAddress}</a>`;
+                    
                     // Update rating cell
                     if (placeDetails.rating) {
                         const stars = '★'.repeat(Math.round(placeDetails.rating)) + 
@@ -632,48 +974,51 @@ async function populateItineraryTable(itineraryItems) {
                     
                     // Update hours cell - CHANGED TO SHOW SPECIFIC DAY HOURS
                     if (placeDetails.hours && placeDetails.hours.length > 0) {
-                        // Find hours for this specific day of week (accounting for API format that might have "day: hours")
                         let todaysHours = "Hours not available";
-                        
-                        if (dayOfWeekIndex >= 0) {
-                            const dayHoursRegex = new RegExp(`${dayOfWeek}:?\\s*(.+)`, 'i');
-                            
-                            // Try to find hours for this specific day
-                            for (const hourText of placeDetails.hours) {
-                                const match = hourText.match(dayHoursRegex);
-                                if (match) {
-                                    todaysHours = match[1] || match[0];
-                                    break;
-                                }
+                        const dayName = dayHeader.split(',')[0].trim(); // e.g., "Monday"
+                        const dayHoursRegex = new RegExp(`^${dayName}:?\\s*(.+)`, 'i');
+                        for (const hourText of placeDetails.hours) {
+                            const match = hourText.match(dayHoursRegex);
+                            if (match) {
+                                todaysHours = match[1] || match[0];
+                                break;
                             }
                         }
-                        
                         hoursCell.innerHTML = `<div class="place-hours">${todaysHours}</div>`;
                     } else {
                         hoursCell.textContent = "Hours not available";
                     }
-                    
-                    // Add Google Maps link to location
-                    if (placeDetails.url) {
-                        const mapLink = document.createElement('a');
-                        mapLink.href = placeDetails.url;
-                        mapLink.target = "_blank";
-                        mapLink.classList.add('google-maps-link');
-                        mapLink.textContent = "View on Google Maps";
-                        locationCell.appendChild(document.createElement('br'));
-                        locationCell.appendChild(mapLink);
-                    }
                 } else {
+                    locationCell.textContent = "Address not available";
                     ratingCell.textContent = "N/A";
                     hoursCell.textContent = "N/A";
                 }
             }).catch(error => {
                 console.error('Error processing place details:', error);
+                locationCell.textContent = "Error loading";
                 ratingCell.textContent = "Error loading";
                 hoursCell.textContent = "Error loading";
             });
         }
     }
+
+    // AFTER ALL ROWS ARE ADDED AND POPULATED:
+    const toggleHoursCheckbox = document.getElementById('toggle-hours');
+    if (toggleHoursCheckbox && !toggleHoursCheckbox.checked) {
+        document.querySelectorAll('#itinerary-table th:nth-child(5), #itinerary-table td:nth-child(5)').forEach(el => {
+            el.style.display = 'none';
+        });
+    }
+
+    // ADD THIS NEW BLOCK FOR RATINGS COLUMN
+    const toggleRatingsCheckbox = document.getElementById('toggle-ratings');
+    if (toggleRatingsCheckbox && !toggleRatingsCheckbox.checked) {
+        // The Ratings column is the 4th column
+        document.querySelectorAll('#itinerary-table th:nth-child(4), #itinerary-table td:nth-child(4)').forEach(el => {
+            el.style.display = 'none';
+        });
+    }
+    console.log("populateItineraryTable finished, hours and ratings column states checked.");
 }
 
 // Add this after populating the itinerary table
@@ -713,116 +1058,120 @@ function populateDayNavigation() {
 // --- ADDED: Map Functions ---
 async function displayMapAndMarkers(items) {
     // Clear existing markers and paths
-    currentMarkers.forEach(marker => marker.map = null);
+    currentMarkers.forEach(marker => marker.map = null); // For google.maps.Marker
+    currentMarkers.forEach(marker => { if (marker.setMap) marker.setMap(null); else marker.map = null; }); // For AdvancedMarkerElement
     currentMarkers = [];
     dayPaths.forEach(path => path.setMap(null));
     dayPaths = [];
     
     if (!map || !geocoder) {
-        console.error("Map or Geocoder not initialized.");
+        console.error("Map or Geocoder not initialized for displayMapAndMarkers.");
         return;
     }
 
-    // Group items by day
-    dayGroups = groupItemsByDay(items);
+    dayGroups = groupItemsByDay(items); // Ensure dayGroups is populated correctly
     
-    // Populate the day selector dropdown
     const daySelector = document.getElementById('day-selector');
     if (daySelector) {
-        // Clear existing options except "Show all days"
+        // Clear previous day options except for "Show all days"
         while (daySelector.options.length > 1) {
             daySelector.remove(1);
         }
-        
-        // Add an option for each day
         Object.keys(dayGroups).forEach(day => {
             const option = document.createElement('option');
             option.value = day;
             option.textContent = day;
             daySelector.appendChild(option);
         });
+        daySelector.value = 'all'; // Reset to "Show all days"
     }
 
     const bounds = new google.maps.LatLngBounds();
     let locationsFound = 0;
     const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
 
-    // Process all items and create markers
+    const tripDetails = getTripDetailsFromStorage();
+    const tripDestinationCityContext = tripDetails ? tripDetails.destination : ""; 
+
+    let dayIndex = 0; // For assigning different colors to paths
+
     for (const [dayName, dayItems] of Object.entries(dayGroups)) {
+        const dayCoordinates = [];
+
         for (const item of dayItems) {
             if (item.location && item.location.trim() !== "") {
+                let locationToGeocode = item.location;
+                if (tripDestinationCityContext) {
+                    const mainTripCity = tripDestinationCityContext.split(',')[0].trim().toLowerCase();
+                    const itemLocationLower = item.location.toLowerCase();
+                    if (item.location.length < 50 && !item.location.includes(',') && !itemLocationLower.includes(mainTripCity)) {
+                        locationToGeocode = `${item.location}, ${tripDestinationCityContext.split(',')[0].trim()}`;
+                    }
+                }
+
                 try {
-                    const results = await geocodeLocation(item.location);
-                    if (results && results.length > 0) {
-                        const location = results[0].geometry.location;
-                        const position = { lat: location.lat(), lng: location.lng() };
-                        
+                    const position = await geocodeLocation(locationToGeocode);
+                    if (position) {
                         locationsFound++;
-                        bounds.extend(position);
-                        
-                        // Create marker properly without custom properties
                         const marker = new AdvancedMarkerElement({
-                            map: map,
+                            map: map, // Initially add to map, will be filtered
                             position: position,
-                            title: `${item.activity}\n${item.location}\n${item.time}`
+                            title: `${item.activity} (${item.time})`,
                         });
                         
-                        // Store day info in WeakMap instead
-                        markerData.set(marker, {
-                            dayGroup: dayName,
-                            item: item
-                        });
-                        
-                        // Add custom styling to show day number
-                        const dayIndex = Object.keys(dayGroups).indexOf(dayName) + 1;
-                        const markerElement = document.createElement('div');
-                        markerElement.className = 'custom-marker';
-                        markerElement.style.backgroundColor = getColorForDay(dayIndex-1);
-                        markerElement.innerHTML = `<span>${dayIndex}</span>`;
-                        marker.content = markerElement;
-                        
-                        // Add info window
-                        const infoWindow = new google.maps.InfoWindow({
-                            content: `<b>${item.activity}</b><br>${item.location}<br><i>${item.time} (${dayName})</i>`
-                        });
-                        marker.addListener('click', () => {
-                            infoWindow.open(map, marker);
-                        });
-                        
-                        // Store marker for filtering
+                        marker.dayName = dayName; // Associate marker with the day
+                        markerData.set(marker, item); 
                         currentMarkers.push(marker);
-                        
-                        // Add position to item for route drawing
-                        item.position = position;
+                        bounds.extend(position);
+                        dayCoordinates.push(position);
+
+                        marker.addListener('click', () => { // For AdvancedMarkerElement, click is direct
+                            const itemData = markerData.get(marker);
+                            const infoWindow = new google.maps.InfoWindow({
+                                content: `<h5>${itemData.activity}</h5><p>${itemData.time}</p><p>${itemData.location}</p>`
+                            });
+                            // For AdvancedMarkerElement, InfoWindow needs a LatLng position if not anchored to a classic marker
+                            // Or, you can create a custom overlay. For simplicity, let's try anchoring to position.
+                            infoWindow.setPosition(marker.position);
+                            infoWindow.open(map);
+                        });
                     }
                 } catch (error) {
-                    console.error(`Geocoding error for ${item.location}:`, error);
+                    console.warn(`Could not geocode location for map: "${locationToGeocode}"`, error);
                 }
             }
         }
-    }
-    
-    // Draw route lines for each day
-    Object.entries(dayGroups).forEach(([day, dayItems], index) => {
-        const validItems = dayItems.filter(item => item.position);
-        if (validItems.length >= 2) {
+
+        // Create and draw polyline for the current day's route
+        if (dayCoordinates.length > 1) {
             const dayPath = new google.maps.Polyline({
-                path: validItems.map(item => item.position),
+                path: dayCoordinates,
                 geodesic: true,
-                strokeColor: getColorForDay(index),
+                strokeColor: getColorForDay(dayIndex),
                 strokeOpacity: 0.8,
-                strokeWeight: 3
+                strokeWeight: 4,
+                map: map // Initially add to map, will be filtered
             });
-            dayPath.set("dayGroup", day); // This works for polylines
-            dayPath.setMap(map);
+            dayPath.dayName = dayName; // Associate path with the day
             dayPaths.push(dayPath);
         }
-    });
-
+        dayIndex++;
+    }
+    
     if (locationsFound > 0) {
         map.fitBounds(bounds);
-        if (locationsFound === 1) map.setZoom(14);
+        if (locationsFound === 1 && map.getZoom() > 15) {
+            map.setZoom(15);
+        }
+    } else if (tripDestinationCityContext) {
+        try {
+            const position = await geocodeLocation(tripDestinationCityContext);
+            if (position) map.setCenter(position);
+        } catch (error) {
+            console.warn(`Could not geocode trip destination for map fallback: "${tripDestinationCityContext}"`, error);
+        }
     }
+    filterMapByDay(); // Apply initial filter (which should be "all")
 }
 
 // Add event listener for day selector
@@ -831,81 +1180,90 @@ document.addEventListener('DOMContentLoaded', () => {
     if (daySelector) {
         daySelector.addEventListener('change', filterMapByDay);
     }
+    // ... other DOMContentLoaded initializations
 });
 
 // Filter function
 function filterMapByDay() {
     const selectedDay = document.getElementById('day-selector').value;
-    
+    const bounds = new google.maps.LatLngBounds();
+    let visibleMarkersExist = false;
+
     // Show/hide markers based on selected day
     currentMarkers.forEach(marker => {
-        // Get dayGroup from our WeakMap
-        const data = markerData.get(marker);
-        if (selectedDay === 'all' || (data && data.dayGroup === selectedDay)) {
-            marker.map = map;
-        } else {
-            marker.map = null;
+        const shouldShow = (selectedDay === 'all' || marker.dayName === selectedDay);
+        // For AdvancedMarkerElement, setMap(null) or setMap(map)
+        if (marker.setMap) { // Check if it's an old marker instance, unlikely now
+             marker.setMap(shouldShow ? map : null);
+        } else { // For AdvancedMarkerElement
+             marker.map = shouldShow ? map : null;
+        }
+        if (shouldShow && marker.position) {
+            bounds.extend(marker.position);
+            visibleMarkersExist = true;
         }
     });
     
     // Show/hide paths based on selected day
     dayPaths.forEach(path => {
-        const pathDay = path.get("dayGroup");
-        if (selectedDay === 'all' || pathDay === selectedDay) {
-            path.setMap(map);
-        } else {
-            path.setMap(null);
+        const shouldShow = (selectedDay === 'all' || path.dayName === selectedDay);
+        path.setMap(shouldShow ? map : null);
+        if (shouldShow) {
+            path.getPath().forEach(point => bounds.extend(point));
+            // No need to set visibleMarkersExist again if paths are shown, markers are primary for bounds
         }
     });
     
-    // Update map bounds for the filtered markers if specific day is selected
-    if (selectedDay !== 'all') {
-        const visibleMarkers = currentMarkers.filter(marker => {
-            const data = markerData.get(marker);
-            return data && data.dayGroup === selectedDay;
-        });
-        
-        if (visibleMarkers.length > 0) {
-            const bounds = new google.maps.LatLngBounds();
-            visibleMarkers.forEach(marker => bounds.extend(marker.position));
-            map.fitBounds(bounds);
-            if (visibleMarkers.length === 1) map.setZoom(14);
-        }
-    } else {
-        // If showing all, fit to all markers
-        const bounds = new google.maps.LatLngBounds();
-        currentMarkers.forEach(marker => bounds.extend(marker.position));
+    // Update map bounds for the filtered markers if specific day is selected or all
+    if (visibleMarkersExist) {
         map.fitBounds(bounds);
+        // If only one marker is visible after filtering, prevent over-zooming
+        const visibleMarkersCount = currentMarkers.filter(m => (selectedDay === 'all' || m.dayName === selectedDay) && m.map).length;
+        if (visibleMarkersCount === 1 && map.getZoom() > 15) {
+            map.setZoom(15);
+        }
+    } else if (selectedDay !== 'all') {
+        // If a specific day is selected and has no markers, maybe show a message or zoom out to trip destination
+        console.log(`No locations found on map for ${selectedDay}.`);
+        // Optionally, center on the trip's main destination if no markers for the selected day
+        const tripDetails = getTripDetailsFromStorage();
+        if (tripDetails && tripDetails.destination) {
+            geocodeLocation(tripDetails.destination).then(position => {
+                if (position) map.setCenter(position); map.setZoom(10); // Reset zoom
+            }).catch(err => console.warn("Could not geocode trip destination for empty day filter"));
+        }
     }
 }
 
 // Helper to get different colors for each day's route
 function getColorForDay(index) {
-    const colors = ['#FF5733', '#33FF57', '#3357FF', '#F033FF', '#FF33A1', '#33FFF0'];
+    const colors = ['#FF5733', '#33FF57', '#3357FF', '#FF33A1', '#A133FF', '#33FFA1', '#FF8C00', '#00CED1'];
     return colors[index % colors.length];
 }
 
-// Helper to group items by day
+// Helper to group items by day (ensure this is robust)
 function groupItemsByDay(items) {
-    return items.reduce((groups, item) => {
-        const day = item.day || 'Unknown';
-        if (!groups[day]) groups[day] = [];
-        groups[day].push(item);
-        return groups;
+    return items.reduce((acc, item) => {
+        const day = item.day || "Unspecified Day"; // Handle items that might be missing a day
+        if (!acc[day]) {
+            acc[day] = [];
+        }
+        acc[day].push(item);
+        return acc;
     }, {});
 }
 
-// Helper function to geocode a location string
+// Helper function to geocode a location string (ensure this is robust)
 function geocodeLocation(address) {
     return new Promise((resolve, reject) => {
-        if (!geocoder) return reject("Geocoder not initialized");
+        if (!geocoder) {
+            return reject(new Error("Geocoder not initialized."));
+        }
         geocoder.geocode({ 'address': address }, (results, status) => {
-            if (status === 'OK') {
-                resolve(results);
-            } else if (status === google.maps.GeocoderStatus.ZERO_RESULTS) {
-                 resolve(null); // No results found is not necessarily an error here
+            if (status === 'OK' && results[0]) {
+                resolve(results[0].geometry.location);
             } else {
-                reject(new Error(`Geocode was not successful for the following reason: ${status}`));
+                reject(new Error('Geocode was not successful for the following reason: ' + status + ' for address: ' + address));
             }
         });
     });
@@ -979,7 +1337,29 @@ function getTripDetailsFromStorage() {
     }
 }
 
-const app = {};
-app.something = function() { /* ... */ };
+// Add this function to handle collapsible sections
 
+function toggleCollapse(contentId) {
+  const content = document.getElementById(contentId);
+  const header = content.previousElementSibling;
+  const icon = header.querySelector('.collapse-icon');
+  
+  content.classList.toggle('expanded');
+  icon.classList.toggle('expanded');
+  
+  // Update aria-expanded attribute for accessibility
+  const isExpanded = content.classList.contains('expanded');
+  header.setAttribute('aria-expanded', isExpanded);
+}
+
+const preferenceOptions = [
+    { id: 'culture', label: 'Culture' },
+    { id: 'landmarks', label: 'Landmarks' },
+    { id: 'food', label: 'Foodie' },
+    { id: 'historical', label: 'Historical' },
+    { id: 'art', label: 'Art' },
+    { id: 'nature', label: 'Nature' },
+    { id: 'nightlife', label: 'Nightlife' },
+    { id: 'theme_parks', label: 'Theme Parks' } // <-- Add this
+];
 

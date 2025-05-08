@@ -405,7 +405,7 @@ input[type="checkbox"] {
         transform: translateY(0);
     }
 }
-
+ 
 /* Loading State */
 .loading {
     text-align: center;
@@ -460,6 +460,7 @@ input[type="checkbox"] {
         font-size: 0.9rem;
     }
 }
+
 /* Flatpickr Calendar */
 .flatpickr-calendar {
     z-index: 9999 !important; /* Ensure the calendar appears on top */
@@ -498,4 +499,273 @@ input[type="checkbox"] {
 
 #itinerary-table tr:hover {
     background-color: #f1f1f1;
+}
+
+/* Actions Preview Bar */
+.actions-preview-bar {
+    background: rgba(255,255,255,0.95);
+}
+
+/* --- Responsive Design Enhancements --- */
+@media (max-width: 600px) {
+    body {
+        padding: 0 2vw;
+        font-size: 15px; 
+    }
+    header, .header-content { 
+        padding: 18px 0 !important;
+    }
+    main {
+        padding: 10px !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+    }
+    .form-container {
+        padding: 10px !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+    }
+    .trip-details-title {
+        font-size: 20px;
+        margin-bottom: 18px;
+    }
+    .preferences-list label {
+        font-size: 14px;
+        margin-right: 10px;
+        margin-bottom: 8px;
+        display: inline-block;
+    }
+    .advanced-preferences {
+        padding: 10px 0 0 0 !important;
+    }
+    .option-categories-grid,
+    .options-grid,
+    .options-grid.compact {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+    .slider-label, .slider-min, .slider-max {
+        font-size: 12px !important;
+    }
+    .preference-slider {
+        height: 5px !important;
+    }
+    button, .regenerate-button {
+        font-size: 15px !important;
+        padding: 10px !important;
+    }
+    #itinerary-table th, #itinerary-table td {
+        font-size: 13px !important;
+        padding: 7px 4px !important;
+    }
+    #map {
+        height: 250px !important;
+    }
+    .actions-preview-bar {
+        padding: 8px 0 !important;
+    }
+    .actions-container {
+        gap: 6px !important;
+    }
+    .form-container {
+        max-width: 100vw !important;
+        width: 100vw !important;
+        margin: 0 !important;
+        padding: 10px !important;
+    }
+    .advanced-preferences {
+        width: 100vw !important;
+        margin-left: -10px !important;
+        margin-right: -10px !important;
+        box-sizing: border-box;
+    }
+    .container {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    main {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+    }
+    main, .container, body {
+        padding-bottom: 120px !important; /* Increase as needed */
+    }
+    #itinerary-table {
+        min-width: 480px;
+        width: 100vw;
+        overflow-x: auto;
+        display: block;
+    }
+    #itinerary-table th, #itinerary-table td {
+        font-size: 11px !important;
+        padding: 4px 2px !important;
+        line-height: 1.2;
+    }
+    #itinerary-table th {
+        white-space: nowrap;
+    }
+    .stars, .rating-count {
+        display: none !important;
+    }
+    .rating-value {
+        font-size: 11px !important;
+        font-weight: 500 !important;
+        display: inline !important;
+    }
+    .day-header-row td, .day-header-row {
+        font-size: 12px !important;
+        padding: 4px 2px !important;
+        background: #f0f7ff !important;
+    }
+    .day-title {
+        font-size: 12px !important;
+        font-weight: 500 !important;
+    }
+    .weather-display {
+        font-size: 13px;
+        padding: 2px 8px;
+    }
+    .weather-display i {
+        font-size: 16px;
+        margin-right: 4px;
+    }
+    #itinerary-table td a {
+        color: #1a73e8;
+        text-decoration: underline;
+        word-break: break-all;
+    }
+    main, .container, body {
+        padding-bottom: 140px !important;
+    }
+}
+
+/* Mobile-friendly itinerary table */
+@media (max-width: 600px) {
+    body, html {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    .container,
+    .content-section,
+    .form-container,
+    .advanced-preferences,
+    .collapse-section {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        margin: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        box-sizing: border-box;
+    }
+    .form-container,
+    .content-section {
+        padding: 10px !important;
+    }
+    main {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+    }
+}
+
+@media (max-width: 600px) {
+    .weather-row td {
+        background: #f8fafd !important;
+        text-align: left;
+        padding: 6px 2px !important;
+    }
+    .weather-display {
+        font-size: 12px !important;
+        padding: 2px 6px !important;
+        margin: 0;
+    }
+    .weather-display i {
+        font-size: 14px !important;
+        margin-right: 4px !important;
+    }
+}
+
+@media (max-width: 600px) {
+    #itinerary-table th:nth-child(4),
+    #itinerary-table td:nth-child(4) {
+        white-space: normal !important;
+        word-break: break-word !important;
+        max-width: 40px;
+        min-width: 30px;
+        width: 1%;
+        text-align: center;
+    }
+    .rating-value {
+        display: block;
+        font-size: 11px !important;
+        font-weight: 500 !important;
+        margin: 0 auto;
+        text-align: center;
+        white-space: normal;
+        word-break: word-break;
+    }
+}
+
+@media (max-width: 600px) {
+    .container,
+    .content-section {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        margin: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        box-sizing: border-box;
+    }
+}
+
+@media (max-width: 600px) {
+    .day-header-row td, .day-header-row, .day-title {
+        font-size: 11px !important;
+        font-weight: bold !important;
+        padding: 4px 2px !important;
+        background: #e8f0fe !important;
+        line-height: 1.2 !important;
+    }
+}
+
+@media (max-width: 600px) {
+  #itinerary-table .day-header-row td,
+  #itinerary-table .day-header-row .day-title { /* Increased specificity by adding #itinerary-table */
+    font-size: 11px !important;
+    font-weight: bold !important;
+    padding: 4px 2px !important;
+    background: #e8f0fe !important; /* Your desired background */
+    line-height: 1.2 !important;
+  }
+}
+
+/* Desktop-specific styles for itinerary table and toggles */
+@media (min-width: 601px) { /* Adjust breakpoint as needed, 601px means wider than mobile */
+
+    /* Hide the toggle labels on desktop */
+    #itinerary-display > label:has(#toggle-hours),
+    #itinerary-display > label:has(#toggle-ratings) {
+        display: none !important;
+    }
+
+    /* Ensure Ratings and Hours columns are always visible on desktop */
+    /* Ratings is the 4th column, Hours is the 5th */
+    #itinerary-table th:nth-child(4),
+    #itinerary-table td:nth-child(4),
+    #itinerary-table th:nth-child(5),
+    #itinerary-table td:nth-child(5) {
+        display: table-cell !important; /* Or your default display type for table cells if different */
+    }
 }
