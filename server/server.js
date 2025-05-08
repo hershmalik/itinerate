@@ -1,6 +1,5 @@
-import fs from 'fs';
-import path from 'path';
 import express from 'express';
+import path from 'path';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
@@ -18,7 +17,7 @@ if (!process.env.OPENAI_API_KEY) {
     process.exit(1);
 }
 
-const PORT = process.env.PORT || 9876;
+const PORT = process.env.PORT || 5000; // Using port 5000 instead
 
 const app = express();
 
@@ -241,165 +240,54 @@ app.get('/generate-itinerary', async (req, res) => {
     try {
         const destination = req.query.destination || "Unknown";
         const preferences = req.query.preferences ? JSON.parse(req.query.preferences) : [];
+        const advancedPreferences = req.query.advancedPreferences ? JSON.parse(req.query.advancedPreferences) : [];
+        const customInstructions = req.query.customInstructions || ""; 
         const departureDateStr = req.query.departureDate; 
         const arrivalDateStr = req.query.arrivalDate;
-
+        
         if (!departureDateStr || !arrivalDateStr) {
             return res.status(400).json({ error: 'Missing departure or arrival date' });
         }
 
-        let numberOfDays = 3;
-        let startDate, endDate;
-        try {
-            startDate = new Date(departureDateStr);
-            endDate = new Date(arrivalDateStr);
-            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-                 throw new Error("Invalid date format received.");
-            }
-            if (endDate < startDate) {
-                throw new Error("Arrival date cannot be before departure date.");
-            }
-            const timeDiff = endDate.getTime() - startDate.getTime();
-            numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; 
-            if (numberOfDays <= 0) numberOfDays = 1;
-
-        } catch (dateError) {
-             console.error("Error calculating trip duration:", dateError.message);
+        // Parse dates
+        const startDate = new Date(departureDateStr);
+        const endDate = new Date(arrivalDateStr);
+        
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            throw new Error("Invalid date format received.");
+        }
+        if (endDate < startDate) {
+            throw new Error("Arrival date cannot be before departure date.");
         }
 
         console.log('--- New Itinerary Request ---');
         console.log(`Destination: ${destination}`);
         console.log(`Preferences: ${preferences.join(', ')}`);
+        console.log(`Advanced Preferences: ${advancedPreferences.join(', ')}`);
+        console.log(`Custom Instructions: ${customInstructions}`);
         console.log(`Departure Date: ${departureDateStr}`);
         console.log(`Arrival Date: ${arrivalDateStr}`);
-        console.log(`Calculated Number of Days: ${numberOfDays}`);
         
-        // NEW: Break longer trips into chunks of maximum 7 days each
-        const MAX_DAYS_PER_CHUNK = 7;
-        let completeItinerary = [];
+        // Generate the full itinerary using our service
+        const completeItinerary = await generateFullItinerary(
+            destination,
+            preferences,
+            startDate,
+            endDate,
+            advancedPreferences,
+            customInstructions
+        );
         
-        for (let chunkStart = 0; chunkStart < numberOfDays; chunkStart += MAX_DAYS_PER_CHUNK) {
-            // Calculate days for this chunk
-            const daysInThisChunk = Math.min(MAX_DAYS_PER_CHUNK, numberOfDays - chunkStart);
-            
-            // Calculate date range for this chunk
-            const chunkStartDate = new Date(startDate);
-            chunkStartDate.setDate(startDate.getDate() + chunkStart);
-            
-            const chunkEndDate = new Date(chunkStartDate);
-            chunkEndDate.setDate(chunkStartDate.getDate() + daysInThisChunk - 1);
-            
-            // Format dates for the message
-            const chunkStartDateStr = chunkStartDate.toISOString().split('T')[0];
-            const chunkEndDateStr = chunkEndDate.toISOString().split('T')[0];
-            
-            console.log(`Generating chunk ${chunkStart / MAX_DAYS_PER_CHUNK + 1}: ${daysInThisChunk} days from ${chunkStartDateStr} to ${chunkEndDateStr}`);
-            
-            const messagesForOpenAI = [
-                {
-                    role: "system",
-                    content: `You are a helpful travel assistant that creates detailed itineraries. Always respond with properly formatted JSON. The response MUST be a JSON array of objects, where each object represents a single activity and has the fields "day" (e.g., "Tuesday, May 6", "Wednesday, May 7"), "time" (e.g., "9:00 AM"), "activity" (description), and "location" (specific address or landmark name). Do not include any introductory text, explanations, or summaries outside the JSON array. Ensure each day has multiple activities covering morning, afternoon, and evening where appropriate.`
-                },
-                {
-                    role: "user",
-                    content: `Create a detailed ${daysInThisChunk}-day itinerary for ${destination} from ${chunkStartDateStr} to ${chunkEndDateStr}. 
-                              This is part ${chunkStart / MAX_DAYS_PER_CHUNK + 1} of a ${Math.ceil(numberOfDays / MAX_DAYS_PER_CHUNK)}-part ${numberOfDays}-day trip.
-                              For each day, include multiple activities (morning, afternoon, evening) with specific locations (addresses if possible) and suggested times.
-                              For the "day" field in each JSON object, use the actual date and day of the week (e.g., "Tuesday, May 6").
-                              The traveler has these preferences: ${preferences.join(', ')}.
-                              IMPORTANT: Format your ENTIRE response strictly as a JSON array of objects with "day", "activity", "location", and "time" fields. No extra text.`
-                }
-            ];
-
-            console.log('--- Sending chunk to OpenAI ---');
-            console.log('Days in chunk:', daysInThisChunk);
-
-            const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-                },
-                body: JSON.stringify({
-                    model: "gpt-3.5-turbo",
-                    messages: messagesForOpenAI
-                })
-            });
-            
-            if (!openAIResponse.ok) {
-                const errorText = await openAIResponse.text();
-                console.error("OpenAI API error status:", openAIResponse.status);
-                console.error("OpenAI API error response:", errorText);
-                let errorMessage = `OpenAI API error: ${openAIResponse.status}`;
-                try {
-                     const errorData = JSON.parse(errorText);
-                     errorMessage = `OpenAI API error: ${errorData.error?.message || openAIResponse.status}`;
-                } catch(e) { }
-                throw new Error(errorMessage);
-            }
-            
-            const openAIData = await openAIResponse.json();
-            
-            const responseText = openAIData.choices[0].message.content.trim();
-            console.log(`--- OpenAI Raw Response for chunk ${chunkStart / MAX_DAYS_PER_CHUNK + 1} ---`);
-            console.log("Content length:", responseText.length);
-            
-            let chunkItinerary = [];
-            try {
-                chunkItinerary = JSON.parse(responseText);
-                
-                if (!Array.isArray(chunkItinerary)) {
-                     console.warn("Parsed response is not an array, attempting extraction...");
-                     throw new Error("Parsed response is not an array.");
-                }
-                
-                console.log("Successfully parsed itinerary chunk directly.");
-
-            } catch (parseError) {
-                console.warn("Direct JSON parsing failed:", parseError.message);
-                console.log("Attempting to extract JSON array from text...");
-                const jsonMatch = responseText.match(/\[\s*\{[\s\S]*?\}\s*\]/);
-                if (jsonMatch && jsonMatch[0]) {
-                    try {
-                        chunkItinerary = JSON.parse(jsonMatch[0]);
-                        if (!Array.isArray(chunkItinerary)) {
-                             throw new Error("Extracted JSON is not an array.");
-                        }
-                        console.log("Successfully extracted and parsed JSON array via regex.");
-                    } catch (regexParseError) {
-                        console.error("Failed to parse extracted JSON array:", regexParseError);
-                        chunkItinerary = [];
-                    }
-                } else {
-                     console.error("Could not find a valid JSON array structure in the response.");
-                     chunkItinerary = [];
-                }
-            }
-
-            // Process and validate the itinerary items
-            chunkItinerary = chunkItinerary.map(item => ({
-                day: item.day || `Date missing`,
-                activity: item.activity || "No activity specified",
-                location: item.location || destination,
-                time: item.time || "Time N/A"
-            }));
-            
-            console.log(`Chunk ${chunkStart / MAX_DAYS_PER_CHUNK + 1} contained ${chunkItinerary.length} activities`);
-            
-            // Add this chunk to the complete itinerary
-            completeItinerary = [...completeItinerary, ...chunkItinerary];
-            
-            // Brief delay to avoid rate limiting
-            await new Promise(resolve => setTimeout(resolve, 500));
-        }
-            
         console.log("--- Final Complete Itinerary ---");
         console.log("Total activities:", completeItinerary.length);
         console.log("Days covered:", new Set(completeItinerary.map(item => item.day)).size);
+        console.log("Days are:", [...new Set(completeItinerary.map(item => item.day))]);
         
         res.json({
             destination: destination,
             preferences: preferences,
+            advancedPreferences: advancedPreferences,
+            customInstructions: customInstructions,
             itinerary: completeItinerary
         });
         
@@ -539,6 +427,258 @@ function getMostFrequentDescription(descriptions) {
   }
   
   return maxDescription;
+}
+
+// Maximum days to process in a single API call
+const MAX_DAYS_PER_CHUNK = 3;
+
+/**
+ * Generates a full itinerary for the given date range
+ */
+async function generateFullItinerary(destination, preferences, startDate, endDate, advancedPreferences = [], customInstructions = "") {
+  // Calculate the total number of days
+  const timeDiff = endDate.getTime() - startDate.getTime();
+  const numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+  
+  console.log(`Generating itinerary for ${destination} from ${startDate.toISOString()} to ${endDate.toISOString()}`);
+  console.log(`Total days: ${numberOfDays}, preferences: ${preferences.join(', ')}`);
+  
+  let completeItinerary = [];
+  
+  // Process the itinerary in manageable chunks
+  for (let chunkStart = 0; chunkStart < numberOfDays; chunkStart += MAX_DAYS_PER_CHUNK) {
+    // Calculate days for this chunk
+    const daysInThisChunk = Math.min(MAX_DAYS_PER_CHUNK, numberOfDays - chunkStart);
+    
+    // Calculate date range for this chunk
+    const chunkStartDate = new Date(startDate);
+    chunkStartDate.setDate(startDate.getDate() + chunkStart);
+    
+    const chunkEndDate = new Date(chunkStartDate);
+    chunkEndDate.setDate(chunkStartDate.getDate() + daysInThisChunk - 1);
+    
+    console.log(`Processing chunk ${Math.floor(chunkStart / MAX_DAYS_PER_CHUNK) + 1} of ${Math.ceil(numberOfDays / MAX_DAYS_PER_CHUNK)}: ${daysInThisChunk} days`);
+    
+    try {
+      // Generate itinerary for this chunk
+      const chunkItinerary = await generateItineraryChunk(
+        destination, 
+        preferences, 
+        chunkStartDate, 
+        chunkEndDate,
+        chunkStart,
+        numberOfDays,
+        advancedPreferences,
+        customInstructions
+      );
+      
+      // Add this chunk to the complete itinerary
+      completeItinerary = [...completeItinerary, ...chunkItinerary];
+    } catch (error) {
+      console.error(`Error processing chunk ${Math.floor(chunkStart / MAX_DAYS_PER_CHUNK) + 1}:`, error);
+    }
+    
+    // Brief delay between chunks to avoid rate limiting
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+  
+  // Final verification
+  const daysInCompleteItinerary = new Set(completeItinerary.map(item => item.day.split(',')[1].trim())).size;
+  console.log(`Generated itinerary with ${completeItinerary.length} activities covering ${daysInCompleteItinerary} days`);
+  
+  // If we're missing days in the itinerary, try to fill them in
+  if (daysInCompleteItinerary < numberOfDays) {
+    console.log(`Missing ${numberOfDays - daysInCompleteItinerary} days in the itinerary. Attempting to fill gaps...`);
+    completeItinerary = await fillMissingDays(completeItinerary, destination, preferences, startDate, endDate);
+  }
+  
+  return completeItinerary;
+}
+
+/**
+ * Generate itinerary for a specific chunk of days
+ */
+async function generateItineraryChunk(destination, preferences, chunkStartDate, chunkEndDate, chunkStart, totalDays, advancedPreferences = [], customInstructions = "") {
+  const chunkStartDateStr = chunkStartDate.toISOString().split('T')[0];
+  const chunkEndDateStr = chunkEndDate.toISOString().split('T')[0];
+  
+  let systemPrompt = `You are a helpful travel assistant that creates detailed itineraries. Always respond with properly formatted JSON. The response MUST be a JSON array of objects, where each object represents a single activity and has the fields "day" (e.g., "Tuesday, May 6", "Wednesday, May 7"), "time" (e.g., "9:00 AM"), "activity" (description), and "location" (specific address or landmark name). Do not include any introductory text, explanations, or summaries outside the JSON array. Ensure each day has multiple activities covering morning, afternoon, and evening where appropriate. Each day should have at least 4 activities.`;
+  
+  let userPrompt = `Create a detailed ${chunkEndDate.getDate() - chunkStartDate.getDate() + 1}-day itinerary for ${destination} from ${chunkStartDateStr} to ${chunkEndDateStr}. 
+                This is part ${Math.floor(chunkStart / MAX_DAYS_PER_CHUNK) + 1} of a ${Math.ceil(totalDays / MAX_DAYS_PER_CHUNK)}-part ${totalDays}-day trip.
+                For each day, include 4-5 activities (morning, lunch, afternoon, dinner/evening) with specific locations (addresses if possible) and suggested times.
+                For the "day" field in each JSON object, use the actual date and day of the week (e.g., "Tuesday, May 6").
+                The traveler has these preferences: ${preferences.join(', ')}.`;
+
+  // Add advanced preferences to the prompt if they exist
+  if (advancedPreferences && advancedPreferences.length > 0) {
+    userPrompt += `\n\nAdditional traveler preferences:\n- ${advancedPreferences.join('\n- ')}`;
+  }
+  
+  // Add custom instructions if provided
+  if (customInstructions && customInstructions.trim().length > 0) {
+    userPrompt += `\n\nSpecific traveler instructions: "${customInstructions}"`;
+  }
+
+  // Add special note for Orlando
+  if (destination.toLowerCase().includes('orlando')) {
+    userPrompt += "\n\nNOTE: For Orlando, be sure to include world-famous theme parks like Universal Studios and Walt Disney World in the itinerary, unless the user specifically asks to avoid them.";
+  }
+
+  const mustSeeAttractions = {
+    "orlando": [
+      "Universal Studios Florida",
+      "Walt Disney World Resort",
+      "SeaWorld Orlando"
+    ],
+    "anaheim": [
+      "Disneyland Park"
+    ],
+    "paris": [
+      "Disneyland Paris"
+    ],
+    // Add more cities as needed
+  };
+
+  const city = destination.toLowerCase();
+  if (mustSeeAttractions[city]) {
+    userPrompt += `\n\nFor ${destination}, always include these must-see attractions: ${mustSeeAttractions[city].join(', ')}.`;
+  }
+
+  // Add must-see attractions for certain cities
+  const cityKey = Object.keys(mustSeeAttractions).find(city =>
+    destination.toLowerCase().includes(city)
+  );
+  if (cityKey) {
+    userPrompt += `\n\nFor ${destination}, always include these must-see attractions: ${mustSeeAttractions[cityKey].join(', ')}.`;
+  }
+  
+  userPrompt += `\n\nIMPORTANT: Format your ENTIRE response strictly as a JSON array of objects with "day", "activity", "location", and "time" fields. No extra text.`;
+
+  const messagesForOpenAI = [
+    {
+      role: "system",
+      content: systemPrompt
+    },
+    {
+      role: "user",
+      content: userPrompt
+    }
+  ];
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: messagesForOpenAI,
+        temperature: 0.7,
+        max_tokens: 3000
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`OpenAI API error (${response.status}): ${errorText}`);
+    }
+
+    const responseData = await response.json();
+    const responseText = responseData.choices[0].message.content;
+    
+    // Parse the JSON response
+    let chunkItinerary;
+    try {
+      chunkItinerary = JSON.parse(responseText);
+      if (!Array.isArray(chunkItinerary)) {
+        throw new Error("Response is not an array.");
+      }
+    } catch (parseError) {
+      console.warn(`Direct JSON parsing failed:`, parseError.message);
+      console.log("Attempting to extract JSON array from text...");
+      const jsonMatch = responseText.match(/\[\s*\{[\s\S]*?\}\s*\]/);
+      if (jsonMatch && jsonMatch[0]) {
+        try {
+          chunkItinerary = JSON.parse(jsonMatch[0]);
+          if (!Array.isArray(chunkItinerary)) {
+            throw new Error("Extracted JSON is not an array.");
+          }
+        } catch (regexParseError) {
+          console.error("Failed to parse extracted JSON array:", regexParseError);
+          chunkItinerary = [];
+        }
+      } else {
+        console.error("Could not find a valid JSON array structure in the response.");
+        chunkItinerary = [];
+      }
+    }
+    
+    // Make sure the required fields are present
+    return chunkItinerary.map(item => ({
+      day: item.day || `Date missing`,
+      activity: item.activity || "No activity specified",
+      location: item.location || destination,
+      time: item.time || "Time N/A"
+    }));
+  } catch (error) {
+    console.error("Error generating itinerary chunk:", error);
+    throw error;
+  }
+}
+
+/**
+ * Attempt to fill in any missing days in the itinerary
+ */
+async function fillMissingDays(existingItinerary, destination, preferences, startDate, endDate) {
+  // Identify which days are missing
+  const existingDays = new Set();
+  existingItinerary.forEach(item => {
+    const day = item.day.split(',')[1].trim();
+    existingDays.add(day);
+  });
+  
+  const missingDays = [];
+  const currentDate = new Date(startDate);
+  
+  while (currentDate <= endDate) {
+    const day = currentDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+    if (!existingDays.has(day)) {
+      missingDays.push(new Date(currentDate));
+    }
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  // Generate activities for each missing day
+  let updatedItinerary = [...existingItinerary];
+  
+  for (const missingDate of missingDays) {
+    console.log(`Generating activities for missing day: ${missingDate.toLocaleDateString()}`);
+    
+    const endOfDay = new Date(missingDate);
+    
+    try {
+      const dayActivities = await generateItineraryChunk(
+        destination,
+        preferences,
+        missingDate,
+        endOfDay,
+        0,
+        1
+      );
+      
+      updatedItinerary = [...updatedItinerary, ...dayActivities];
+    } catch (error) {
+      console.error(`Failed to generate activities for ${missingDate.toLocaleDateString()}:`, error);
+    }
+    
+    // Delay to avoid rate limiting
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+  
+  return updatedItinerary;
 }
 
 // Start the server
