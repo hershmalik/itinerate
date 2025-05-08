@@ -9,7 +9,9 @@
     "dev": "nodemon server/server.js",
     "debug": "node --inspect server/server.js",
     "build": "parcel build src/index.html --dist-dir ./dist",
-    "killport": "kill $(lsof -t -i:9876) || true"
+    "killport": "kill $(lsof -t -i:9876) || true",
+    "killport9877": "kill $(lsof -t -i:9877) || true",
+    "killport3000": "kill $(lsof -t -i:3000) || true"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
