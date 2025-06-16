@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -55,7 +56,10 @@ app.get('/api/weather', async (req, res) => {
     
     console.log(`Weather request received for location: ${location}`);
     
-    const API_KEY = process.env.WEATHER_API_KEY || 'abd222e02532f30bf10623599a48fba5';
+    const API_KEY = process.env.WEATHER_API_KEY;
+    if (!API_KEY) {
+      return res.status(500).json({ error: 'Weather API key not configured' });
+    }
     
     const currentWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(location)}&units=imperial&appid=${API_KEY}`;
     console.log(`Calling OpenWeatherMap API for current weather: ${currentWeatherUrl}`);
@@ -172,7 +176,10 @@ app.get('/api/place-details', async (req, res) => {
     
     console.log(`Google Places request received for: ${name}, ${location}`);
     
-    const API_KEY = 'AIzaSyDsiIuDg6F3hT2Oj871DQYzH7RMXhJ5JKg';
+    const API_KEY = process.env.GOOGLE_PLACES_API_KEY;
+    if (!API_KEY) {
+      return res.status(500).json({ error: 'Google Places API key not configured' });
+    }
     
     const searchUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(name + ' ' + location)}&inputtype=textquery&fields=place_id,name,formatted_address,rating,user_ratings_total&key=${API_KEY}`;
     
@@ -309,11 +316,21 @@ app.use(express.static(path.join(__dirname, '../src')));
 
 // Specific routes for HTML pages
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../src/index.html'));
+  const filePath = path.join(__dirname, '../src/index.html');
+  fs.readFile(filePath, 'utf8', (err, data) => {
+    if (err) return res.status(500).send('Error loading page');
+    const replaced = data.replace(/__GOOGLE_MAPS_API_KEY__/g, process.env.GOOGLE_MAPS_API_KEY || '');
+    res.send(replaced);
+  });
 });
 
 app.get('/second-page', (req, res) => {
-  res.sendFile(path.join(__dirname, '../src/second-page.html'));
+  const filePath = path.join(__dirname, '../src/second-page.html');
+  fs.readFile(filePath, 'utf8', (err, data) => {
+    if (err) return res.status(500).send('Error loading page');
+    const replaced = data.replace(/__GOOGLE_MAPS_API_KEY__/g, process.env.GOOGLE_MAPS_API_KEY || '');
+    res.send(replaced);
+  });
 });
 
 // --------- CATCH-ALL ROUTE LAST ---------
@@ -321,7 +338,12 @@ app.get('*', (req, res) => {
   if (req.url.startsWith('/api/')) {
     return res.status(404).json({ error: 'API endpoint not found' });
   }
-  res.sendFile(path.join(__dirname, '../src/index.html'));
+  const filePath = path.join(__dirname, '../src/index.html');
+  fs.readFile(filePath, 'utf8', (err, data) => {
+    if (err) return res.status(500).send('Error loading page');
+    const replaced = data.replace(/__GOOGLE_MAPS_API_KEY__/g, process.env.GOOGLE_MAPS_API_KEY || '');
+    res.send(replaced);
+  });
 });
 
 // Helper function to map Visual Crossing weather conditions to OpenWeatherMap icons for consistency
