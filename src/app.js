@@ -11,6 +11,15 @@ document.addEventListener('DOMContentLoaded', () => {
     flatpickr(departureDateInput, { dateFormat: "m/d/Y" });
     flatpickr(arrivalDateInput, { dateFormat: "m/d/Y" });
 
+    // Prevent Enter key on date fields from submitting the form prematurely
+    [departureDateInput, arrivalDateInput].forEach(input => {
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+            }
+        });
+    });
+
     // Initialize Google Places Autocomplete
     let autocomplete;
     function initMap() { 
