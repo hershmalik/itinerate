@@ -926,122 +926,10 @@
     
     <div class="container">
         <div class="content-section">
-            <div id="preferences-summary">
-                <h2 class="section-title">Your Preferences</h2>
-                <ul id="preferences-list"></ul>
-                <div id="customize-preferences" class="customize-preferences">
-                    <h3>Refine Your Preferences</h3>
-                    <div class="preference-toggles">
-                        <button class="preference-toggle" data-preference="culture">Culture</button>
-                        <button class="preference-toggle" data-preference="landmarks">Landmarks</button>
-                        <button class="preference-toggle" data-preference="food">Foodie</button>
-                        <button class="preference-toggle" data-preference="historical">Historical</button>
-                        <button class="preference-toggle" data-preference="art">Art</button>
-                        <button class="preference-toggle" data-preference="nature">Nature</button>
-                        <button class="preference-toggle" data-preference="nightlife">Nightlife</button>
-                        <button class="preference-toggle" data-preference="theme_parks">Theme Parks</button>
-                    </div>
-                    
-                    <div class="collapse-section" id="advanced-options-section">
-                        <div class="collapse-header" onclick="toggleCollapse('advanced-options-content')">
-                            <h3 class="collapse-title">Advanced Options</h3>
-                            <span class="collapse-icon" aria-label="Toggle section">▶</span>
-                        </div>
-                        <div class="collapse-content" id="advanced-options-content">
-                            <div class="collapse-inner">
-                                <div class="option-categories-grid">
-                                    <div class="option-category">
-                                        <h5>Travel & Mobility</h5>
-                                        <div class="slider-row">
-                                            <div class="slider-name">Walking Distance</div>
-                                            <div class="slider-container">
-                                                <input type="range" min="1" max="5" value="3" class="preference-slider" id="walking-slider-second" 
-                                                      data-min="minimize_walking" data-max="maximize_walking">
-                                                <div class="slider-bounds">
-                                                    <span>Minimize</span>
-                                                    <span>Maximize</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="slider-row">
-                                            <div class="slider-name">Scenic Routes</div>
-                                            <div class="slider-container">
-                                                <input type="range" min="1" max="5" value="3" class="preference-slider" id="route-slider-second"
-                                                      data-min="minimize_travel_time" data-max="maximize_scenic_routes">
-                                                <div class="slider-bounds">
-                                                    <span>Direct</span>
-                                                    <span>Scenic</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="checkbox-grid">
-                                            <label class="option-label">
-                                                <input type="checkbox" name="advanced-prefs-second" value="public_transport">
-                                                Public transport
-                                            </label>
-                                            <label class="option-label">
-                                                <input type="checkbox" name="advanced-prefs-second" value="accessibility">
-                                                Accessibility
-                                            </label>
-                                            <label class="option-label">
-                                                <input type="checkbox" name="advanced-prefs-second" value="bikeable_paths">
-                                                Bikeable paths
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="option-category">
-                                        <h5>Time & Activities</h5>
-                                        <div class="checkbox-grid">
-                                            <label class="option-label">
-                                                <input type="checkbox" name="advanced-prefs-second" value="morning_heavy">
-                                                Morning-heavy
-                                            </label>
-                                            <label class="option-label">
-                                                <input type="checkbox" name="advanced-prefs-second" value="late_start">
-                                                Late start
-                                            </label>
-                                            <label class="option-label">
-                                                <input type="checkbox" name="advanced-prefs-second" value="include_downtime">
-                                                Include downtime
-                                            </label>
-                                            <label class="option-label">
-                                                <input type="checkbox" name="advanced-prefs-second" value="evenly_distribute">
-                                                Even distribution
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="collapse-section" id="custom-instructions-section">
-                                    <div class="collapse-header" onclick="toggleCollapse('custom-instructions-content')">
-                                        <h3 class="collapse-title">Additional Custom Instructions</h3>
-                                        <span class="collapse-icon" aria-label="Toggle section">▶</span>
-                                    </div>
-                                    <div class="collapse-content" id="custom-instructions-content">
-                                        <div class="collapse-inner">
-                                            <p class="instructions-note">Provide any specific requests or details that aren't covered by the options above.</p>
-                                            <textarea id="custom-instructions" placeholder="Example: 'Include at least one museum each day, I prefer outdoor activities in the morning, suggest vegetarian restaurants for lunch...'" rows="3"></textarea>
-                                            <div class="examples-dropdown">
-                                                <span class="examples-toggle">See examples ▾</span>
-                                                <div class="examples-content">
-                                                    <ul>
-                                                        <li>"I'll be traveling with a toddler, suggest family-friendly activities"</li>
-                                                        <li>"I'm interested in live music venues in the evenings"</li>
-                                                        <li>"Include some off-the-beaten-path locations"</li>
-                                                        <li>"I have mobility issues, so please minimize stairs"</li>
-                                                    </ul>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <button id="regenerate-itinerary" class="regenerate-button">
-                        <span class="regenerate-icon">↺</span> Regenerate Itinerary
-                    </button>
+                <div id="preferences-summary">
+                    <h2 class="section-title">Your Preferences</h2>
+                    <ul id="preferences-list"></ul>
                 </div>
-            </div>
 
             <div id="weather-loading" class="loading-spinner" style="display: none;">
                 <div class="spinner"></div>
@@ -1109,6 +997,119 @@
                 </div>
             </div>
             <div id="map"></div>
+        </div>
+
+        <div id="customize-preferences" class="customize-preferences">
+            <h3>Refine Your Preferences</h3>
+            <div class="preference-toggles">
+                <button class="preference-toggle" data-preference="culture">Culture</button>
+                <button class="preference-toggle" data-preference="landmarks">Landmarks</button>
+                <button class="preference-toggle" data-preference="food">Foodie</button>
+                <button class="preference-toggle" data-preference="historical">Historical</button>
+                <button class="preference-toggle" data-preference="art">Art</button>
+                <button class="preference-toggle" data-preference="nature">Nature</button>
+                <button class="preference-toggle" data-preference="nightlife">Nightlife</button>
+                <button class="preference-toggle" data-preference="theme_parks">Theme Parks</button>
+            </div>
+
+            <div class="collapse-section" id="advanced-options-section">
+                <div class="collapse-header" onclick="toggleCollapse('advanced-options-content')">
+                    <h3 class="collapse-title">Advanced Options</h3>
+                    <span class="collapse-icon" aria-label="Toggle section">▶</span>
+                </div>
+                <div class="collapse-content" id="advanced-options-content">
+                    <div class="collapse-inner">
+                        <div class="option-categories-grid">
+                            <div class="option-category">
+                                <h5>Travel & Mobility</h5>
+                                <div class="slider-row">
+                                    <div class="slider-name">Walking Distance</div>
+                                    <div class="slider-container">
+                                        <input type="range" min="1" max="5" value="3" class="preference-slider" id="walking-slider-second"
+                                              data-min="minimize_walking" data-max="maximize_walking">
+                                        <div class="slider-bounds">
+                                            <span>Minimize</span>
+                                            <span>Maximize</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slider-row">
+                                    <div class="slider-name">Scenic Routes</div>
+                                    <div class="slider-container">
+                                        <input type="range" min="1" max="5" value="3" class="preference-slider" id="route-slider-second"
+                                              data-min="minimize_travel_time" data-max="maximize_scenic_routes">
+                                        <div class="slider-bounds">
+                                            <span>Direct</span>
+                                            <span>Scenic</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="checkbox-grid">
+                                    <label class="option-label">
+                                        <input type="checkbox" name="advanced-prefs-second" value="public_transport">
+                                        Public transport
+                                    </label>
+                                    <label class="option-label">
+                                        <input type="checkbox" name="advanced-prefs-second" value="accessibility">
+                                        Accessibility
+                                    </label>
+                                    <label class="option-label">
+                                        <input type="checkbox" name="advanced-prefs-second" value="bikeable_paths">
+                                        Bikeable paths
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="option-category">
+                                <h5>Time & Activities</h5>
+                                <div class="checkbox-grid">
+                                    <label class="option-label">
+                                        <input type="checkbox" name="advanced-prefs-second" value="morning_heavy">
+                                        Morning-heavy
+                                    </label>
+                                    <label class="option-label">
+                                        <input type="checkbox" name="advanced-prefs-second" value="late_start">
+                                        Late start
+                                    </label>
+                                    <label class="option-label">
+                                        <input type="checkbox" name="advanced-prefs-second" value="include_downtime">
+                                        Include downtime
+                                    </label>
+                                    <label class="option-label">
+                                        <input type="checkbox" name="advanced-prefs-second" value="evenly_distribute">
+                                        Even distribution
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="collapse-section" id="custom-instructions-section">
+                            <div class="collapse-header" onclick="toggleCollapse('custom-instructions-content')">
+                                <h3 class="collapse-title">Additional Custom Instructions</h3>
+                                <span class="collapse-icon" aria-label="Toggle section">▶</span>
+                            </div>
+                            <div class="collapse-content" id="custom-instructions-content">
+                                <div class="collapse-inner">
+                                    <p class="instructions-note">Provide any specific requests or details that aren't covered by the options above.</p>
+                                    <textarea id="custom-instructions" placeholder="Example: 'Include at least one museum each day, I prefer outdoor activities in the morning, suggest vegetarian restaurants for lunch...'" rows="3"></textarea>
+                                    <div class="examples-dropdown">
+                                        <span class="examples-toggle">See examples ▾</span>
+                                        <div class="examples-content">
+                                            <ul>
+                                                <li>"I'll be traveling with a toddler, suggest family-friendly activities"</li>
+                                                <li>"I'm interested in live music venues in the evenings"</li>
+                                                <li>"Include some off-the-beaten-path locations"</li>
+                                                <li>"I have mobility issues, so please minimize stairs"</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button id="regenerate-itinerary" class="regenerate-button">
+                <span class="regenerate-icon">↺</span> Regenerate Itinerary
+            </button>
         </div>
     </div>
 

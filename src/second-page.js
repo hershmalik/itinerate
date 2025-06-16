@@ -896,27 +896,28 @@ async function populateItineraryTable(itineraryItems) {
         `;
     }
 
+    const tripDetails = getTripDetailsFromStorage();
+    const startDate = tripDetails ? new Date(tripDetails.departureDate) : new Date();
+
     // Process each day in the itinerary
-    for (const dayHeader of Object.keys(groupedByDay)) {
+    const dayKeys = Object.keys(groupedByDay);
+    dayKeys.forEach((dayHeader, idx) => {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + idx);
+        const displayHeader = currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
         // Render day header row (no weather here)
         const dayRow = document.createElement('tr');
         dayRow.className = 'day-header-row';
         const dayCell = document.createElement('td');
         dayCell.colSpan = 5; // Adjust if you have more/less columns
-        dayCell.innerHTML = `<span class="day-title">${dayHeader}</span>`;
+        dayCell.innerHTML = `<span class="day-title">${displayHeader}</span>`;
         dayRow.appendChild(dayCell);
         itineraryTableBody.appendChild(dayRow);
 
-        // After rendering the day header row:
-        const dayHeaderParts = dayHeader.split(',');
-        if (dayHeaderParts.length === 2) {
-          const [weekday, monthDay] = dayHeaderParts;
-          const [monthName, dayNum] = monthDay.trim().split(' ');
-          const year = (new Date()).getFullYear(); // Or get from trip details
-          const dateObj = new Date(`${monthName} ${dayNum}, ${year}`);
-          const dateKey = dateObj.toISOString().split('T')[0];
-          const forecast = forecastByDate[dateKey];
-          if (forecast) {
+        const dateKey = currentDate.toISOString().split('T')[0];
+        const forecast = forecastByDate[dateKey];
+        if (forecast) {
             const weatherRow = document.createElement('tr');
             weatherRow.className = 'weather-row';
             const weatherCell = document.createElement('td');
@@ -924,7 +925,6 @@ async function populateItineraryTable(itineraryItems) {
             weatherCell.innerHTML = createWeatherDisplay(forecast);
             weatherRow.appendChild(weatherCell);
             itineraryTableBody.appendChild(weatherRow);
-          }
         }
   
         // Get day of week for hours display
@@ -1000,7 +1000,7 @@ async function populateItineraryTable(itineraryItems) {
                 hoursCell.textContent = "Error loading";
             });
         }
-    }
+    });
 
     // AFTER ALL ROWS ARE ADDED AND POPULATED:
     const toggleHoursCheckbox = document.getElementById('toggle-hours');

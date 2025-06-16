@@ -513,7 +513,10 @@ async function generateFullItinerary(destination, preferences, startDate, endDat
     console.log(`Missing ${numberOfDays - daysInCompleteItinerary} days in the itinerary. Attempting to fill gaps...`);
     completeItinerary = await fillMissingDays(completeItinerary, destination, preferences, startDate, endDate);
   }
-  
+
+  // Remove duplicate activities across days
+  completeItinerary = removeDuplicateActivities(completeItinerary);
+
   return completeItinerary;
 }
 
@@ -701,6 +704,19 @@ async function fillMissingDays(existingItinerary, destination, preferences, star
   }
   
   return updatedItinerary;
+}
+
+// Remove activities with the same name appearing on multiple days
+function removeDuplicateActivities(itinerary) {
+  const seen = new Set();
+  return itinerary.filter(item => {
+    const key = item.activity ? item.activity.toLowerCase() : '';
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
 }
 
 // Start the server
