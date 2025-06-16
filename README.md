@@ -1,43 +1,42 @@
-# Web Application
+# Itinerary Planner
 
-This is a simple web application built using HTML, CSS, and JavaScript.
+This project is a Node.js application that generates travel itineraries using OpenAI and various external APIs.
 
 ## Project Structure
 
 ```
-web-app
-├── src
-│   ├── index.html       # Main HTML document
-│   ├── css
-│   │   └── styles.css   # Styles for the web application
-│   └── js
-│       └── app.js       # JavaScript code for interactivity
-└── README.md            # Project documentation
+.
+├── server            # Express server
+│   └── server.js
+├── src               # Static client files
+│   ├── index.html
+│   ├── second-page.html
+│   └── ...
+└── .env.example      # Example environment variables
 ```
 
-## Getting Started
+## Setup
 
-To set up and run the web application, follow these steps:
-
-1. **Clone the repository** (if applicable):
+1. Install dependencies:
+   ```bash
+   npm install
    ```
-   git clone <repository-url>
+2. Copy `.env.example` to `.env` and provide the required API keys:
+   - `OPENAI_API_KEY`
+   - `WEATHER_API_KEY`
+   - `VISUAL_CROSSING_API_KEY`
+   - `GOOGLE_PLACES_API_KEY`
+   - `GOOGLE_MAPS_API_KEY`
+3. Start the server:
+   ```bash
+   npm start
    ```
+   The application will run on `http://localhost:5000` unless the `PORT` variable is set.
 
-2. **Navigate to the project directory**:
-   ```
-   cd web-app
-   ```
+## Development
 
-3. **Open the `index.html` file** in your web browser:
-   - You can simply double-click the `src/index.html` file or open it using a web server.
-
-## Technologies Used
-
-- HTML
-- CSS
-- JavaScript
+Static files are served from the `src` directory. The server code is located in `server/server.js`.
 
 ## License
 
-This project is licensed under the MIT License.
+MIT
