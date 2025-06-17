@@ -373,50 +373,48 @@ function mapWeatherConditionToIcon(conditions, iconCode) {
 
 // Helper function to process 3-hour forecasts into daily forecasts
 function processDailyForecasts(forecastList) {
-  const dailyMap = new Map();
-  
-  forecastList.forEach(item => {
-    const date = new Date(item.dt * 1000);
-    const dateKey = date.toISOString().split('T')[0];
-    
-    if (!dailyMap.has(dateKey)) {
-      dailyMap.set(dateKey, {
-        date: dateKey,
-        day: date.toLocaleDateString('en-US', { weekday: 'long' }),
-        temps: [],
-        icons: [],
-        descriptions: [],
-        precipitation: 0,
-        hasRain: false
-      });
-    }
-    
-    const dayData = dailyMap.get(dateKey);
-    dayData.temps.push(item.main.temp);
-    dayData.icons.push(item.weather[0].icon);
-    dayData.descriptions.push(item.weather[0].description);
-    
-    if (item.rain && item.rain['3h'] > 0) {
-      dayData.precipitation += item.rain['3h'];
-      dayData.hasRain = true;
-    }
-    if (item.snow && item.snow['3h'] > 0) {
-      dayData.precipitation += item.snow['3h'];
-    }
-  });
-  
-  return Array.from(dailyMap.values()).map(day => {
-    return {
-      date: day.date,
-      day: day.day,
-      high: Math.round(Math.max(...day.temps)),
-      low: Math.round(Math.min(...day.temps)),
-      icon: getMostFrequentIcon(day.icons),
-      description: getMostFrequentDescription(day.descriptions),
-      precipitation: Math.round(day.precipitation * 10) / 10,
-      hasRain: day.hasRain
-    };
-  }).slice(0, 5);
+    const dailyMap = new Map();
+
+    forecastList.forEach(item => {
+        const date = new Date(item.dt * 1000);
+        const dateKey = date.toISOString().split('T')[0];
+
+        if (!dailyMap.has(dateKey)) {
+            dailyMap.set(dateKey, {
+                date: dateKey,
+                day: date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
+                temps: [],
+                icons: [],
+                descriptions: [],
+                precipitation: 0,
+                hasRain: false
+            });
+        }
+
+        const dayData = dailyMap.get(dateKey);
+        dayData.temps.push(item.main.temp);
+        dayData.icons.push(item.weather[0].icon);
+        dayData.descriptions.push(item.weather[0].description);
+
+        if (item.rain && item.rain['3h'] > 0) {
+            dayData.precipitation += item.rain['3h'];
+            dayData.hasRain = true;
+        }
+        if (item.snow && item.snow['3h'] > 0) {
+            dayData.precipitation += item.snow['3h'];
+        }
+    });
+
+    return Array.from(dailyMap.values()).map(day => ({
+        date: day.date,
+        day: day.day,
+        high: Math.round(Math.max(...day.temps)),
+        low: Math.round(Math.min(...day.temps)),
+        icon: getMostFrequentIcon(day.icons),
+        description: getMostFrequentDescription(day.descriptions),
+        precipitation: Math.round(day.precipitation * 10) / 10,
+        hasRain: day.hasRain
+    })).slice(0, 5);
 }
 
 function getMostFrequentIcon(icons) {
@@ -708,15 +706,15 @@ async function fillMissingDays(existingItinerary, destination, preferences, star
 
 // Remove activities with the same name appearing on multiple days
 function removeDuplicateActivities(itinerary) {
-  const seen = new Set();
-  return itinerary.filter(item => {
-    const key = item.activity ? item.activity.toLowerCase() : '';
-    if (seen.has(key)) {
-      return false;
-    }
-    seen.add(key);
-    return true;
-  });
+    const seenActivities = new Set();
+    return itinerary.filter(item => {
+        const activityKey = `${item.activity}-${item.location}`.toLowerCase();
+        if (seenActivities.has(activityKey)) {
+            return false;
+        }
+        seenActivities.add(activityKey);
+        return true;
+    });
 }
 
 // Start the server
