@@ -615,15 +615,8 @@ app.get('/', (req, res) => {
     res.send(html);
 });
 
-// Fallback - serve index.html for any other routes
-app.get('*', (req, res) => {
-    let html = fs.readFileSync(path.join(__dirname, '../src/index.html'), 'utf8');
-    html = html.replace('__GOOGLE_MAPS_API_KEY__', process.env.GOOGLE_MAPS_API_KEY || '');
-    res.send(html);
-});
-
-// --------- SERVE STATIC FILES LAST ---------
-// Serve static files from src directory AFTER API routes
+// --------- SERVE STATIC FILES BEFORE FALLBACK ---------
+// Serve static files from src directory AFTER API routes but BEFORE fallback
 app.use(express.static(path.join(__dirname, '../src'), {
   setHeaders: (res, path) => {
     if (path.endsWith('.css')) {
@@ -633,3 +626,16 @@ app.use(express.static(path.join(__dirname, '../src'), {
     }
   }
 }));
+
+// Fallback - serve index.html for any other routes (ONLY for HTML routes)
+app.get('*', (req, res) => {
+    // Only serve index.html for non-file requests
+    if (!req.path.includes('.')) {
+        let html = fs.readFileSync(path.join(__dirname, '../src/index.html'), 'utf8');
+        html = html.replace('__GOOGLE_MAPS_API_KEY__', process.env.GOOGLE_MAPS_API_KEY || '');
+        res.send(html);
+    } else {
+        // For file requests that aren't handled by static middleware, return 404
+        res.status(404).send('File not found');
+    }
+});
