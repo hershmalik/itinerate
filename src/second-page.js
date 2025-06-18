@@ -1340,7 +1340,7 @@ async function fetchAndDisplayPlaceDetails(activity, location, ratingCell, hours
                                  onclick="showImageModal('${imageUrl}', '${activity.replace(/'/g, "\\'")}')">
                         </div>` : ''}
                         <div class="stars">${stars}${emptyStars}</div>
-                        <div class="rating-value">${placeDetails.rating}</div>
+                        <div class="rating-value">${placeDetails.rating.toFixed(1)}</div>
                         <div class="rating-count">(${placeDetails.totalRatings || 0})</div>
                         ${placeDetails.youtubeUrl ? `<a href="${placeDetails.youtubeUrl}" target="_blank" class="youtube-link">🎥 Watch</a>` : ''}
                     </div>
@@ -2464,7 +2464,7 @@ function showNotification(message, type = 'success') {
 // Add mobile detection and debugging
 function addMobileDebugging() {
     // Mobile detection
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isMobile = /Android|webOS|iPhone|iPad|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const isTablet = /iPad|Android/i.test(navigator.userAgent) && window.screen.width >= 768;
     
     console.log('Device detection:', {
