@@ -308,18 +308,12 @@ async function generateItinerary() {
             throw new Error("Trip details not found. Please return to the previous page.");
         }
 
-        // Enhanced base URL detection for Vercel and Render
+        // Simple base URL detection - use current origin in production, localhost in development
         let baseUrl;
-        const hostname = window.location.hostname;
-        
-        if (hostname === 'localhost' || hostname === '127.0.0.1') {
-            // Local development - use port 10000 to match server
-            baseUrl = `http://localhost:10000`;
-        } else if (hostname.includes('vercel.app') || hostname.includes('render.com') || hostname.includes('aitinerate')) {
-            // Production on Vercel or Render
-            baseUrl = window.location.origin;
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            baseUrl = 'http://localhost:10000';
         } else {
-            // Fallback to current origin
+            // Production - just use the current origin (works for any hosting platform)
             baseUrl = window.location.origin;
         }
         
@@ -1294,11 +1288,8 @@ async function fetchPlaceDetails(activity, location) {
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
             // Local development - use port 10000 to match server
             baseUrl = `http://localhost:10000`;
-        } else if (hostname.includes('vercel.app') || hostname.includes('render.com') || hostname.includes('aitinerate')) {
-            // Production on Vercel or Render
-            baseUrl = window.location.origin;
         } else {
-            // Fallback to current origin
+            // Production on Vercel or Render
             baseUrl = window.location.origin;
         }
 
