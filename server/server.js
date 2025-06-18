@@ -498,6 +498,72 @@ function generateDateMapping(startDate, endDate) {
   return dateMapping.map((day, index) => `Day ${index + 1}: ${day}`).join('\n');
 }
 
+// Add the missing removeDuplicateActivities function
+function removeDuplicateActivities(itinerary) {
+  const seen = new Set();
+  const uniqueItinerary = [];
+  
+  itinerary.forEach(item => {
+    // Create a unique key based on activity and location
+    const key = `${item.activity.toLowerCase().trim()}-${item.location.toLowerCase().trim()}`;
+    
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueItinerary.push(item);
+    }
+  });
+  
+  console.log(`Removed ${itinerary.length - uniqueItinerary.length} duplicate activities`);
+  return uniqueItinerary;
+}
+
+// Add the missing fillMissingDays function
+async function fillMissingDays(itinerary, destination, preferences, startDate, endDate, tripStyle) {
+  const existingDays = new Set(itinerary.map(item => item.day));
+  const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+  
+  const currentDate = new Date(startDate);
+  for (let i = 0; i < totalDays; i++) {
+    const dayName = currentDate.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    
+    if (!existingDays.has(dayName)) {
+      // Add default activities for missing days
+      const defaultActivities = [
+        {
+          day: dayName,
+          time: "9:00 AM",
+          activity: `Explore ${destination} downtown`,
+          location: `City center of ${destination}`
+        },
+        {
+          day: dayName,
+          time: "1:00 PM",
+          activity: `Lunch at local restaurant`,
+          location: `Restaurant in ${destination}`
+        },
+        {
+          day: dayName,
+          time: "6:00 PM",
+          activity: `Evening stroll and dinner`,
+          location: `Popular area in ${destination}`
+        }
+      ];
+      
+      // Add based on trip style
+      const activitiesPerDay = tripStyle === 'relaxed' ? 2 : tripStyle === 'packed' ? 4 : 3;
+      itinerary.push(...defaultActivities.slice(0, activitiesPerDay));
+    }
+    
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  return itinerary;
+}
+
 // Update the processDailyForecasts function
 function processDailyForecasts(forecastList) {
     const dailyForecasts = [];
