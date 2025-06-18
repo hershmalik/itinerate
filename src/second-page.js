@@ -312,9 +312,9 @@ async function generateItinerary() {
         let baseUrl;
         const hostname = window.location.hostname;
         
-        if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '162.120.186.64') {
-            // Local development
-            baseUrl = `http://162.120.186.64:5001`;
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            // Local development - use port 10000 to match server
+            baseUrl = `http://localhost:10000`;
         } else if (hostname.includes('vercel.app') || hostname.includes('render.com') || hostname.includes('aitinerate')) {
             // Production on Vercel or Render
             baseUrl = window.location.origin;
@@ -334,10 +334,14 @@ async function generateItinerary() {
             tripStyle: tripDetails.tripStyle || 'balanced'
         });
 
+        console.log('Request URL:', `${baseUrl}/generate-itinerary?${params.toString()}`);
+
         const response = await fetch(`${baseUrl}/generate-itinerary?${params.toString()}`);
         
         if (!response.ok) {
-            throw new Error(`Server error: ${response.status}`);
+            const errorText = await response.text();
+            console.error('Server response:', errorText);
+            throw new Error(`Server error: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
@@ -1287,9 +1291,9 @@ async function fetchPlaceDetails(activity, location) {
         let baseUrl;
         const hostname = window.location.hostname;
         
-        if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '162.120.186.64') {
-            // Local development
-            baseUrl = `http://162.120.186.64:5001`;
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            // Local development - use port 10000 to match server
+            baseUrl = `http://localhost:10000`;
         } else if (hostname.includes('vercel.app') || hostname.includes('render.com') || hostname.includes('aitinerate')) {
             // Production on Vercel or Render
             baseUrl = window.location.origin;
@@ -1855,6 +1859,7 @@ function getActivityIcon(activityType) {
 }
 
 // Export to Calendar function (Enhanced ICS format with better Google Calendar support)
+
 function exportToCalendar() {
     try {
         const tripDetails = getTripDetailsFromStorage();
