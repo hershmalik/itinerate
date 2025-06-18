@@ -40,19 +40,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// --------- SERVE STATIC FILES FIRST (IMPORTANT!) ---------
-// Serve static files from src directory BEFORE API routes
-app.use(express.static(path.join(__dirname, '../src'), {
-  setHeaders: (res, path) => {
-    if (path.endsWith('.css')) {
-      res.setHeader('Content-Type', 'text/css');
-    } else if (path.endsWith('.js')) {
-      res.setHeader('Content-Type', 'application/javascript');
-    }
-  }
-}));
-
-// --------- API ROUTES ---------
+// --------- API ROUTES FIRST ---------
 // API middleware - ensure proper Content-Type for API responses ONLY
 app.use('/api/*', (req, res, next) => {
   res.header('Content-Type', 'application/json');
@@ -633,3 +621,15 @@ app.get('*', (req, res) => {
     html = html.replace('__GOOGLE_MAPS_API_KEY__', process.env.GOOGLE_MAPS_API_KEY || '');
     res.send(html);
 });
+
+// --------- SERVE STATIC FILES LAST ---------
+// Serve static files from src directory AFTER API routes
+app.use(express.static(path.join(__dirname, '../src'), {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+    } else if (path.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    }
+  }
+}));
