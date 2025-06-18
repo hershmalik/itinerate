@@ -1,10 +1,10 @@
 import express from 'express';
-import path from 'path';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
-import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,6 +17,9 @@ if (!process.env.OPENAI_API_KEY) {
     console.error("OpenAI API key is missing. Please check your .env file.");
     process.exit(1);
 }
+
+// Add missing constant
+const MAX_DAYS_PER_CHUNK = 5; // Process itinerary in 5-day chunks
 
 const PORT = process.env.PORT || 5000; // Using port 5000 instead
 
@@ -249,6 +252,7 @@ app.get('/generate-itinerary', async (req, res) => {
         const preferences = req.query.preferences ? JSON.parse(req.query.preferences) : [];
         const advancedPreferences = req.query.advancedPreferences ? JSON.parse(req.query.advancedPreferences) : [];
         const customInstructions = req.query.customInstructions || ""; 
+        const tripStyle = req.query.tripStyle || "balanced"; // Add this line
         const departureDateStr = req.query.departureDate; 
         const arrivalDateStr = req.query.arrivalDate;
         
@@ -272,6 +276,7 @@ app.get('/generate-itinerary', async (req, res) => {
         console.log(`Preferences: ${preferences.join(', ')}`);
         console.log(`Advanced Preferences: ${advancedPreferences.join(', ')}`);
         console.log(`Custom Instructions: ${customInstructions}`);
+        console.log(`Trip Style: ${tripStyle}`); // Add this log
         console.log(`Departure Date: ${departureDateStr}`);
         console.log(`Arrival Date: ${arrivalDateStr}`);
         
@@ -282,7 +287,8 @@ app.get('/generate-itinerary', async (req, res) => {
             startDate,
             endDate,
             advancedPreferences,
-            customInstructions
+            customInstructions,
+            tripStyle // Add this parameter
         );
         
         console.log("--- Final Complete Itinerary ---");
@@ -295,6 +301,7 @@ app.get('/generate-itinerary', async (req, res) => {
             preferences: preferences,
             advancedPreferences: advancedPreferences,
             customInstructions: customInstructions,
+            tripStyle: tripStyle, // Add this
             itinerary: completeItinerary
         });
         
@@ -307,161 +314,14 @@ app.get('/generate-itinerary', async (req, res) => {
     }
 });
 
-app.get('/test', (req, res) => {
-  res.json({ message: 'Server is working!' });
-});
-
-// --------- STATIC FILES & PAGE ROUTES AFTER API ROUTES ---------
-app.use(express.static(path.join(__dirname, '../src')));
-
-// Specific routes for HTML pages
-app.get('/', (req, res) => {
-  const filePath = path.join(__dirname, '../src/index.html');
-  fs.readFile(filePath, 'utf8', (err, data) => {
-    if (err) return res.status(500).send('Error loading page');
-    const replaced = data.replace(/__GOOGLE_MAPS_API_KEY__/g, process.env.GOOGLE_MAPS_API_KEY || '');
-    res.send(replaced);
-  });
-});
-
-app.get('/second-page', (req, res) => {
-  const filePath = path.join(__dirname, '../src/second-page.html');
-  fs.readFile(filePath, 'utf8', (err, data) => {
-    if (err) return res.status(500).send('Error loading page');
-    const replaced = data.replace(/__GOOGLE_MAPS_API_KEY__/g, process.env.GOOGLE_MAPS_API_KEY || '');
-    res.send(replaced);
-  });
-});
-
-// --------- CATCH-ALL ROUTE LAST ---------
-app.get('*', (req, res) => {
-  if (req.url.startsWith('/api/')) {
-    return res.status(404).json({ error: 'API endpoint not found' });
-  }
-  const filePath = path.join(__dirname, '../src/index.html');
-  fs.readFile(filePath, 'utf8', (err, data) => {
-    if (err) return res.status(500).send('Error loading page');
-    const replaced = data.replace(/__GOOGLE_MAPS_API_KEY__/g, process.env.GOOGLE_MAPS_API_KEY || '');
-    res.send(replaced);
-  });
-});
-
-// Helper function to map Visual Crossing weather conditions to OpenWeatherMap icons for consistency
-function mapWeatherConditionToIcon(conditions, iconCode) {
-  if (!conditions) return '03d';
-  
-  const conditionLower = conditions.toLowerCase();
-  
-  if (conditionLower.includes('clear') || conditionLower.includes('sunny')) {
-    return '01d';
-  } else if (conditionLower.includes('partly cloudy') || conditionLower.includes('partly-cloudy')) {
-    return '02d';
-  } else if (conditionLower.includes('cloudy') || conditionLower.includes('overcast')) {
-    return '04d';
-  } else if (conditionLower.includes('rain') || conditionLower.includes('drizzle')) {
-    return '10d';
-  } else if (conditionLower.includes('thunder') || conditionLower.includes('lightning')) {
-    return '11d';
-  } else if (conditionLower.includes('snow') || conditionLower.includes('ice')) {
-    return '13d';
-  } else if (conditionLower.includes('fog') || conditionLower.includes('mist')) {
-    return '50d';
-  }
-  
-  return '03d';
-}
-
-// Helper function to process 3-hour forecasts into daily forecasts
-function processDailyForecasts(forecastList) {
-    const dailyMap = new Map();
-
-    forecastList.forEach(item => {
-        const date = new Date(item.dt * 1000);
-        const dateKey = date.toISOString().split('T')[0];
-
-        if (!dailyMap.has(dateKey)) {
-            dailyMap.set(dateKey, {
-                date: dateKey,
-                day: date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
-                temps: [],
-                icons: [],
-                descriptions: [],
-                precipitation: 0,
-                hasRain: false
-            });
-        }
-
-        const dayData = dailyMap.get(dateKey);
-        dayData.temps.push(item.main.temp);
-        dayData.icons.push(item.weather[0].icon);
-        dayData.descriptions.push(item.weather[0].description);
-
-        if (item.rain && item.rain['3h'] > 0) {
-            dayData.precipitation += item.rain['3h'];
-            dayData.hasRain = true;
-        }
-        if (item.snow && item.snow['3h'] > 0) {
-            dayData.precipitation += item.snow['3h'];
-        }
-    });
-
-    return Array.from(dailyMap.values()).map(day => ({
-        date: day.date,
-        day: day.day,
-        high: Math.round(Math.max(...day.temps)),
-        low: Math.round(Math.min(...day.temps)),
-        icon: getMostFrequentIcon(day.icons),
-        description: getMostFrequentDescription(day.descriptions),
-        precipitation: Math.round(day.precipitation * 10) / 10,
-        hasRain: day.hasRain
-    })).slice(0, 5);
-}
-
-function getMostFrequentIcon(icons) {
-  const counts = {};
-  let maxIcon = icons[0];
-  let maxCount = 1;
-  
-  for (const icon of icons) {
-    counts[icon] = (counts[icon] || 0) + 1;
-    if (counts[icon] > maxCount) {
-      maxCount = counts[icon];
-      maxIcon = icon;
-    }
-  }
-  
-  return maxIcon;
-}
-
-function getMostFrequentDescription(descriptions) {
-  const counts = {};
-  let maxDescription = descriptions[0];
-  let maxCount = 1;
-  
-  for (const desc of descriptions) {
-    counts[desc] = (counts[desc] || 0) + 1;
-    if (counts[desc] > maxCount) {
-      maxCount = counts[desc];
-      maxDescription = desc;
-    }
-  }
-  
-  return maxDescription;
-}
-
-// Maximum days to process in a single API call
-const MAX_DAYS_PER_CHUNK = 3;
-
-/**
- * Generates a full itinerary for the given date range
- */
-async function generateFullItinerary(destination, preferences, startDate, endDate, advancedPreferences = [], customInstructions = "") {
-  // Calculate the total number of days
+// Update the generateFullItinerary function signature:
+async function generateFullItinerary(destination, preferences, startDate, endDate, advancedPreferences = [], customInstructions = "", tripStyle = "balanced") {
+  // Calculate the total number of days (fix the missing day issue)
   const timeDiff = endDate.getTime() - startDate.getTime();
-  const numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+  const numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // This was correct, the issue is elsewhere
   
   console.log(`Generating itinerary for ${destination} from ${startDate.toISOString()} to ${endDate.toISOString()}`);
-  console.log(`Total days: ${numberOfDays}, preferences: ${preferences.join(', ')}`);
+  console.log(`Total days calculated: ${numberOfDays}, preferences: ${preferences.join(', ')}, trip style: ${tripStyle}`);
   
   let completeItinerary = [];
   
@@ -489,7 +349,8 @@ async function generateFullItinerary(destination, preferences, startDate, endDat
         chunkStart,
         numberOfDays,
         advancedPreferences,
-        customInstructions
+        customInstructions,
+        tripStyle // Add this parameter
       );
       
       // Add this chunk to the complete itinerary
@@ -509,7 +370,7 @@ async function generateFullItinerary(destination, preferences, startDate, endDat
   // If we're missing days in the itinerary, try to fill them in
   if (daysInCompleteItinerary < numberOfDays) {
     console.log(`Missing ${numberOfDays - daysInCompleteItinerary} days in the itinerary. Attempting to fill gaps...`);
-    completeItinerary = await fillMissingDays(completeItinerary, destination, preferences, startDate, endDate);
+    completeItinerary = await fillMissingDays(completeItinerary, destination, preferences, startDate, endDate, tripStyle);
   }
 
   // Remove duplicate activities across days
@@ -518,75 +379,81 @@ async function generateFullItinerary(destination, preferences, startDate, endDat
   return completeItinerary;
 }
 
-/**
- * Generate itinerary for a specific chunk of days
- */
-async function generateItineraryChunk(destination, preferences, chunkStartDate, chunkEndDate, chunkStart, totalDays, advancedPreferences = [], customInstructions = "") {
+// Update generateItineraryChunk function:
+async function generateItineraryChunk(destination, preferences, chunkStartDate, chunkEndDate, chunkStart, totalDays, advancedPreferences = [], customInstructions = "", tripStyle = "balanced") {
   const chunkStartDateStr = chunkStartDate.toISOString().split('T')[0];
   const chunkEndDateStr = chunkEndDate.toISOString().split('T')[0];
   
-  let systemPrompt = `You are a helpful travel assistant that creates detailed itineraries. Always respond with properly formatted JSON. The response MUST be a JSON array of objects, where each object represents a single activity and has the fields "day" (e.g., "Tuesday, May 6", "Wednesday, May 7"), "time" (e.g., "9:00 AM"), "activity" (description), and "location" (specific address or landmark name). Do not include any introductory text, explanations, or summaries outside the JSON array. Ensure each day has multiple activities covering morning, afternoon, and evening where appropriate. Each day should have at least 4 activities.`;
+  // Calculate actual number of days in this chunk
+  const actualDays = Math.ceil((chunkEndDate - chunkStartDate) / (1000 * 60 * 60 * 24)) + 1;
   
-  let userPrompt = `Create a detailed ${chunkEndDate.getDate() - chunkStartDate.getDate() + 1}-day itinerary for ${destination} from ${chunkStartDateStr} to ${chunkEndDateStr}. 
-                This is part ${Math.floor(chunkStart / MAX_DAYS_PER_CHUNK) + 1} of a ${Math.ceil(totalDays / MAX_DAYS_PER_CHUNK)}-part ${totalDays}-day trip.
-                For each day, include 4-5 activities (morning, lunch, afternoon, dinner/evening) with specific locations (addresses if possible) and suggested times.
-                For the "day" field in each JSON object, use the actual date and day of the week (e.g., "Tuesday, May 6").
-                The traveler has these preferences: ${preferences.join(', ')}.`;
-
-  // Add advanced preferences to the prompt if they exist
-  if (advancedPreferences && advancedPreferences.length > 0) {
-    userPrompt += `\n\nAdditional traveler preferences:\n- ${advancedPreferences.join('\n- ')}`;
-  }
-  
-  // Add custom instructions if provided
-  if (customInstructions && customInstructions.trim().length > 0) {
-    userPrompt += `\n\nSpecific traveler instructions: "${customInstructions}"`;
-  }
-
-  // Add special note for Orlando
-  if (destination.toLowerCase().includes('orlando')) {
-    userPrompt += "\n\nNOTE: For Orlando, be sure to include world-famous theme parks like Universal Studios and Walt Disney World in the itinerary, unless the user specifically asks to avoid them.";
-  }
-
-  const mustSeeAttractions = {
-    "orlando": [
-      "Universal Studios Florida",
-      "Walt Disney World Resort",
-      "SeaWorld Orlando"
-    ],
-    "anaheim": [
-      "Disneyland Park"
-    ],
-    "paris": [
-      "Disneyland Paris"
-    ],
-    // Add more cities as needed
+  // Define activity counts based on trip style
+  const activityCounts = {
+    relaxed: { min: 2, max: 3, description: "~2-3 leisurely activities" },
+    balanced: { min: 4, max: 6, description: "~4-6 well-spaced activities" },
+    packed: { min: 6, max: 8, description: "~6-8 exciting activities" }
   };
-
-  const city = destination.toLowerCase();
-  if (mustSeeAttractions[city]) {
-    userPrompt += `\n\nFor ${destination}, always include these must-see attractions: ${mustSeeAttractions[city].join(', ')}.`;
-  }
-
-  // Add must-see attractions for certain cities
-  const cityKey = Object.keys(mustSeeAttractions).find(city =>
-    destination.toLowerCase().includes(city)
-  );
-  if (cityKey) {
-    userPrompt += `\n\nFor ${destination}, always include these must-see attractions: ${mustSeeAttractions[cityKey].join(', ')}.`;
+  
+  const styleConfig = activityCounts[tripStyle] || activityCounts.balanced;
+  
+  let systemPrompt = `You are a travel planner that creates detailed daily itineraries. You MUST follow the exact date range and activity requirements. Always respond with properly formatted JSON array only, no other text.`;
+  
+  // Create explicit day-by-day requirements
+  const dayRequirements = [];
+  const currentDate = new Date(chunkStartDate);
+  
+  for (let i = 0; i < actualDays; i++) {
+    const dayName = currentDate.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    dayRequirements.push(`Day ${i + 1} (${dayName}): MUST have exactly ${styleConfig.min}-${styleConfig.max} activities`);
+    currentDate.setDate(currentDate.getDate() + 1);
   }
   
-  userPrompt += `\n\nIMPORTANT: Format your ENTIRE response strictly as a JSON array of objects with "day", "activity", "location", and "time" fields. No extra text.`;
+  let userPrompt = `Create a ${actualDays}-day itinerary for ${destination} covering ALL dates from ${chunkStartDateStr} to ${chunkEndDateStr}.
+
+CRITICAL REQUIREMENTS - MUST FOLLOW:
+${dayRequirements.join('\n')}
+
+TOTAL ACTIVITIES REQUIRED: ${actualDays * styleConfig.min} to ${actualDays * styleConfig.max} activities across ALL ${actualDays} days
+
+TRIP STYLE: ${tripStyle.toUpperCase()}
+${tripStyle === 'relaxed' ? 'Focus on leisurely experiences with downtime' : 
+  tripStyle === 'balanced' ? 'Balance activities with free time' : 
+  'Pack in maximum experiences efficiently'}
+
+ACTIVITY COUNT: Aim for ~${styleConfig.min}-${styleConfig.max} activities per day (may vary based on activity type and duration)
+
+SCHEDULING RULES:
+- Schedule activities during appropriate business hours when venues will be open
+- Breakfast: 7-10 AM, Lunch: 11 AM-2 PM, Dinner: 5-9 PM
+- Museums/attractions: 9 AM-5 PM (avoid Mondays for major attractions)
+- Shopping: 10 AM-8 PM
+- Outdoor activities: During daylight hours
+- Nightlife: After 6 PM
+
+EXACT DATES TO USE:
+${generateDateMapping(chunkStartDate, chunkEndDate)}
+
+For each activity, use the "day" field format exactly as shown above (e.g., "Monday, June 17").
+
+Traveler preferences: ${preferences.join(', ')}.`;
+
+  if (advancedPreferences && advancedPreferences.length > 0) {
+    userPrompt += `\nAdditional preferences: ${advancedPreferences.join(', ')}`;
+  }
+  
+  if (customInstructions && customInstructions.trim().length > 0) {
+    userPrompt += `\nSpecific instructions: "${customInstructions}"`;
+  }
+
+  userPrompt += `\n\nResponse format: JSON array only with objects containing "day", "time", "activity", "location" fields. NO other text.`;
 
   const messagesForOpenAI = [
-    {
-      role: "system",
-      content: systemPrompt
-    },
-    {
-      role: "user",
-      content: userPrompt
-    }
+    { role: "system", content: systemPrompt },
+    { role: "user", content: userPrompt }
   ];
 
   try {
@@ -599,8 +466,8 @@ async function generateItineraryChunk(destination, preferences, chunkStartDate, 
       body: JSON.stringify({
         model: "gpt-3.5-turbo",
         messages: messagesForOpenAI,
-        temperature: 0.7,
-        max_tokens: 3000
+        temperature: 0.8, // Increase creativity
+        max_tokens: 4000 // Increase token limit
       })
     });
 
@@ -610,9 +477,11 @@ async function generateItineraryChunk(destination, preferences, chunkStartDate, 
     }
 
     const responseData = await response.json();
-    const responseText = responseData.choices[0].message.content;
+    let responseText = responseData.choices[0].message.content;
     
-    // Parse the JSON response
+    // Clean up the response text
+    responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+    
     let chunkItinerary;
     try {
       chunkItinerary = JSON.parse(responseText);
@@ -620,101 +489,184 @@ async function generateItineraryChunk(destination, preferences, chunkStartDate, 
         throw new Error("Response is not an array.");
       }
     } catch (parseError) {
-      console.warn(`Direct JSON parsing failed:`, parseError.message);
-      console.log("Attempting to extract JSON array from text...");
+      console.warn(`JSON parsing failed, attempting extraction...`);
       const jsonMatch = responseText.match(/\[\s*\{[\s\S]*?\}\s*\]/);
-      if (jsonMatch && jsonMatch[0]) {
-        try {
-          chunkItinerary = JSON.parse(jsonMatch[0]);
-          if (!Array.isArray(chunkItinerary)) {
-            throw new Error("Extracted JSON is not an array.");
-          }
-        } catch (regexParseError) {
-          console.error("Failed to parse extracted JSON array:", regexParseError);
-          chunkItinerary = [];
-        }
+      if (jsonMatch) {
+        chunkItinerary = JSON.parse(jsonMatch[0]);
       } else {
-        console.error("Could not find a valid JSON array structure in the response.");
-        chunkItinerary = [];
+        console.error("Could not extract valid JSON");
+        chunkItinerary = generateFallbackItinerary(chunkStartDate, chunkEndDate, destination, styleConfig);
       }
     }
     
-    // Make sure the required fields are present
-    return chunkItinerary.map(item => ({
-      day: item.day || `Date missing`,
-      activity: item.activity || "No activity specified",
-      location: item.location || destination,
-      time: item.time || "Time N/A"
-    }));
+    // Validate and fix the itinerary
+    return validateAndFixItinerary(chunkItinerary, chunkStartDate, chunkEndDate, styleConfig, destination);
+    
   } catch (error) {
     console.error("Error generating itinerary chunk:", error);
-    throw error;
+    // Return fallback itinerary instead of throwing
+    return generateFallbackItinerary(chunkStartDate, chunkEndDate, destination, styleConfig);
   }
 }
 
-/**
- * Attempt to fill in any missing days in the itinerary
- */
-async function fillMissingDays(existingItinerary, destination, preferences, startDate, endDate) {
-  // Identify which days are missing
-  const existingDays = new Set();
-  existingItinerary.forEach(item => {
-    const day = item.day.split(',')[1].trim();
-    existingDays.add(day);
+// Add validation function
+function validateAndFixItinerary(itinerary, startDate, endDate, styleConfig, destination) {
+  const fixedItinerary = [];
+  const daysRequired = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+  
+  // Group activities by day
+  const dayGroups = {};
+  itinerary.forEach(item => {
+    const day = item.day || "Unknown Day";
+    if (!dayGroups[day]) dayGroups[day] = [];
+    dayGroups[day].push(item);
   });
   
-  const missingDays = [];
+  // Ensure we have the right number of days with proper activities
   const currentDate = new Date(startDate);
-  
-  while (currentDate <= endDate) {
-    const day = currentDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
-    if (!existingDays.has(day)) {
-      missingDays.push(new Date(currentDate));
+  for (let i = 0; i < daysRequired; i++) {
+    const dayName = currentDate.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    
+    let dayActivities = dayGroups[dayName] || [];
+    
+    // Ensure each day has minimum activities
+    while (dayActivities.length < styleConfig.min) {
+      const timeSlots = ["9:00 AM", "1:00 PM", "6:00 PM"];
+      const defaultActivities = [
+        `Explore ${destination} downtown`,
+        `Visit local attractions in ${destination}`,
+        `Dining experience in ${destination}`,
+        `Cultural activity in ${destination}`,
+        `Shopping in ${destination}`
+      ];
+      
+      dayActivities.push({
+        day: dayName,
+        time: timeSlots[dayActivities.length % timeSlots.length],
+        activity: defaultActivities[dayActivities.length % defaultActivities.length],
+        location: destination
+      });
     }
+    
+    // Limit to max activities
+    dayActivities = dayActivities.slice(0, styleConfig.max);
+    
+    fixedItinerary.push(...dayActivities);
     currentDate.setDate(currentDate.getDate() + 1);
   }
   
-  // Generate activities for each missing day
-  let updatedItinerary = [...existingItinerary];
-  
-  for (const missingDate of missingDays) {
-    console.log(`Generating activities for missing day: ${missingDate.toLocaleDateString()}`);
-    
-    const endOfDay = new Date(missingDate);
-    
-    try {
-      const dayActivities = await generateItineraryChunk(
-        destination,
-        preferences,
-        missingDate,
-        endOfDay,
-        0,
-        1
-      );
-      
-      updatedItinerary = [...updatedItinerary, ...dayActivities];
-    } catch (error) {
-      console.error(`Failed to generate activities for ${missingDate.toLocaleDateString()}:`, error);
-    }
-    
-    // Delay to avoid rate limiting
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  }
-  
-  return updatedItinerary;
+  return fixedItinerary;
 }
 
-// Remove activities with the same name appearing on multiple days
-function removeDuplicateActivities(itinerary) {
-    const seenActivities = new Set();
-    return itinerary.filter(item => {
-        const activityKey = `${item.activity}-${item.location}`.toLowerCase();
-        if (seenActivities.has(activityKey)) {
-            return false;
-        }
-        seenActivities.add(activityKey);
-        return true;
+// Add fallback function
+function generateFallbackItinerary(startDate, endDate, destination, styleConfig) {
+  const fallbackItinerary = [];
+  const daysRequired = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+  
+  const timeSlots = ["9:00 AM", "12:00 PM", "3:00 PM", "6:00 PM"];
+  const activities = [
+    `Visit ${destination} city center`,
+    `Explore local museums in ${destination}`,
+    `Lunch at popular restaurant`,
+    `Walking tour of ${destination}`,
+    `Visit local market`,
+    `Dinner at recommended restaurant`,
+    `Evening entertainment`,
+    `Cultural experience`
+  ];
+  
+  const currentDate = new Date(startDate);
+  
+  for (let day = 0; day < daysRequired; day++) {
+    const dayName = currentDate.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      month: 'long', 
+      day: 'numeric' 
     });
+    
+    // Add required number of activities for this day
+    for (let i = 0; i < styleConfig.min; i++) {
+      fallbackItinerary.push({
+        day: dayName,
+        time: timeSlots[i % timeSlots.length],
+        activity: activities[(day * styleConfig.min + i) % activities.length],
+        location: destination
+      });
+    }
+    
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  return fallbackItinerary;
+}
+
+// Add the missing generateDateMapping function
+function generateDateMapping(startDate, endDate) {
+  const dateMapping = [];
+  const currentDate = new Date(startDate);
+  
+  while (currentDate <= endDate) {
+    const dayName = currentDate.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    dateMapping.push(dayName);
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  return dateMapping.map((day, index) => `Day ${index + 1}: ${day}`).join('\n');
+}
+
+// Update the processDailyForecasts function
+function processDailyForecasts(forecastList) {
+    const dailyForecasts = [];
+    const processedDates = new Set();
+    
+    forecastList.forEach(forecast => {
+        const date = forecast.dt_txt.split(' ')[0]; // Get just the date part
+        
+        if (!processedDates.has(date)) {
+            processedDates.add(date);
+            
+            const dayData = {
+                date: date,
+                high: forecast.main.temp_max,
+                low: forecast.main.temp_min,
+                description: forecast.weather[0].description,
+                icon: forecast.weather[0].icon
+            };
+            
+            dailyForecasts.push(dayData);
+        }
+    });
+    
+    return dailyForecasts.slice(0, 5); // Return up to 5 days
+}
+
+function mapWeatherConditionToIcon(conditions, icon) {
+    // Simple mapping - you can expand this
+    const conditionMap = {
+        'clear': '01d',
+        'sunny': '01d',
+        'cloudy': '02d',
+        'overcast': '04d',
+        'rain': '10d',
+        'snow': '13d'
+    };
+    
+    const lowerConditions = conditions.toLowerCase();
+    for (const [key, value] of Object.entries(conditionMap)) {
+        if (lowerConditions.includes(key)) {
+            return value;
+        }
+    }
+    
+    return icon || '01d'; // Default icon
 }
 
 // Start the server
@@ -722,4 +674,77 @@ app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 }).on('error', (err) => {
     console.error("Failed to start server:", err.message);
+});
+
+// Add this new API endpoint after the existing ones:
+app.get('/api/activity-image', async (req, res) => {
+    try {
+        const { query } = req.query;
+        
+        if (!query) {
+            return res.status(400).json({ error: 'Query parameter is required' });
+        }
+        
+        console.log(`Image search request received for: ${query}`);
+        
+        const API_KEY = process.env.GOOGLE_PLACES_API_KEY;
+        if (!API_KEY) {
+            return res.status(500).json({ error: 'Google Places API key not configured' });
+        }
+        
+        // Use Google Places API to find the place and get photos
+        const searchUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(query)}&inputtype=textquery&fields=place_id,photos&key=${API_KEY}`;
+        
+        const searchResponse = await fetch(searchUrl);
+        
+        if (!searchResponse.ok) {
+            throw new Error(`Google Places Search API error: ${searchResponse.status}`);
+        }
+        
+        const searchData = await searchResponse.json();
+        
+        if (!searchData.candidates || searchData.candidates.length === 0 || !searchData.candidates[0].photos) {
+            return res.json({ imageUrl: null });
+        }
+        
+        // Get the first photo reference
+        const photoReference = searchData.candidates[0].photos[0].photo_reference;
+        
+        // Construct the photo URL
+        const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=200&photo_reference=${photoReference}&key=${API_KEY}`;
+        
+        res.json({ imageUrl: photoUrl });
+        
+    } catch (error) {
+        console.error('Activity Image API Error:', error);
+        res.status(500).json({ 
+            error: 'Failed to fetch activity image', 
+            message: error.message || 'Unknown error'
+        });
+    }
+});
+
+// Add this AFTER your API routes but BEFORE app.listen()
+// Replace the placeholder with actual API key for the frontend
+app.use('/second-page', (req, res) => {
+    let html = fs.readFileSync(path.join(__dirname, '../src/second-page.html'), 'utf8');
+    html = html.replace('__GOOGLE_MAPS_API_KEY__', process.env.GOOGLE_MAPS_API_KEY || '');
+    res.send(html);
+});
+
+// Serve the main page
+app.get('/', (req, res) => {
+    let html = fs.readFileSync(path.join(__dirname, '../src/index.html'), 'utf8');
+    html = html.replace('__GOOGLE_MAPS_API_KEY__', process.env.GOOGLE_MAPS_API_KEY || '');
+    res.send(html);
+});
+
+// Serve static files from src directory
+app.use(express.static(path.join(__dirname, '../src')));
+
+// Fallback - serve index.html for any other routes
+app.get('*', (req, res) => {
+    let html = fs.readFileSync(path.join(__dirname, '../src/index.html'), 'utf8');
+    html = html.replace('__GOOGLE_MAPS_API_KEY__', process.env.GOOGLE_MAPS_API_KEY || '');
+    res.send(html);
 });
