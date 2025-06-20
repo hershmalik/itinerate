@@ -311,7 +311,7 @@ const inspirationData = {
         {
             title: "Bali, Indonesia",
             description: "Tropical paradise with rice terraces, spiritual temples, and vibrant culture",
-            image: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?auto=format&fit=crop&w=800&q=80",
+            image: "https://plus.unsplash.com/premium_photo-1677829177642-30def98b0963?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
             badges: ["Nature", "Wellness", "Culture"],
             activities: "Temple visits, yoga retreats, volcano hiking"
         }
@@ -335,7 +335,7 @@ const inspirationData = {
         {
             title: "Big Sur, CA",
             description: "Dramatic coastline with redwood forests and artistic communities",
-            image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=600&q=80",
+            image: "https://plus.unsplash.com/premium_photo-1723708940528-58fbf9c73983?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
             badges: ["Nature", "Photography", "Art"],
             activities: "Coastal drives, forest hikes, art galleries"
         },
@@ -359,7 +359,7 @@ const inspirationData = {
         {
             title: "Costa Rica Zip-lining",
             description: "Canopy adventures through tropical rainforests",
-            image: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=800&q=80",
+            image: "https://images.unsplash.com/photo-1600176812877-8108bafde6e6?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
             badges: ["Adventure", "Wildlife", "Nature"],
             activities: "Zip-lining, wildlife tours, volcano hikes"
         },
@@ -393,7 +393,7 @@ const inspirationData = {
         {
             title: "Orlando, Florida",
             description: "Theme park capital with magical experiences for all ages",
-            image: "https://images.unsplash.com/photo-1565552645632-d725f8bfc19a?auto=format&fit=crop&w=800&q=80",
+            image: "https://images.unsplash.com/photo-1597466599360-3b9775841aec?q=80&w=928&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
             badges: ["Family", "Entertainment", "Adventure"],
             activities: "Disney World, Universal Studios, water parks"
         },
@@ -417,7 +417,7 @@ const inspirationData = {
         {
             title: "Las Vegas, Nevada",
             description: "Entertainment capital with shows, dining, and nightlife adventures",
-            image: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=800&q=80",
+            image: "https://images.unsplash.com/photo-1581351721010-8cf859cb14a4?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
             badges: ["Nightlife", "Entertainment", "Dining"],
             activities: "Shows, casino games, pool parties, group dining"
         },
@@ -433,16 +433,18 @@ const inspirationData = {
 
 // Function to create inspiration cards
 function createInspirationCard(destination, cardClass = 'inspiration-card') {
+    // Always use the static image from the data for every destination
+    const imgTag = `<img src="${destination.image}" alt="${destination.title}" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0;background:#f8fafc;">`;
     return `
-        <a href="#" class="${cardClass}" style="background-image: url('${destination.image}')">
-            <div class="card-overlay"></div>
-            <div class="card-info">
+        <a href="#" class="${cardClass}" style="position:relative;overflow:hidden;">
+            ${imgTag}
+            <div class="card-overlay" style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:1;"></div>
+            <div class="card-info" style="position:relative;z-index:2;">
                 <div class="card-badges">
                     ${destination.badges.map(badge => `<span class="card-badge">${badge}</span>`).join('')}
                 </div>
                 <h4 class="card-title">${destination.title}</h4>
-                <p class="card-description">${destination.description}</p>
-                <div class="card-details">
+                <div class="card-details hover-reveal">
                     <span class="card-activities">${destination.activities}</span>
                 </div>
             </div>

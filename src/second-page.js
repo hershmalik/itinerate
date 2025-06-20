@@ -338,6 +338,7 @@ async function generateItinerary() {
         // Fix and enhance the itinerary data
         itineraryData = enhanceAndFixItinerary(rawItinerary, tripDetails);
 
+        renderItineraryCards(itineraryData);
         await populateItineraryTable(itineraryData);
         await displayMapAndMarkers(itineraryData); // always show all pins after load
         populateDaySelectors(itineraryData);
@@ -369,6 +370,84 @@ async function generateItinerary() {
             }, 500);
         }
     }
+}
+
+// Render itinerary as VRBO-inspired cards
+function getUnsplashImageUrl(query) {
+    // Use Unsplash source API for demo (no API key needed, random image)
+    return `https://source.unsplash.com/800x400/?${encodeURIComponent(query)}`;
+}
+
+function renderItineraryCards(itineraryItems) {
+    const container = document.getElementById('itinerary-cards-container');
+    if (!container) return;
+    container.innerHTML = '';
+    // Group by day
+    const dayGroups = {};
+    itineraryItems.forEach((item, idx) => {
+        if (!dayGroups[item.day]) dayGroups[item.day] = [];
+        dayGroups[item.day].push({ ...enhanceActivityData(item, idx) });
+    });
+    // Sort days by extracting the date from the day string if possible
+    const sortedDayKeys = Object.keys(dayGroups).sort((a, b) => {
+        const dateA = a.match(/Day (\d+): (.+)/);
+        const dateB = b.match(/Day (\d+): (.+)/);
+        if (dateA && dateB) {
+            return parseInt(dateA[1]) - parseInt(dateB[1]);
+        }
+        return a.localeCompare(b);
+    });
+    sortedDayKeys.forEach((dayName, dayIndex) => {
+        const activities = dayGroups[dayName];
+        const weatherInfo = generateWeatherForDay(dayIndex);
+        let displayDate = dayName;
+        const match = dayName.match(/Day (\d+): (.+)/);
+        if (match) {
+            displayDate = match[2];
+        }
+        // Day card container
+        const dayCard = document.createElement('div');
+        dayCard.className = 'itinerary-day-card'; // Use a class for styling
+        // Day header (blue gradient)
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'itinerary-day-header'; // Use a class for styling
+        dayHeader.innerHTML = `
+            <div class="itinerary-day-header-title">
+                <span>📅</span> ${displayDate}
+            </div>
+            <div class="itinerary-day-header-weather">
+                <span>☀️ Partly Cloudy, ${weatherInfo.temp}</span>
+            </div>
+        `;
+        dayCard.appendChild(dayHeader);
+
+        // New wrapper for all cards of the day
+        const cardsWrapper = document.createElement('div');
+        cardsWrapper.className = 'itinerary-day-cards-wrapper';
+
+        activities.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'itinerary-card';
+            card.innerHTML = `
+                <div class="itinerary-card-header">
+                    <span>🕒 ${item.time || ''}</span>
+                    <span>⏱️ ${item.duration || ''}</span>
+                </div>
+                <div class="itinerary-card-title">${item.title || ''}</div>
+                <div class="itinerary-card-desc">${item.description || ''}</div>
+                <div class="itinerary-card-meta">
+                    ${item.price ? `<span class="itinerary-card-price"><span class="icon">💰</span> ${item.price}</span>` : ''}
+                    ${item.rating ? `<span class="itinerary-card-rating"><span class="icon">⭐</span> ${item.rating}</span>` : ''}
+                    ${item.reviews ? `<span class="itinerary-card-reviews">${item.reviews} reviews</span>` : ''}
+                </div>
+                <div class="itinerary-card-location"><span>📍</span> <span>${item.location || ''}</span></div>
+                ${item.mapLink ? `<a href="${item.mapLink}" target="_blank" class="itinerary-card-map-link">View Location</a>` : ''}
+            `;
+            cardsWrapper.appendChild(card);
+        });
+        dayCard.appendChild(cardsWrapper);
+        container.appendChild(dayCard);
+    });
 }
 
 // Helper function to show notification

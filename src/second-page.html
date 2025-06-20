@@ -23,8 +23,8 @@
             --bg-tertiary: #e9ecef;
             
             /* Professional Accent */
-            --accent-color: #FF5A5F;
-            --accent-hover: #e04347;
+            --accent-color: #2563eb;
+            --accent-hover: #174bbd;
             
             /* Borders */
             --border-color: #e0e0e0;
@@ -176,7 +176,8 @@
             transform: translateX(-50%);
             width: 100%;
             height: 100%;
-            background: linear-gradient(45deg, rgba(255, 90, 95, 0.1), rgba(255, 90, 95, 0.3));
+            /* Changed from pink to blue-tinted neutral */
+            background: linear-gradient(45deg, rgba(37,99,235,0.07), rgba(59,130,246,0.13));
             border-radius: var(--radius-lg);
             z-index: 1;
         }
@@ -459,56 +460,27 @@
 
         /* Hero Section (move to bottom) */
         .hero-section {
-            background: linear-gradient(135deg, var(--accent-color), #ff7a7f);
+            background: linear-gradient(135deg, rgba(37,99,235,0.7) 0%, rgba(59,130,246,0.7) 100%),
+                url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1500&q=80');
+            background-size: cover;
+            background-position: center;
             color: var(--text-inverse);
             padding: var(--space-3xl) 0;
             text-align: center;
             margin: var(--space-2xl) 0;
             border-radius: var(--radius-xl);
+            box-shadow: 0 8px 32px rgba(37,99,235,0.10);
+            position: relative;
         }
-
-        .hero-content {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 0 var(--space-lg);
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(37,99,235,0.25);
+            border-radius: var(--radius-xl);
+            z-index: 0;
         }
-
-        .hero-title {
-            font-family: 'Playfair Display', serif;
-            font-size: clamp(2rem, 4vw, 3rem);
-            font-weight: 700;
-            margin-bottom: var(--space-md);
-        }
-
-        .hero-subtitle {
-            font-size: 1.25rem;
-            opacity: 0.9;
-            margin-bottom: var(--space-xl);
-        }
-
-        .hero-stats {
-            display: flex;
-            justify-content: center;
-            gap: var(--space-xl);
-            flex-wrap: wrap;
-        }
-
-        .stat-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: var(--space-xs);
-        }
-
-        .stat-label {
-            font-size: 0.875rem;
-            opacity: 0.8;
-        }
+        .hero-section > * { position: relative; z-index: 1; }
 
         /* Responsive Design */
         @media (max-width: 768px) {
@@ -563,6 +535,7 @@
 
             <div id="itinerary-chatbot">
                 <div class="trip-details">
+                    <!-- Loading Spinner -->
                     <div id="loading-indicator" class="loading-spinner">
                         <div class="loading-container">
                             <div class="spinner"></div>
@@ -579,6 +552,9 @@
                 </div>
             </div>
         </div>
+
+        <!-- VRBO-inspired Card Layout for Itinerary Days -->
+        <div id="itinerary-cards-container" style="margin-bottom: 2rem;"></div>
 
         <!-- Update the map section -->
         <div class="content-section" id="map-container">
@@ -629,9 +605,28 @@
                     rows="4"></textarea>
             </div>
 
+            <!-- Regenerate Button -->
             <button id="regenerate-itinerary" class="regenerate-button">
                 <span class="regenerate-icon">✨</span> Regenerate Journey
             </button>
+        </div>
+
+        <!-- Itinerary Table (hidden by default) -->
+        <div class="content-section" id="itinerary-table-container" style="display: none;">
+            <h2 class="section-title">📅 Your Detailed Itinerary</h2>
+            <table id="itinerary-table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Activity</th>
+                        <th>Location</th>
+                        <th>Day</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Dynamic content will be inserted by JavaScript -->
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -861,24 +856,24 @@ END:VEVENT
 
     <!-- Hero Section -->
     <div class="hero-section">
-            <div class="hero-content">
-                <h1 class="hero-title">Your Perfect Itinerary Awaits</h1>
-                <p class="hero-subtitle">Thoughtfully planned, perfectly personalized</p>
-                <div class="hero-stats">
-                    <div class="stat-item">
-                        <span class="stat-number" id="activities-count">---</span>
-                        <span class="stat-label">Activities</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number" id="trip-duration">--- days</span>
-                        <span class="stat-label">Adventure</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number" id="destinations-count">---</span>
-                        <span class="stat-label">Places</span>
-                    </div>
-                </div>
-            </div>
+      <div class="hero-content">
+        <h1 class="hero-title">Your Perfect Itinerary Awaits</h1>
+        <p class="hero-subtitle">Thoughtfully planned, perfectly personalized</p>
+        <div class="hero-stats">
+          <div class="stat-item">
+            <span class="stat-number" id="activities-count">---</span>
+            <span class="stat-label">Activities</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number" id="trip-duration">--- days</span>
+            <span class="stat-label">Adventure</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number" id="destinations-count">---</span>
+            <span class="stat-label">Places</span>
+          </div>
         </div>
+      </div>
+    </div>
 </body>
 </html>
