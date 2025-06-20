@@ -12,6 +12,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 console.log("Loaded OpenAI API Key:", process.env.OPENAI_API_KEY ? "Exists" : "Missing");
+console.log("Loaded Google Maps API Key:", process.env.GOOGLE_MAPS_API_KEY ? "Exists" : "Missing");
 
 if (!process.env.OPENAI_API_KEY) {
     console.error("OpenAI API key is missing. Please check your .env file.");
@@ -130,6 +131,8 @@ app.get('/generate-itinerary', async (req, res) => {
         const tripStyle = req.query.tripStyle || "balanced";
         const departureDateStr = req.query.departureDate; 
         const arrivalDateStr = req.query.arrivalDate;
+        const multiCity = req.query.multiCity === 'true';
+        const additionalCities = req.query.additionalCities ? JSON.parse(req.query.additionalCities) : [];
         
         if (!departureDateStr || !arrivalDateStr) {
             return res.status(400).json({ error: 'Missing departure or arrival date' });
@@ -148,6 +151,8 @@ app.get('/generate-itinerary', async (req, res) => {
 
         console.log('--- Parsed Request ---');
         console.log(`Destination: ${destination}`);
+        console.log(`Multi-City: ${multiCity}`);
+        console.log(`Additional Cities: ${additionalCities.join(', ')}`);
         console.log(`Preferences: ${preferences.join(', ')}`);
         console.log(`Trip Style: ${tripStyle}`);
         console.log(`Departure Date: ${departureDateStr}`);
@@ -161,7 +166,9 @@ app.get('/generate-itinerary', async (req, res) => {
             endDate,
             advancedPreferences,
             customInstructions,
-            tripStyle
+            tripStyle,
+            multiCity,
+            additionalCities
         );
         
         console.log("--- Generated Itinerary ---");
@@ -174,6 +181,8 @@ app.get('/generate-itinerary', async (req, res) => {
             advancedPreferences: advancedPreferences,
             customInstructions: customInstructions,
             tripStyle: tripStyle,
+            multiCity: multiCity,
+            additionalCities: additionalCities,
             itinerary: completeItinerary
         });
         
@@ -191,7 +200,7 @@ app.get('/generate-itinerary', async (req, res) => {
 });
 
 // Update the generateFullItinerary function signature:
-async function generateFullItinerary(destination, preferences, startDate, endDate, advancedPreferences = [], customInstructions = "", tripStyle = "balanced") {
+async function generateFullItinerary(destination, preferences, startDate, endDate, advancedPreferences = [], customInstructions = "", tripStyle = "balanced", multiCity = false, additionalCities = []) {
   // Calculate the total number of days (fix the missing day issue)
   const timeDiff = endDate.getTime() - startDate.getTime();
   const numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // This was correct, the issue is elsewhere
@@ -226,7 +235,9 @@ async function generateFullItinerary(destination, preferences, startDate, endDat
         numberOfDays,
         advancedPreferences,
         customInstructions,
-        tripStyle // Add this parameter
+        tripStyle, // Add this parameter
+        multiCity,
+        additionalCities
       );
       
       // Add this chunk to the complete itinerary
@@ -256,7 +267,7 @@ async function generateFullItinerary(destination, preferences, startDate, endDat
 }
 
 // Update generateItineraryChunk function:
-async function generateItineraryChunk(destination, preferences, chunkStartDate, chunkEndDate, chunkStart, totalDays, advancedPreferences = [], customInstructions = "", tripStyle = "balanced") {
+async function generateItineraryChunk(destination, preferences, chunkStartDate, chunkEndDate, chunkStart, totalDays, advancedPreferences = [], customInstructions = "", tripStyle = "balanced", multiCity = false, additionalCities = []) {
   const chunkStartDateStr = chunkStartDate.toISOString().split('T')[0];
   const chunkEndDateStr = chunkEndDate.toISOString().split('T')[0];
   
@@ -300,9 +311,27 @@ ${tripStyle === 'relaxed' ? 'Focus on leisurely experiences with downtime' :
   tripStyle === 'balanced' ? 'Balance activities with free time' : 
   'Pack in maximum experiences efficiently'}
 
-ACTIVITY COUNT: Aim for ~${styleConfig.min}-${styleConfig.max} activities per day (may vary based on activity type and duration)
+ACTIVITY COUNT: Aim for ~${styleConfig.min}-${styleConfig.max} activities per day (may vary based on activity type and duration)`;
 
-SCHEDULING RULES:
+  // Add multi-city instructions if enabled
+  if (multiCity && additionalCities.length > 0) {
+    const allCities = [destination, ...additionalCities];
+    const daysPerCity = Math.ceil(actualDays / allCities.length);
+    
+    userPrompt += `\n\nMULTI-CITY EXPLORATION:
+This is a multi-city trip covering: ${allCities.join(', ')}
+- Distribute ${actualDays} days across these ${allCities.length} cities
+- Spend approximately ${daysPerCity} days in each city
+- Include travel time between cities in the itinerary
+- Suggest optimal hotel locations for each city segment
+- Consider day trips between nearby cities when appropriate
+- For each city, focus on its unique attractions and experiences
+
+CITY-SPECIFIC GUIDANCE:
+${allCities.map((city, index) => `${city}: Days ${index * daysPerCity + 1}-${Math.min((index + 1) * daysPerCity, actualDays)} - Focus on ${city}'s signature attractions, local culture, and must-see destinations`).join('\n')}`;
+  }
+
+  userPrompt += `\n\nSCHEDULING RULES:
 - Schedule activities during appropriate business hours when venues will be open
 - Breakfast: 7-10 AM, Lunch: 11 AM-2 PM, Dinner: 5-9 PM
 - Museums/attractions: 9 AM-5 PM (avoid Mondays for major attractions)
@@ -681,8 +710,16 @@ app.get('/', (req, res) => {
     res.send(html);
 });
 
+// Handle second-page.html specifically
+app.get('/second-page.html', (req, res) => {
+    let html = fs.readFileSync(path.join(__dirname, '../src/second-page.html'), 'utf8');
+    html = html.replace('__GOOGLE_MAPS_API_KEY__', process.env.GOOGLE_MAPS_API_KEY || '');
+    res.send(html);
+});
+
 // --------- SERVE STATIC FILES BEFORE FALLBACK ---------
 // Serve static files from src directory AFTER API routes but BEFORE fallback
+// Exclude HTML files from static serving so they go through our custom handlers
 app.use(express.static(path.join(__dirname, '../src'), {
   setHeaders: (res, path) => {
     if (path.endsWith('.css')) {
@@ -690,7 +727,9 @@ app.use(express.static(path.join(__dirname, '../src'), {
     } else if (path.endsWith('.js')) {
       res.setHeader('Content-Type', 'application/javascript');
     }
-  }
+  },
+  // Skip HTML files so they go through our custom handlers
+  ignore: ['*.html']
 }));
 
 // Fallback - serve index.html for any other routes (ONLY for HTML routes)
@@ -703,5 +742,91 @@ app.get('*', (req, res) => {
     } else {
         // For file requests that aren't handled by static middleware, return 404
         res.status(404).send('File not found');
+    }
+});
+
+// Add this new API endpoint after the existing ones:
+app.get('/api/trending-destinations', async (req, res) => {
+    try {
+        console.log('Trending destinations request received');
+        
+        // Enhanced trending destinations with multi-city suggestions
+        const trendingDestinations = [
+            {
+                id: 1,
+                name: 'Iceland Adventure',
+                primaryCity: 'Reykjavik',
+                additionalCities: ['Golden Circle', 'South Coast'],
+                description: 'Northern lights, geysers, and stunning landscapes',
+                imageUrl: 'https://images.unsplash.com/photo-1539066834862-2f447f4ffa8e?w=400',
+                duration: '7 days',
+                highlights: ['Blue Lagoon', 'Gullfoss Waterfall', 'Northern Lights'],
+                multiCityOption: true
+            },
+            {
+                id: 2,
+                name: 'Japan Explorer',
+                primaryCity: 'Tokyo',
+                additionalCities: ['Kyoto', 'Osaka', 'Nara'],
+                description: 'Traditional culture meets modern innovation',
+                imageUrl: 'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=400',
+                duration: '10 days',
+                highlights: ['Temples & Shrines', 'Sushi & Ramen', 'Cherry Blossoms'],
+                multiCityOption: true
+            },
+            {
+                id: 3,
+                name: 'Italian Romance',
+                primaryCity: 'Rome',
+                additionalCities: ['Florence', 'Venice', 'Naples'],
+                description: 'History, art, and incredible cuisine',
+                imageUrl: 'https://images.unsplash.com/photo-1515542622106-78bda8ba0e5b?w=400',
+                duration: '8 days',
+                highlights: ['Colosseum', 'Vatican City', 'Tuscan Countryside'],
+                multiCityOption: true
+            },
+            {
+                id: 4,
+                name: 'Tropical Paradise',
+                primaryCity: 'Bali',
+                additionalCities: ['Ubud', 'Seminyak', 'Canggu'],
+                description: 'Beaches, temples, and tropical vibes',
+                imageUrl: 'https://images.unsplash.com/photo-1537953773345-d172ccf13cf1?w=400',
+                duration: '6 days',
+                highlights: ['Rice Terraces', 'Beach Clubs', 'Temple Tours'],
+                multiCityOption: true
+            },
+            {
+                id: 5,
+                name: 'Greek Islands',
+                primaryCity: 'Athens',
+                additionalCities: ['Santorini', 'Mykonos', 'Crete'],
+                description: 'Ancient history and pristine beaches',
+                imageUrl: 'https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=400',
+                duration: '9 days',
+                highlights: ['Acropolis', 'Sunset Views', 'Island Hopping'],
+                multiCityOption: true
+            },
+            {
+                id: 6,
+                name: 'Morocco Adventure',
+                primaryCity: 'Marrakech',
+                additionalCities: ['Fez', 'Casablanca', 'Chefchaouen'],
+                description: 'Vibrant markets and desert landscapes',
+                imageUrl: 'https://images.unsplash.com/photo-1539650116574-75c0c6d73f6e?w=400',
+                duration: '7 days',
+                highlights: ['Sahara Desert', 'Medina Markets', 'Atlas Mountains'],
+                multiCityOption: true
+            }
+        ];
+        
+        res.json(trendingDestinations);
+        
+    } catch (error) {
+        console.error('Trending Destinations API Error:', error);
+        res.status(500).json({ 
+            error: 'Failed to fetch trending destinations', 
+            message: error.message || 'Unknown error'
+        });
     }
 });

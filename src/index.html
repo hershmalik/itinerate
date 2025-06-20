@@ -3,678 +3,416 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plan Your Trip</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>AItinerate - Plan Your Perfect Trip</title>
+    <link rel="stylesheet" href="styles.css?v=1734637800">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCnghfavV7G0Hy86_R2cSHze0KC5W9xZP0&libraries=places&callback=initMap" loading="async"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="app.js"></script> <!-- Moved app.js here, before Google Maps -->
-    <script async src="https://maps.googleapis.com/maps/api/js?key=__GOOGLE_MAPS_API_KEY__&libraries=places&callback=initMap" loading="async"></script>
-    <style>
-        /* Modern Reset */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            color: #333;
-            background-color: #f5f7fa;
-            line-height: 1.6;
-            min-height: 100vh;
-            max-width: 100%; /* Ensure body uses full width */
-            overflow-x: hidden; /* Prevent horizontal scrolling */
-        }
-
-        header {
-            background: linear-gradient(135deg, #FF4C4C 0%, #FF7676 100%);
-            color: white;
-            padding: 40px 0;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            margin-bottom: 30px;
-            width: 100%; /* Ensure header uses full width */
-        }
-
-        .header-content {
-            max-width: 100%; /* Changed from 1200px to 100% */
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
-        h1 {
-            margin: 0;
-            font-size: 36px;
-            font-weight: 700;
-        }
-
-        .subtitle {
-            opacity: 0.9;
-        }
-
-        .form-container {
-            max-width: 95%; /* Changed from 800px to 95% */
-            margin: 0 auto;
-        }
-
-        main {
-            width: 100%;
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .trip-details-title {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 30px;
-            color: #333;
-            position: relative;
-        }
-
-        .trip-details-title::after {
-            content: '';
-            position: absolute;
-            bottom: -8px;
-            left: 0;
-            width: 40px;
-            height: 3px;
-            background-color: #FF4C4C;
-        }
-
-        input[type="text"], .flatpickr-input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-
-        input[type="text"]:focus, .flatpickr-input:focus {
-            border-color: #FF4C4C;
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(255, 76, 76, 0.1);
-        }
-
-        .preferences-list {
-            margin-top: 10px;
-            display: grid;
-            grid-template-columns: repeat(2, 1fr); /* Two equal columns */
-            gap: 8px 15px; /* Reduced vertical gap from 15px to 8px, horizontal gap from 20px to 15px */
-            align-items: start;
-        }
-
-        .preferences-list label {
-            display: flex;
-            align-items: center;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            padding: 4px 0; /* Reduced from 8px to 4px */
-            transition: color 0.2s ease;
-        }
-
-        .preferences-list label:hover {
-            color: #FF4C4C;
-        }
-
-        .preferences-list input[type="checkbox"] {
-            margin-right: 8px; /* Reduced from 12px to 8px */
-            width: 18px;
-            height: 18px;
-            accent-color: #FF4C4C;
-            cursor: pointer;
-        }
-
-        /* Responsive: Stack in single column on mobile */
-        @media (max-width: 600px) {
-            .preferences-list {
-                grid-template-columns: 1fr; /* Single column on mobile */
-                gap: 6px; /* Reduced from 10px to 6px */
-            }
-            
-            .preferences-list label {
-                font-size: 15px;
-                padding: 3px 0; /* Reduced from 6px to 3px */
-            }
-            
-            .preferences-list input[type="checkbox"] {
-                width: 16px;
-                height: 16px;
-                margin-right: 8px; /* Reduced from 10px to 8px */
-            }
-        }
-
-        /* For very wide screens, you could even do 3 columns if desired */
-        @media (min-width: 1000px) {
-            .preferences-list {
-                grid-template-columns: repeat(3, 1fr); /* Three columns on large screens */
-                gap: 8px 20px; /* Reduced vertical gap from 15px to 8px */
-            }
-        }
-
-        .advanced-preferences {
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 1px dashed #ddd;
-            position: relative;
-        }
-
-        .advanced-prefs-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 15px;
-            cursor: pointer;
-            padding: 8px 0;
-            background-color: #f5f5f5;
-            border-radius: 8px;
-            padding: 12px 15px;
-        }
-
-        .advanced-prefs-header:hover {
-            background-color: #f0f0f0;
-        }
-
-        .expand-icon {
-            color: #FF4C4C;
-            transition: transform 0.3s ease;
-            font-size: 24px; /* Increased from 14px */
-            font-weight: bold;
-            background-color: #f8f8f8;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .expand-icon.expanded {
-            transform: rotate(90deg); /* Change from 180deg to 90deg */
-        }
-
-        .advanced-options-container {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.5s ease;
-        }
-
-        .advanced-options-container.expanded {
-            max-height: 2000px; /* Adjust as needed depending on content height */
-        }
-
-        .option-category {
-            margin-bottom: 20px;
-        }
-
-        .option-category h5 {
-            font-size: 16px;
-            color: #333;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .options-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 12px;
-        }
-
-        .option-label {
-            display: flex;
-            align-items: flex-start;
-            font-weight: normal;
-            cursor: pointer;
-            padding: 5px;
-            transition: background-color 0.2s;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-
-        .option-label:hover {
-            background-color: #f5f5f5;
-        }
-
-        .option-label input[type="checkbox"] {
-            margin-right: 10px;
-            margin-top: 3px;
-            width: 16px;
-            height: 16px;
-            accent-color: #FF4C4C;
-        }
-
-        .slider-option {
-            margin-bottom: 15px;
-        }
-
-        .slider-label {
-            display: block;
-            font-size: 14px;
-            margin-bottom: 5px;
-            font-weight: 500;
-        }
-
-        .slider-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .slider-min, .slider-max {
-            font-size: 12px;
-            color: #666;
-            min-width: 60px;
-        }
-
-        .slider-min {
-            text-align: right;
-        }
-
-        .preference-slider {
-            flex-grow: 1;
-            -webkit-appearance: none;
-            appearance: none; /* Add the standard version */
-            height: 6px;
-            border-radius: 3px;
-            background: #ddd;
-            outline: none;
-        }
-
-        .preference-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none; /* Add the standard version */
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #FF4C4C;
-            cursor: pointer;
-        }
-
-        .preference-slider::-moz-range-thumb {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #FF4C4C;
-            cursor: pointer;
-            border: none;
-        }
-
-        .option-categories-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 25px;
-        }
-
-        .options-grid.compact {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-        }
-
-        @media (max-width: 768px) {
-            .options-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .option-categories-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .preferences-list.grayed-out {
-            opacity: 0.6;
-            pointer-events: none;
-        }
-
-        .disabled-option {
-            cursor: not-allowed;
-        }
-
-        /* Trip Style Section - Updated for smaller cards */
-        .trip-style-options {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr); /* Changed from auto-fit to 3 equal columns */
-            gap: 12px; /* Reduced from 15px */
-            margin-top: 15px;
-        }
-
-        .trip-style-card {
-            border: 2px solid #e0e0e0;
-            border-radius: 8px; /* Reduced from 12px */
-            padding: 15px; /* Reduced from 20px */
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: white;
-            position: relative;
-            overflow: hidden;
-            min-height: 180px; /* Add minimum height for consistency */
-        }
-
-        .trip-style-card:hover {
-            border-color: #FF4C4C;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(255, 76, 76, 0.15);
-        }
-
-        .trip-style-card input[type="radio"] {
-            position: absolute;
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .trip-style-card input[type="radio"]:checked + .style-content {
-            background: linear-gradient(135deg, #FF4C4C 0%, #FF7676 100%);
-            color: white;
-        }
-
-        .trip-style-card input[type="radio"]:checked + .style-content .style-pace {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-        }
-
-        .style-content {
-            text-align: center;
-            border-radius: 6px; /* Reduced from 8px */
-            padding: 10px; /* Reduced from 15px */
-            transition: all 0.3s ease;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .style-icon {
-            font-size: 28px; /* Reduced from 32px */
-            margin-bottom: 8px; /* Reduced from 10px */
-            display: block;
-        }
-
-        .style-content h4 {
-            margin: 8px 0 6px 0; /* Reduced margins */
-            font-size: 16px; /* Reduced from 18px */
-            font-weight: 600;
-            line-height: 1.2;
-        }
-
-        .style-content p {
-            font-size: 13px; /* Reduced from 14px */
-            line-height: 1.3; /* Reduced from 1.4 */
-            margin-bottom: 10px; /* Reduced from 12px */
-            opacity: 0.9;
-            flex-grow: 1; /* Allow text to fill available space */
-        }
-
-        .style-pace {
-            display: inline-block;
-            background: #f0f0f0;
-            color: #666;
-            padding: 3px 10px; /* Reduced padding */
-            border-radius: 12px; /* Reduced from 15px */
-            font-size: 11px; /* Reduced from 12px */
-            font-weight: 500;
-            transition: all 0.3s ease;
-            margin-top: auto; /* Push to bottom */
-        }
-
-        /* Responsive adjustments for mobile */
-        @media (max-width: 768px) {
-            .trip-style-options {
-                grid-template-columns: 1fr; /* Stack on mobile */
-                gap: 10px;
-            }
-            
-            .trip-style-card {
-                padding: 12px;
-                min-height: 150px; /* Smaller minimum height on mobile */
-            }
-            
-            .style-content {
-                padding: 8px;
-            }
-            
-            .style-icon {
-                font-size: 24px;
-            }
-            
-            .style-content h4 {
-                font-size: 15px;
-            }
-            
-            .style-content p {
-                font-size: 12px;
-            }
-            
-            .style-pace {
-                font-size: 10px;
-                padding: 2px 8px;
-            }
-        }
-
-        /* For very wide screens, ensure cards don't get too wide */
-        @media (min-width: 1200px) {
-            .trip-style-options {
-                max-width: 800px; /* Limit maximum width */
-                margin: 15px auto 0; /* Center the grid */
-            }
-        }
-    </style>
 </head>
 <body>
-    <header>
-        <div class="header-content">
-            <h1>Plan Your Perfect Trip</h1>
-            <p class="subtitle">Let AI create your ideal itinerary</p>
+    <!-- Navigation Header -->
+    <nav class="main-navigation">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="#" class="brand-logo">
+                    <span class="logo-icon">🧭</span>
+                    AItinerate
+                </a>
+            </div>
+            <div class="nav-menu">
+                <div class="nav-actions">
+                    <button class="nav-btn">Login</button>
+                    <button class="nav-btn primary">Sign Up</button>
+                </div>
+            </div>
         </div>
-    </header>
+    </nav>
 
-    <main>
-        <div class="container">
-            <div class="form-container">
-                <form id="trip-form">
-                    <h2 class="trip-details-title">Trip Details</h2>
-                    
-                    <div class="form-group">
-                        <label for="destination-input">Destination</label>
-                        <div id="destination-autocomplete"></div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="departure-date">Departure Date</label>
-                        <input type="text" id="departure-date" name="departure-date" placeholder="mm/dd/yyyy" class="flatpickr-input" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="arrival-date">Return Date</label>
-                        <input type="text" id="arrival-date" name="arrival-date" placeholder="mm/dd/yyyy" class="flatpickr-input" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <h3>Your Interests</h3>
-                        <p>Select all that apply:</p>
-                        <div class="preferences-list">
-                            <!-- Will be populated by JavaScript -->
-                        </div>
-                    </div>
-
-                    <!-- Trip Style Section -->
-                    <div class="form-group">
-                        <h3>Trip Style</h3>
-                        <p>How would you like to experience your destination?</p>
-                        <div class="trip-style-options">
-                            <label class="trip-style-card">
-                                <input type="radio" name="trip-style" value="relaxed" checked>
-                                <div class="style-content">
-                                    <div class="style-icon">🌅</div>
-                                    <h4>Take It Easy</h4>
-                                    <p>1-2 activities per day. Plenty of time to wander, rest, and go with the flow.</p>
-                                    <span class="style-pace">Relaxed Pace</span>
-                                </div>
-                            </label>
-                            
-                            <label class="trip-style-card">
-                                <input type="radio" name="trip-style" value="balanced">
-                                <div class="style-content">
-                                    <div class="style-icon">⚖️</div>
-                                    <h4>Balanced Explorer</h4>
-                                    <p>2-3 activities per day. Mix of planned experiences and free time.</p>
-                                    <span class="style-pace">Moderate Pace</span>
-                                </div>
-                            </label>
-                            
-                            <label class="trip-style-card">
-                                <input type="radio" name="trip-style" value="packed">
-                                <div class="style-content">
-                                    <div class="style-icon">⚡</div>
-                                    <h4>Adventure Seeker</h4>
-                                    <p>4-6 activities per day. Maximize every moment and see it all!</p>
-                                    <span class="style-pace">Energetic Pace</span>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="advanced-preferences">
-                        <div class="advanced-prefs-header" id="toggle-advanced-options">
-                            <h4>Advanced Options</h4>
-                            <span class="expand-icon">›</span> <!-- Changed from ▼ to › -->
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Plan Your Perfect Journey</h1>
+            <p class="hero-subtitle">AI-powered travel planning that creates personalized itineraries for your dream destinations</p>
+            
+            <!-- Main Trip Planning Form -->
+            <div class="trip-form-container">
+                <form id="trip-form" class="trip-form">
+                    <!-- Basic Form Fields -->
+                    <div class="form-row">
+                        <div class="form-group destination-group">
+                            <label for="destination">Where to?</label>
+                            <input type="text" id="destination" name="destination" placeholder="Enter city or country" required>
+                            <div id="destination-suggestions" class="suggestions-dropdown"></div>
                         </div>
                         
-                        <div class="advanced-options-container" id="advanced-options-container">
-                            <div class="option-categories-grid">
-                                <!-- Travel Efficiency Section -->
-                                <div class="option-category">
-                                    <h5>Travel & Mobility</h5>
-                                    
-                                    <div class="slider-option">
-                                        <span class="slider-label">Walking Distance</span>
-                                        <div class="slider-container">
-                                            <span class="slider-min">Minimize</span>
-                                            <input type="range" min="1" max="5" value="3" class="preference-slider" id="walking-slider" 
-                                                   data-min="minimize_walking" data-max="maximize_walking">
-                                            <span class="slider-max">Maximize</span>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="slider-option">
-                                        <span class="slider-label">Scenic Routes</span>
-                                        <div class="slider-container">
-                                            <span class="slider-min">Direct</span>
-                                            <input type="range" min="1" max="5" value="3" class="preference-slider" id="route-slider"
-                                                   data-min="minimize_travel_time" data-max="maximize_scenic_routes">
-                                            <span class="slider-max">Scenic</span>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="options-grid compact">
-                                        <label class="option-label">
-                                            <input type="checkbox" name="advanced-prefs" value="public_transport">
-                                            Public transport
-                                        </label>
-                                        <label class="option-label">
-                                            <input type="checkbox" name="advanced-prefs" value="accessibility">
-                                            Accessibility-friendly
-                                        </label>
-                                        <label class="option-label">
-                                            <input type="checkbox" name="advanced-prefs" value="bikeable_paths">
-                                            Bikeable paths
-                                        </label>
-                                    </div>
+                        <div class="form-group">
+                            <label for="departure-date">Departure</label>
+                            <input type="text" id="departure-date" name="departure-date" placeholder="Select date" required autocomplete="off" readonly>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="arrival-date">Return</label>
+                            <input type="text" id="arrival-date" name="arrival-date" placeholder="Select date" required autocomplete="off" readonly>
+                        </div>
+                    </div>
+
+                    <!-- Travel Style Selection -->
+                    <div class="form-section">
+                        <h3 class="section-title">Travel Style</h3>
+                        <div class="style-options">
+                            <label class="style-option">
+                                <input type="radio" name="trip-style" value="relaxed" checked>
+                                <div class="style-card">
+                                    <div class="style-icon">🌅</div>
+                                    <div class="style-name">Relaxed</div>
+                                    <div class="style-desc">Take it slow, enjoy the moments</div>
                                 </div>
-                                
-                                <!-- Time & Activity Section -->
-                                <div class="option-category">
-                                    <h5>Time & Activities</h5>
-                                    <div class="options-grid compact">
-                                        <label class="option-label">
-                                            <input type="checkbox" name="advanced-prefs" value="morning_heavy">
-                                            Morning-heavy
-                                        </label>
-                                        <label class="option-label">
-                                            <input type="checkbox" name="advanced-prefs" value="late_start">
-                                            Late start days
-                                        </label>
-                                        <label class="option-label">
-                                            <input type="checkbox" name="advanced-prefs" value="include_downtime">
-                                            Include downtime
-                                        </label>
-                                        <label class="option-label">
-                                            <input type="checkbox" name="advanced-prefs" value="evenly_distribute">
-                                            Even distribution
-                                        </label>
-                                    </div>
+                            </label>
+                            <label class="style-option">
+                                <input type="radio" name="trip-style" value="balanced">
+                                <div class="style-card">
+                                    <div class="style-icon">⚖️</div>
+                                    <div class="style-name">Balanced</div>
+                                    <div class="style-desc">Mix of activities and rest</div>
                                 </div>
-                                
-                                <!-- Experience Section -->
-                                <div class="option-category">
-                                    <h5>Experience Focus</h5>
-                                    <div class="slider-option">
-                                        <span class="slider-label">Tourist vs Local Experience</span>
-                                        <div class="slider-container">
-                                            <span class="slider-min">Tourist</span>
-                                            <input type="range" min="1" max="5" value="3" class="preference-slider" id="tourist-local-slider"
-                                                   data-min="" data-max="local_gems">
-                                            <span class="slider-max">Local</span>
-                                        </div>
-                                    </div>
-                                    <div class="options-grid compact">
-                                        <label class="option-label">
-                                            <input type="checkbox" name="advanced-prefs" value="top_rated">
-                                            Top-rated
-                                        </label>
-                                        <label class="option-label">
-                                            <input type="checkbox" name="advanced-prefs" value="instagrammable">
-                                            Photo-worthy
-                                        </label>
-                                        <label class="option-label">
-                                            <input type="checkbox" name="advanced-prefs" value="weather_based">
-                                            Weather-adaptive
-                                        </label>
-                                    </div>
+                            </label>
+                            <label class="style-option">
+                                <input type="radio" name="trip-style" value="packed">
+                                <div class="style-card">
+                                    <div class="style-icon">🚀</div>
+                                    <div class="style-name">Packed</div>
+                                    <div class="style-desc">See and do everything</div>
                                 </div>
-                                
-                                <!-- Practical Considerations -->
-                                <div class="option-category">
-                                    <h5>Practical Factors</h5>
-                                    <div class="options-grid compact">
-                                        <label class="option-label">
-                                            <input type="checkbox" name="advanced-prefs" value="free_wifi">
-                                            Free Wi-Fi
-                                        </label>
-                                        <label class="option-label">
-                                            <input type="checkbox" name="advanced-prefs" value="avoid_poor_service">
-                                            Good cell service
-                                        </label>
-                                        <label class="option-label">
-                                            <input type="checkbox" name="advanced-prefs" value="bookable_activities">
-                                            Bookable activities
-                                        </label>
-                                        <label class="option-label">
-                                            <input type="checkbox" name="advanced-prefs" value="avoid_sold_out">
-                                            Avoid crowds
-                                        </label>
-                                    </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Interests Selection -->
+                    <div class="form-section">
+                        <h3 class="section-title">What interests you?</h3>
+                        <div class="interests-grid">
+                            <label class="interest-item">
+                                <input type="checkbox" name="interests" value="culture">
+                                <div class="interest-card">
+                                    <span class="interest-icon">🏛️</span>
+                                    <span class="interest-name">Culture & History</span>
                                 </div>
+                            </label>
+                            <label class="interest-item">
+                                <input type="checkbox" name="interests" value="food">
+                                <div class="interest-card">
+                                    <span class="interest-icon">🍽️</span>
+                                    <span class="interest-name">Food & Dining</span>
+                                </div>
+                            </label>
+                            <label class="interest-item">
+                                <input type="checkbox" name="interests" value="nature">
+                                <div class="interest-card">
+                                    <span class="interest-icon">🌿</span>
+                                    <span class="interest-name">Nature & Parks</span>
+                                </div>
+                            </label>
+                            <label class="interest-item">
+                                <input type="checkbox" name="interests" value="adventure">
+                                <div class="interest-card">
+                                    <span class="interest-icon">🏔️</span>
+                                    <span class="interest-name">Adventure</span>
+                                </div>
+                            </label>
+                            <label class="interest-item">
+                                <input type="checkbox" name="interests" value="nightlife">
+                                <div class="interest-card">
+                                    <span class="interest-icon">🌙</span>
+                                    <span class="interest-name">Nightlife</span>
+                                </div>
+                            </label>
+                            <label class="interest-item">
+                                <input type="checkbox" name="interests" value="shopping">
+                                <div class="interest-card">
+                                    <span class="interest-icon">🛍️</span>
+                                    <span class="interest-name">Shopping</span>
+                                </div>
+                            </label>
+                            <label class="interest-item">
+                                <input type="checkbox" name="interests" value="art">
+                                <div class="interest-card">
+                                    <span class="interest-icon">🎨</span>
+                                    <span class="interest-name">Arts & Culture</span>
+                                </div>
+                            </label>
+                            <label class="interest-item">
+                                <input type="checkbox" name="interests" value="relaxation">
+                                <div class="interest-card">
+                                    <span class="interest-icon">🧘</span>
+                                    <span class="interest-name">Wellness</span>
+                                </div>
+                            </label>
+                            <label class="interest-item">
+                                <input type="checkbox" name="interests" value="sports">
+                                <div class="interest-card">
+                                    <span class="interest-icon">⚽</span>
+                                    <span class="interest-name">Sports & Events</span>
+                                </div>
+                            </label>
+                            <label class="interest-item">
+                                <input type="checkbox" name="interests" value="architecture">
+                                <div class="interest-card">
+                                    <span class="interest-icon">🏗️</span>
+                                    <span class="interest-name">Architecture</span>
+                                </div>
+                            </label>
+                            <label class="interest-item">
+                                <input type="checkbox" name="interests" value="beaches">
+                                <div class="interest-card">
+                                    <span class="interest-icon">🏖️</span>
+                                    <span class="interest-name">Beaches & Water</span>
+                                </div>
+                            </label>
+                            <label class="interest-item">
+                                <input type="checkbox" name="interests" value="photography">
+                                <div class="interest-card">
+                                    <span class="interest-icon">📸</span>
+                                    <span class="interest-name">Photography</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Options Toggle -->
+                    <div class="advanced-toggle-container">
+                        <button type="button" id="advanced-toggle" class="advanced-toggle">
+                            <span class="toggle-text">Advanced Options</span>
+                            <span class="toggle-icon">▼</span>
+                        </button>
+                    </div>
+
+                    <!-- Advanced Options Section -->
+                    <div id="advanced-options" class="advanced-options">
+                        <!-- Trip Coverage (moved to advanced) -->
+                        <div class="form-section">
+                            <h3 class="section-title">Trip Coverage</h3>
+                            <div class="coverage-options">
+                                <label class="coverage-option">
+                                    <input type="radio" name="trip-coverage" value="single-city" checked>
+                                    <div class="coverage-card">
+                                        <div class="coverage-icon">📍</div>
+                                        <div class="coverage-name">Stay Local</div>
+                                        <div class="coverage-desc">Focus on one city/area</div>
+                                    </div>
+                                </label>
+                                <label class="coverage-option">
+                                    <input type="radio" name="trip-coverage" value="multi-city">
+                                    <div class="coverage-card">
+                                        <div class="coverage-icon">🗺️</div>
+                                        <div class="coverage-name">Multi-City</div>
+                                        <div class="coverage-desc">Explore multiple cities</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Budget Range -->
+                        <div class="form-section">
+                            <h3 class="section-title">Budget Range</h3>
+                            <div class="budget-options">
+                                <label class="budget-option">
+                                    <input type="radio" name="budget" value="budget" checked>
+                                    <div class="budget-card">
+                                        <div class="budget-icon">💰</div>
+                                        <div class="budget-name">Budget</div>
+                                        <div class="budget-desc">$50-100 per day</div>
+                                    </div>
+                                </label>
+                                <label class="budget-option">
+                                    <input type="radio" name="budget" value="mid-range">
+                                    <div class="budget-card">
+                                        <div class="budget-icon">💎</div>
+                                        <div class="budget-name">Mid-range</div>
+                                        <div class="budget-desc">$100-300 per day</div>
+                                    </div>
+                                </label>
+                                <label class="budget-option">
+                                    <input type="radio" name="budget" value="luxury">
+                                    <div class="budget-card">
+                                        <div class="budget-icon">👑</div>
+                                        <div class="budget-name">Luxury</div>
+                                        <div class="budget-desc">$300+ per day</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Group Size -->
+                        <div class="form-section">
+                            <h3 class="section-title">Group Size</h3>
+                            <div class="form-group">
+                                <select name="group-size" id="group-size">
+                                    <option value="1">Solo traveler</option>
+                                    <option value="2" selected>Couple</option>
+                                    <option value="3-4">Small group (3-4)</option>
+                                    <option value="5+">Large group (5+)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Transportation Preferences -->
+                        <div class="form-section">
+                            <h3 class="section-title">Transportation</h3>
+                            <div class="transport-options">
+                                <label class="transport-option">
+                                    <input type="checkbox" name="transportation" value="walking">
+                                    <div class="transport-card">
+                                        <span class="transport-icon">🚶</span>
+                                        <span class="transport-name">Walking</span>
+                                    </div>
+                                </label>
+                                <label class="transport-option">
+                                    <input type="checkbox" name="transportation" value="public-transport">
+                                    <div class="transport-card">
+                                        <span class="transport-icon">🚇</span>
+                                        <span class="transport-name">Public Transit</span>
+                                    </div>
+                                </label>
+                                <label class="transport-option">
+                                    <input type="checkbox" name="transportation" value="rideshare">
+                                    <div class="transport-card">
+                                        <span class="transport-icon">🚗</span>
+                                        <span class="transport-name">Rideshare/Taxi</span>
+                                    </div>
+                                </label>
+                                <label class="transport-option">
+                                    <input type="checkbox" name="transportation" value="rental-car">
+                                    <div class="transport-card">
+                                        <span class="transport-icon">🚙</span>
+                                        <span class="transport-name">Rental Car</span>
+                                    </div>
+                                </label>
+                            </div>
+                            <div style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-secondary);">
+                                <strong>Transport Icons:</strong> 🚶 Walking • 🚇 Public Transit • 🚗 Rideshare/Taxi • 🚙 Rental Car
+                            </div>
+                        </div>
+
+                        <!-- Dining Preferences -->
+                        <div class="form-section">
+                            <h3 class="section-title">Dining Style</h3>
+                            <div class="dining-options">
+                                <label class="dining-option">
+                                    <input type="radio" name="dining" value="local" checked>
+                                    <div class="dining-card">
+                                        <div class="dining-icon">🍜</div>
+                                        <div class="dining-name">Local Favorites</div>
+                                        <div class="dining-desc">Authentic local cuisine</div>
+                                    </div>
+                                </label>
+                                <label class="dining-option">
+                                    <input type="radio" name="dining" value="fine-dining">
+                                    <div class="dining-card">
+                                        <div class="dining-icon">🍷</div>
+                                        <div class="dining-name">Fine Dining</div>
+                                        <div class="dining-desc">Upscale restaurants</div>
+                                    </div>
+                                </label>
+                                <label class="dining-option">
+                                    <input type="radio" name="dining" value="mixed">
+                                    <div class="dining-card">
+                                        <div class="dining-icon">🍽️</div>
+                                        <div class="dining-name">Mixed</div>
+                                        <div class="dining-desc">Variety of dining options</div>
+                                    </div>
+                                </label>
+                            </div>
+                            <div style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-secondary);">
+                                <strong>Dining Icons:</strong> 🍜 Local • 🍷 Fine Dining • 🍽️ Mixed
                             </div>
                         </div>
                     </div>
-                    
-                    <button type="submit">Create My Itinerary</button>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="submit-btn">
+                        <span class="btn-icon">✨</span>
+                        Create My Itinerary
+                    </button>
                 </form>
             </div>
         </div>
-    </main>
+    </section>
 
-    <!-- Removed duplicate flatpickr.js and app.js from here -->
+    <!-- Inspirations Section with VRBO-style hodgepodge layout -->
+    <section class="inspirations-section">
+        <div class="inspirations-container">
+            <div class="inspirations-header">
+                <h2 class="inspirations-title">Find Your Next Adventure</h2>
+                <p class="inspirations-subtitle">Discover handpicked destinations for every type of traveler</p>
+            </div>
+            
+            <!-- Featured Destinations Hero -->
+            <div class="featured-section">
+                <h3 class="section-heading">Featured Destinations</h3>
+                <div class="featured-grid" id="featured-grid">
+                    <!-- Featured cards will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Weekend Getaways -->
+            <div class="weekend-section">
+                <div class="section-header">
+                    <h3 class="section-heading">Perfect Weekend Escapes</h3>
+                    <button class="view-all-btn" data-category="weekend">View all →</button>
+                </div>
+                <div class="weekend-grid" id="weekend-grid">
+                    <!-- Weekend cards will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Adventure Trips -->
+            <div class="adventure-section">
+                <div class="section-header">
+                    <h3 class="section-heading">Epic Adventures</h3>
+                    <button class="view-all-btn" data-category="adventure">View all →</button>
+                </div>
+                <div class="adventure-grid" id="adventure-grid">
+                    <!-- Adventure cards will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Romantic Getaways -->
+            <div class="romantic-section">
+                <div class="section-header">
+                    <h3 class="section-heading">Romantic Retreats</h3>
+                    <button class="view-all-btn" data-category="romantic">View all →</button>
+                </div>
+                <div class="romantic-grid" id="romantic-grid">
+                    <!-- Romantic cards will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Family Fun -->
+            <div class="family-section">
+                <div class="section-header">
+                    <h3 class="section-heading">Family Adventures</h3>
+                    <button class="view-all-btn" data-category="family">View all →</button>
+                </div>
+                <div class="family-grid" id="family-grid">
+                    <!-- Family cards will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Group Trips -->
+            <div class="group-section">
+                <div class="section-header">
+                    <h3 class="section-heading">Group Getaways</h3>
+                    <button class="view-all-btn" data-category="group">View all →</button>
+                </div>
+                <div class="group-grid" id="group-grid">
+                    <!-- Group cards will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="app.js"></script>
 </body>
 </html>

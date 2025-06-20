@@ -3,11 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Trip Itinerary</title>
+    <title>Your Dream Itinerary</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.12/css/weather-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Modern Reset */
+        /* Professional Design System - Matching Page 1 */
+        :root {
+            /* Professional Color Palette */
+            --primary-color: #222222;
+            --text-primary: #222222;
+            --text-secondary: #717171;
+            --text-tertiary: #999999;
+            --text-inverse: #ffffff;
+            
+            /* Clean Backgrounds */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #e9ecef;
+            
+            /* Professional Accent */
+            --accent-color: #FF5A5F;
+            --accent-hover: #e04347;
+            
+            /* Borders */
+            --border-color: #e0e0e0;
+            
+            /* Professional Shadows */
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+            --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.1);
+            
+            /* Spacing */
+            --space-xs: 0.5rem;
+            --space-sm: 1rem;
+            --space-md: 1.5rem;
+            --space-lg: 2rem;
+            --space-xl: 3rem;
+            --space-2xl: 4rem;
+            --space-3xl: 6rem;
+            
+            /* Border Radius */
+            --radius-sm: 0.375rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+            --radius-full: 9999px;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -15,80 +59,83 @@
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f5f7fa;
-            color: #333;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            color: var(--text-primary);
             line-height: 1.6;
-            max-width: 100%;
-            overflow-x: hidden;
-            padding-bottom: 80px; /* Reduced from 120px to 80px */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            padding-bottom: 120px;
         }
 
+        /* Clean Professional Header */
         header {
-            background: linear-gradient(135deg, #FF4C4C 0%, #FF7676 100%);
-            color: white;
-            padding: 40px 0;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: var(--space-2xl) 0;
             text-align: center;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            margin-bottom: 40px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--space-2xl);
         }
 
         header h1 {
-            margin: 0;
-            font-size: 36px;
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2.5rem, 5vw, 4rem);
             font-weight: 700;
+            margin-bottom: var(--space-sm);
+            color: var(--text-primary);
         }
         
         header p {
-            margin-top: 12px;
-            font-size: 18px;
-            opacity: 0.9;
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            font-weight: 400;
         }
 
         .container {
             width: 100%;
-            max-width: 100%;
-            padding: 0;
-            padding-bottom: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 var(--space-lg);
         }
 
+        /* Clean Content Sections */
         .content-section {
-            background-color: #fff;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-            padding: 20px;
-            margin-bottom: 30px;
-            width: 100%;
-            overflow-x: visible;
-            max-width: 100%;
-            -webkit-overflow-scrolling: touch;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            padding: var(--space-2xl);
+            margin-bottom: var(--space-2xl);
         }
 
         .section-title {
-            font-size: 24px;
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
             font-weight: 700;
-            color: #333;
-            margin-bottom: 20px;
-            position: relative;
-        }
-        
-        .section-title::after {
-            content: '';
-            position: absolute;
-            bottom: -8px;
-            left: 0;
-            width: 50px;
-            height: 3px;
-            background-color: #FF4C4C;
+            color: var(--text-primary);
+            margin-bottom: var(--space-lg);
         }
 
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 4px;
+            background: var(--accent-color);
+            border-radius: 2px;
+            margin-top: 8px;
+        }
+
+        /* Professional Preferences Summary */
         #preferences-summary {
-            background-color: #f0f7ff;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 30px;
+            background: var(--bg-secondary);
+            padding: var(--space-xl);
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--space-2xl);
+            border: 1px solid var(--border-color);
         }
         
         #preferences-list {
@@ -96,41 +143,87 @@
             padding: 0;
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: var(--space-sm);
         }
         
         #preferences-list li {
-            background-color: #e1e9f8;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            background: var(--accent-color);
+            color: var(--text-inverse);
+            padding: var(--space-sm) var(--space-md);
+            border-radius: var(--radius-full);
+            font-size: 0.875rem;
+            font-weight: 600;
+            box-shadow: var(--shadow-sm);
         }
 
+        /* Professional Loading States */
         .loading-spinner {
             display: none;
             text-align: center;
-            padding: 40px 20px;
-            margin: 20px 0;
-            background-color: #f9f9f9;
-            border-radius: 8px;
+            padding: var(--space-3xl);
+            margin: var(--space-lg) 0;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .loading-spinner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, rgba(255, 90, 95, 0.1), rgba(255, 90, 95, 0.3));
+            border-radius: var(--radius-lg);
+            z-index: 1;
         }
 
         .spinner {
-            border: 5px solid rgba(0, 0, 0, 0.1);
+            width: 60px;
+            height: 60px;
+            margin: 0 auto var(--space-lg);
+            position: relative;
+            z-index: 2;
+        }
+
+        .spinner::before,
+        .spinner::after {
+            content: '';
+            position: absolute;
             border-radius: 50%;
-            border-top: 5px solid #FF4C4C;
-            width: 50px;
-            height: 50px;
-            margin: 0 auto 20px;
-            animation: spin 1s linear infinite;
+            border: 3px solid transparent;
+            border-top-color: var(--accent-color);
+        }
+
+        .spinner::before {
+            width: 100%;
+            height: 100%;
+            animation: spin 1.5s linear infinite;
+        }
+
+        .spinner::after {
+            width: 80%;
+            height: 80%;
+            top: 10%;
+            left: 10%;
+            border-top-color: var(--text-secondary);
+            animation: spin 1s linear infinite reverse;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         .loading-text {
-            text-align: center;
-            margin-top: 15px;
-            font-size: 16px;
-            color: #555;
+            color: var(--text-primary);
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: var(--space-sm);
+            position: relative;
+            z-index: 2;
         }
 
         .loading-container {
@@ -139,952 +232,342 @@
             align-items: center;
             justify-content: center;
             width: 100%;
-            padding: 30px 0;
+            padding: var(--space-2xl) 0;
+            position: relative;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        #itinerary-table {
-            width: 100%;
-            table-layout: fixed;
-            border-collapse: collapse;
-            margin-top: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        #itinerary-table th {
-            background-color: #003366;
-            color: white;
-            padding: 12px 8px;
-            text-align: left;
-            font-weight: 600;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            position: sticky;
-            top: 0;
-            background-color: #003366;
-            z-index: 1;
-        }
-
-        #itinerary-table td {
-            padding: 12px 10px;
-            border-bottom: 1px solid #eee;
-            vertical-align: top;
-            overflow-wrap: break-word;
-            word-wrap: break-word;
-            hyphens: auto;
-            font-size: 14px;
-        }
-
-        #itinerary-table tbody tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        
-        #itinerary-table tbody tr:hover {
-            background-color: #f0f7ff;
-        }
-
-        .day-header-row {
-            background-color: #e8f0fe !important;
-        }
-
-        #itinerary-table th:nth-child(1), /* Time column */
-        #itinerary-table td:nth-child(1) {
-            width: 10%;
-            white-space: nowrap;
-        }
-        
-        #itinerary-table th:nth-child(2), /* Activity column */
-        #itinerary-table td:nth-child(2) {
-            width: 25%;
-        }
-        
-        #itinerary-table th:nth-child(3), /* Location column */
-        #itinerary-table td:nth-child(3) {
-            width: 30%;
-        }
-        
-        #itinerary-table th:nth-child(4), /* Rating column */
-        #itinerary-table td:nth-child(4) {
-            width: 15%;
-        }
-        
-        #itinerary-table th:nth-child(5), /* Hours column */
-        #itinerary-table td:nth-child(5) {
-            width: 20%;
-        }
-
-        .day-header-row td:first-child {
-            white-space: nowrap;
-            padding: 12px 10px;
-        }
-
-        #map-container {
-            margin-top: 40px;
-        }
-        
+        /* Map Styling */
         #map {
-            height: 400px; /* Reduced from 450px */
             width: 100%;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        /* Mobile map adjustment */
-        @media (max-width: 600px) {
-            #map {
-                height: 250px !important; /* Reduced from 300px */
-            }
+            height: 500px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-md);
         }
 
         .map-controls {
-            margin-bottom: 20px;
+            margin-bottom: var(--space-lg);
             display: flex;
             align-items: center;
-        }
-
-        .day-filter {
-            background: white;
-            padding: 12px 16px;
-            border-radius: 6px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-            display: flex;
-            align-items: center;
-        }
-
-        .day-filter label {
-            margin-right: 12px;
-            font-weight: 600;
-            color: #444;
+            gap: var(--space-md);
         }
 
         .day-filter select {
-            padding: 8px 12px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-            font-size: 15px;
-            min-width: 180px;
+            padding: var(--space-sm) var(--space-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 0.875rem;
         }
 
-        /* Additional styles for place details */
-        .place-rating {
+        /* Itinerary Table Styling */
+        #itinerary-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 1.5rem;
+            margin-top: var(--space-lg);
+            background: none;
+            box-shadow: none;
+        }
+        #itinerary-table thead th {
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            padding: 0.75rem 1.25rem;
+        }
+        #itinerary-table tbody tr {
+            background: var(--bg-primary);
+            box-shadow: var(--shadow-md);
+            border-radius: var(--radius-xl);
+            transition: box-shadow 0.2s;
+        }
+        #itinerary-table tbody tr:hover {
+            box-shadow: var(--shadow-lg);
+        }
+        #itinerary-table td {
+            border: none;
+            padding: 1.25rem 1.25rem;
+            font-size: 1rem;
+            vertical-align: top;
+        }
+        .day-header-row {
+            background: var(--bg-secondary) !important;
+            box-shadow: none !important;
+        }
+        .day-header-row td {
+            color: var(--accent-color) !important;
+            font-weight: 700;
+            font-size: 1.1rem;
+            padding: var(--space-lg) var(--space-md);
+            background: var(--bg-secondary);
+        }
+
+        /* Preference Toggles */
+        .customize-preferences {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            padding: var(--space-2xl);
+            margin-bottom: var(--space-2xl);
+        }
+
+        .customize-preferences h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--space-lg);
+        }
+
+        .preference-toggles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-xl);
+        }
+
+        .preference-toggle {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: var(--space-sm) var(--space-md);
+            border-radius: var(--radius-full);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .preference-toggle:hover {
+            background: var(--accent-color);
+            color: var(--text-inverse);
+            border-color: var(--accent-color);
+        }
+
+        .preference-toggle.active {
+            background: var(--accent-color);
+            color: var(--text-inverse);
+            border-color: var(--accent-color);
+        }
+
+        /* Regenerate Button */
+        .regenerate-button {
+            background: var(--accent-color);
+            color: var(--text-inverse);
+            border: none;
+            padding: var(--space-md) var(--space-xl);
+            border-radius: var(--radius-lg);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            box-shadow: var(--shadow-md);
+        }
+
+        .regenerate-button:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .regenerate-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Error Message */
+        .error-message {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: var(--space-lg);
+            border-radius: var(--radius-lg);
+            margin: var(--space-lg) 0;
+            display: none;
+        }
+
+        /* Actions Bar */
+        .actions-preview-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-primary);
+            border-top: 1px solid var(--border-color);
+            padding: var(--space-lg);
+            box-shadow: var(--shadow-xl);
+            z-index: 1000;
+        }
+
+        .actions-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            gap: var(--space-md);
+            justify-content: center;
+        }
+
+        .action-button {
             display: flex;
             flex-direction: column;
-        }
-        
-        .stars {
-            color: #FF9800;
-            font-size: 18px;
-            line-height: 1;
-        }
-        
-        .rating-value {
-            font-weight: bold;
-            margin-top: 4px;
-        }
-        
-        .rating-count {
-            color: #666;
-            font-size: 12px;
-        }
-        
-        .place-hours {
-            font-size: 13px;
-            line-height: 1.3;
-            color: #333;
-        }
-        
-        .open-now {
-            color: #4CAF50;
-            font-weight: bold;
-        }
-        
-        .closed-now {
-            color: #F44336;
-            font-weight: bold;
-        }
-        
-        .view-hours-btn {
-            background-color: #f0f0f0;
-            border: none;
-            border-radius: 4px;
-            padding: 4px 8px;
-            font-size: 12px;
+            align-items: center;
+            gap: var(--space-xs);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--space-md);
             cursor: pointer;
-            transition: background-color 0.2s;
-            margin-top: 4px;
+            transition: all 0.2s ease;
+            min-width: 100px;
+            position: relative;
         }
-        
-        .view-hours-btn:hover {
-            background-color: #e0e0e0;
+
+        .action-button:hover:not(.action-disabled) {
+            background: var(--accent-color);
+            color: var(--text-inverse);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
         }
-        
-        .google-maps-link {
-            display: inline-block;
-            margin-top: 8px;
-            color: #1a73e8;
-            font-size: 12px;
-            text-decoration: none;
+
+        .action-disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
-        
-        .google-maps-link:hover {
-            text-decoration: underline;
+
+        .action-icon {
+            font-size: 1.5rem;
         }
-        
-        .loading-place-data {
-            color: #999;
-            font-style: italic;
-            font-size: 13px;
+
+        .soon-pill {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--accent-color);
+            color: var(--text-inverse);
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: var(--radius-full);
         }
-        
-        /* Responsive adjustments */
+
+        /* Hero Section (move to bottom) */
+        .hero-section {
+            background: linear-gradient(135deg, var(--accent-color), #ff7a7f);
+            color: var(--text-inverse);
+            padding: var(--space-3xl) 0;
+            text-align: center;
+            margin: var(--space-2xl) 0;
+            border-radius: var(--radius-xl);
+        }
+
+        .hero-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 var(--space-lg);
+        }
+
+        .hero-title {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 700;
+            margin-bottom: var(--space-md);
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            margin-bottom: var(--space-xl);
+        }
+
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-xl);
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: var(--space-xs);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            opacity: 0.8;
+        }
+
+        /* Responsive Design */
         @media (max-width: 768px) {
-            header {
-                padding: 25px 0;
-            }
-            
             .container {
-                padding: 0 15px;
+                padding: 0 var(--space-md);
             }
             
             .content-section {
-                padding: 15px;
+                padding: var(--space-lg);
             }
             
             #map {
-                height: 400px;
+                height: 300px;
             }
             
-            #itinerary-table {
-                font-size: 14px;
+            .actions-container {
+                flex-wrap: wrap;
+                gap: var(--space-sm);
             }
             
-            .place-rating .stars {
-                font-size: 16px;
-            }
-            
-            .place-rating .rating-count {
-                font-size: 11px;
+            .action-button {
+                min-width: 80px;
+                padding: var(--space-sm);
             }
         }
-
-        @media (max-width: 1000px) {
-            .content-section::after {
-                display: none;
-            }
-        }
-
-        /* Add this to your existing styles */
-        #itinerary-display {
-            max-height: 800px; /* Adjust as needed */
-            overflow-y: auto;
-            margin-bottom: 30px;
-        }
-        
-        /* Make sure horizontal scrolling works too */
-        #itinerary-table {
-            width: 100%;
-            table-layout: fixed;
-            border-collapse: collapse;
-        }
-        
-        /* Keep table headers visible when scrolling */
-        #itinerary-table thead {
-            position: sticky;
-            top: 0;
-            z-index: 2;
-        }
-
-        /* Update the actions-preview-bar styles */
-.actions-preview-bar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(135deg, #5DADE2 0%, #85C1E9 100%); /* Light blue gradient */
-    box-shadow: 0 -2px 15px rgba(0,0,0,0.15);
-    padding: 10px 0; /* Reduced from 12px */
-    z-index: 100;
-    border-top: 1px solid rgba(255,255,255,0.3);
-}
-
-.actions-container {
-    display: flex;
-    justify-content: center;
-    max-width: 900px;
-    margin: 0 auto;
-    gap: 15px; /* Reduced gap to fit 4 buttons */
-}
-
-.action-button {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 8px 15px; /* Reduced padding */
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    position: relative;
-    color: white;
-    transition: all 0.3s ease;
-    border-radius: 8px;
-}
-
-.action-button:hover:not(.action-disabled) {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-1px);
-}
-
-.action-disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.action-icon {
-    font-size: 20px; /* Reduced from 24px */
-    margin-bottom: 3px; /* Reduced from 4px */
-}
-
-.action-button span:not(.soon-pill) {
-    font-size: 12px; /* Reduced from 13px */
-    font-weight: 500;
-}
-
-.soon-pill {
-    position: absolute;
-    top: 2px; /* Adjusted for smaller size */
-    right: 2px;
-    background: #F39C12;
-    color: white;
-    font-size: 8px; /* Reduced from 9px */
-    padding: 1px 4px; /* Reduced padding */
-    border-radius: 6px; /* Reduced border radius */
-    font-weight: bold;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-}
-
-@media (max-width: 768px) {
-    .actions-container {
-        gap: 8px; /* Even smaller gap on mobile */
-        padding: 0 5px;
-    }
-    
-    .action-button {
-        padding: 6px 8px; /* Smaller padding on mobile */
-    }
-    
-    .action-icon {
-        font-size: 16px; /* Smaller icons on mobile */
-    }
-    
-    .action-button span:not(.soon-pill) {
-        font-size: 9px; /* Smaller text on mobile */
-    }
-}
-
-/* Fix map overlap by adding bottom padding to body */
-body {
-    padding-bottom: 70px !important; /* Reduced from 80px */
-}
-
-/* Also adjust content padding */
-@media (max-width: 600px) {
-    main, .container, body {
-        padding-bottom: 80px !important; /* Reduced mobile padding */
-    }
-}
-
-/* Add this to your existing <style> section */
-.customize-preferences {
-    margin-top: 20px;
-    padding: 20px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    border: 1px solid #e9ecef;
-    margin-bottom: 40px; /* Extra margin to ensure visibility */
-}
-
-.customize-preferences h3 {
-    font-size: 18px;
-    margin-bottom: 15px;
-    color: #444;
-}
-
-.preference-toggles {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.preference-toggle {
-    background-color: #f1f1f1;
-    color: #666;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.preference-toggle:hover {
-    background-color: #e0e0e0;
-}
-
-.preference-toggle.active {
-    background-color: #FF4C4C;
-    color: white;
-    box-shadow: 0 2px 5px rgba(255, 76, 76, 0.3);
-}
-
-.regenerate-button {
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    padding: 12px 20px;
-    border-radius: 6px;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.2s ease;
-    margin-top: 10px;
-    width: auto;
-    max-width: 300px;
-}
-
-.regenerate-button:hover {
-    background-color: #45a049;
-}
-
-.regenerate-icon {
-    margin-right: 8px;
-    font-size: 18px;
-}
-
-@media (max-width: 768px) {
-    .preference-toggles {
-        justify-content: center;
-    }
-    
-    .preference-toggle {
-        font-size: 13px;
-        padding: 6px 12px;
-    }
-    
-    .regenerate-button {
-        width: 100%;
-        max-width: none;
-    }
-}
-
-/* Add to your existing <style> section */
-.advanced-options-section {
-  margin-top: 25px;
-  padding-top: 15px;
-  border-top: 1px dashed #ddd;
-}
-
-.advanced-options-section h3 {
-  font-size: 18px;
-  margin-bottom: 15px;
-  color: #444;
-}
-
-/* Reusing the styles from index.html for consistency */
-.option-categories-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 25px;
-}
-
-.options-grid.compact {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-}
-
-.option-category {
-  margin-bottom: 20px;
-}
-
-.option-category h5 {
-  font-size: 16px;
-  color: #333;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #eee;
-}
-
-@media (max-width: 768px) {
-  .option-categories-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Add to your existing <style> section */
-.weather-display {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  background-color: rgba(255, 255, 255, 0.7);
-  border-radius: 20px;
-  margin-left: auto; /* Push to the right */
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.weather-display i {
-  font-size: 18px; /* Make icon slightly larger */
-  margin-right: 6px;
-  color: #0066cc;
-}
-
-.weather-temps {
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap; /* Prevent breaking */
-}
-
-.day-header-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between; /* This ensures proper spacing */
-  width: 100%;
-  padding: 5px 0;
-}
-
-.day-title {
-  font-weight: bold;
-  font-size: 16px;
-  flex: 1; /* Allow title to take available space */
-  text-align: left; /* Ensure left alignment */
-}
-
-/* Add to your existing <style> section */
-.custom-instructions-container {
-  margin-top: 25px;
-  padding-top: 15px;
-  border-top: 1px dashed #ddd;
-}
-
-.custom-instructions-container h3 {
-  font-size: 18px;
-  margin-bottom: 10px;
-  color: #444;
-}
-
-.instructions-note {
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 10px;
-}
-
-#custom-instructions {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  line-height: 1.4;
-  resize: vertical;
-  font-family: inherit;
-  transition: border-color 0.3s;
-}
-
-#custom-instructions:focus {
-  border-color: #FF4C4C;
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(255, 76, 76, 0.1);
-}
-
-.examples-dropdown {
-  margin-top: 10px;
-}
-
-.examples-toggle {
-  color: #0066cc;
-  cursor: pointer;
-  font-size: 14px;
-  user-select: none;
-}
-
-.examples-content {
-  background: #f9f9f9;
-  border-radius: 4px;
-  padding: 12px;
-  margin-top: 8px;
-  font-size: 14px;
-  display: none;
-}
-
-.examples-content.visible {
-  display: block;
-  animation: fadeIn 0.3s ease;
-}
-
-.examples-content ul {
-  margin: 0;
-  padding-left: 20px;
-}
-
-.examples-content li {
-  margin-bottom: 8px;
-  line-height: 1.4;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* Section collapsing system */
-.collapse-section {
-  margin-bottom: 15px;
-  border: 1px solid #eaeaea;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.collapse-header {
-    background-color: #f8f9fa;
-    padding: 12px 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    border-radius: 8px;
-    margin-bottom: 5px;
-}
-
-.collapse-header:hover {
-    background-color: #f0f0f0;
-}
-
-.collapse-title {
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0;
-  color: #444;
-} 
-
-.collapse-icon {
-    transition: transform 0.3s;
-    color: #FF4C4C; /* Changed from gray to brand color */
-    font-size: 24px; /* Increased from 14px */
-    font-weight: bold;
-    background-color: #f8f8f8;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.collapse-icon.expanded {
-  transform: rotate(90deg);
-}
-
-.arrow-icon {
-  display: inline-block;
-}
-
-.collapse-content {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease-out;
-  background-color: white;
-}
-
-.collapse-content.expanded {
-  max-height: 2000px; /* Large enough to accommodate content */
-  transition: max-height 0.5s ease-in;
-}
-
-.collapse-inner {
-  padding: 15px;
-}
-
-/* Compact preference toggles */
-.preference-toggles {
-  margin-bottom: 15px;
-}
-
-/* Slider styling improvements */
-.slider-row {
-  display: flex;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.slider-label-container {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  margin-bottom: 4px;
-}
-
-.slider-name {
-  font-weight: 500;
-  font-size: 14px;
-}
-
-.slider-bounds {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  font-size: 13px;
-  color: #666;
-}
-
-.slider-container {
-  width: 100%;
-}
-
-/* Checkbox grid layout */
-.checkbox-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 8px;
-}
-
-/* Add these styles to fix the advanced options appearance */
-
-/* Reset slider appearance to match home page */
-.preference-slider {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 6px;
-  border-radius: 3px;
-  background: #ddd;
-  outline: none;
-  width: 100%;
-}
-
-/* Style the slider thumb to match home page */
-.preference-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #FF4C4C;
-  cursor: pointer;
-}
-
-.preference-slider::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #FF4C4C;
-  cursor: pointer;
-  border: none;
-}
-
-/* Fix layout of option items */
-.option-label {
-  display: flex;
-  align-items: flex-start;
-  font-weight: normal;
-  cursor: pointer;
-  padding: 5px;
-  transition: background-color 0.2s;
-  border-radius: 4px;
-  font-size: 14px;
-  margin-bottom: 4px;
-}
-
-.option-label:hover {
-  background-color: #f5f5f5;
-}
-
-.option-label input[type="checkbox"] {
-  margin-right: 10px;
-  margin-top: 3px;
-  width: 16px;
-  height: 16px;
-  accent-color: #FF4C4C;
-}
-
-/* Fix spacing in advanced options section */
-.collapse-content .collapse-inner {
-  padding: 15px;
-  background-color: #f8f8f8;
-  border-radius: 0 0 8px 8px;
-}
-
-/* Make slider containers consistent with home page */
-.slider-row {
-  margin-bottom: 15px;
-}
-
-.slider-container {
-  margin-top: 5px;
-  width: 100%;
-}
-
-/* Ensure checkbox grid layout matches */
-.checkbox-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-}
-
-/* Add proper labels to sliders */
-.slider-bounds {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 5px;
-  font-size: 12px;
-  color: #666;
-}
-
-/* Fix option category styling */
-.option-category h5 {
-  font-size: 16px;
-  color: #333;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #eee;
-}
-
-/* Smooth transitions for regenerate button */
-.regenerate-button {
-    transition: all 0.3s ease;
-}
-
-/* Loading state for itinerary section */
-#itinerary-chatbot {
-    scroll-margin-top: 20px; /* Adds space when scrolling to this element */
-}
-
-/* Smooth scroll behavior */
-html {
-    scroll-behavior: smooth;
-}
-
-/* Activity-specific hours status */
-.activity-hours-status {
-    font-weight: bold;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    margin-bottom: 8px;
-    text-align: center;
-}
-
-.hours-open {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-}
-
-.hours-closed {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-}
-
-.hours-unknown {
-    background-color: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffeaa7;
-}
-
-.hours-available {
-    background-color: #e7f3ff;
-    color: #004085;
-    border: 1px solid #bee5eb;
-}
-
-/* Weather display styles */
-.day-header-content {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    padding: 5px 0;
-}
-
-.day-title {
-    font-weight: bold;
-    font-size: 16px;
-    flex: 1;
-    text-align: left;
-}
-
-.export-btn {
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.export-btn:hover {
-    background-color: #45a049;
-}
-
-.export-controls {
-    background-color: #f8f9fa;
-    padding: 15px;
-    border-radius: 8px;
-    border: 1px solid #e9ecef;
-}
-
-@media (max-width: 600px) {
-    .export-controls {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
-    
-    .export-btn {
-        font-size: 13px;
-        padding: 6px 12px;
-    }
-}
     </style>
 </head>
 <body>
     <header>
         <div class="container">
-            <h1>Your Trip Itinerary</h1>
-            <p>Discover the best activities based on your preferences!</p>
+            <h1>Your Dream Journey</h1>
+            <p>AI-powered travel planning, crafted with precision</p>
         </div>
     </header>
     
     <div class="container">
         <div class="content-section">
                 <div id="preferences-summary">
-                    <h2 class="section-title">Your Preferences</h2>
+                    <h2 class="section-title">✨ Your Vision</h2>
                     <ul id="preferences-list"></ul>
                 </div>
+
+            <!-- Jump to Day selector for itinerary table -->
+            <div class="map-controls" style="margin-bottom: 1.5rem;">
+                <div class="day-filter">
+                    <label for="itinerary-day-selector">Jump to day:</label>
+                    <select id="itinerary-day-selector">
+                        <option value="all">Show all days</option>
+                    </select>
+                </div>
+            </div>
 
             <div id="itinerary-chatbot">
                 <div class="trip-details">
                     <div id="loading-indicator" class="loading-spinner">
                         <div class="loading-container">
                             <div class="spinner"></div>
-                            <div class="loading-text">Generating your AI-powered itinerary...</div>
-                            <div class="loading-text">This might take a minute for longer trips as we create your perfect itinerary</div>
+                            <div class="loading-text">Weaving your perfect adventure...</div>
+                            <div class="loading-text" style="font-size: 0.875rem; opacity: 0.8;">Our AI is discovering hidden gems and crafting magical moments</div>
                         </div>
                     </div>
                     
@@ -1099,10 +582,10 @@ html {
 
         <!-- Update the map section -->
         <div class="content-section" id="map-container">
-            <h2 class="section-title">Trip Map</h2>
+            <h2 class="section-title">🗺️ Your Adventure Map</h2>
             <div class="map-controls">
                 <div class="day-filter">
-                    <label for="day-selector">Filter by day:</label>
+                    <label for="day-selector">Explore by day:</label>
                     <select id="day-selector">
                         <option value="all">Show all days</option>
                     </select>
@@ -1112,168 +595,42 @@ html {
         </div>
 
         <div id="customize-preferences" class="customize-preferences">
-            <h3>Refine Your Preferences</h3>
+            <h3>🎨 Refine Your Journey</h3>
             <div class="preference-toggles">
-                <button class="preference-toggle" data-preference="culture">Culture</button>
-                <button class="preference-toggle" data-preference="landmarks">Landmarks</button>
-                <button class="preference-toggle" data-preference="food">Foodie</button>
-                <button class="preference-toggle" data-preference="historical">Historical</button>
-                <button class="preference-toggle" data-preference="art">Art</button>
-                <button class="preference-toggle" data-preference="nature">Nature</button>
+                <!-- Match the exact interests from page 1 -->
+                <button class="preference-toggle" data-preference="culture">Culture & History</button>
+                <button class="preference-toggle" data-preference="food">Food & Dining</button>
+                <button class="preference-toggle" data-preference="nature">Nature & Parks</button>
+                <button class="preference-toggle" data-preference="adventure">Adventure</button>
                 <button class="preference-toggle" data-preference="nightlife">Nightlife</button>
-                <button class="preference-toggle" data-preference="theme_parks">Theme Parks</button>
+                <button class="preference-toggle" data-preference="shopping">Shopping</button>
+                <button class="preference-toggle" data-preference="art">Arts & Culture</button>
+                <button class="preference-toggle" data-preference="relaxation">Wellness</button>
+                <button class="preference-toggle" data-preference="sports">Sports & Events</button>
+                <button class="preference-toggle" data-preference="architecture">Architecture</button>
+                <button class="preference-toggle" data-preference="beaches">Beaches & Water</button>
+                <button class="preference-toggle" data-preference="photography">Photography</button>
             </div>
 
-            <!-- Advanced Options Section -->
-            <div class="collapse-section">
-                <div class="collapse-header" onclick="toggleCollapse('advanced-options-content')">
-                    <h4 class="collapse-title">Advanced Options</h4>
-                    <span class="collapse-icon">
-                        <span class="arrow-icon">›</span>
-                    </span>
-                </div>
-                <div id="advanced-options-content" class="collapse-content">
-                    <div class="collapse-inner">
-                        <div class="option-categories-grid">
-                            <!-- Travel & Mobility Section -->
-                            <div class="option-category">
-                                <h5>Travel & Mobility</h5>
-                                
-                                <div class="slider-row">
-                                    <div class="slider-container">
-                                        <div class="slider-label-container">
-                                            <span class="slider-name">Walking Distance</span>
-                                        </div>
-                                        <input type="range" min="1" max="5" value="3" class="preference-slider" id="walking-slider-second" 
-                                               data-min="minimize_walking" data-max="maximize_walking">
-                                        <div class="slider-bounds">
-                                            <span>Minimize</span>
-                                            <span>Maximize</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="slider-row">
-                                    <div class="slider-container">
-                                        <div class="slider-label-container">
-                                            <span class="slider-name">Scenic Routes</span>
-                                        </div>
-                                        <input type="range" min="1" max="5" value="3" class="preference-slider" id="route-slider-second"
-                                               data-min="minimize_travel_time" data-max="maximize_scenic_routes">
-                                        <div class="slider-bounds">
-                                            <span>Direct</span>
-                                            <span>Scenic</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="checkbox-grid">
-                                    <label class="option-label">
-                                        <input type="checkbox" name="advanced-prefs-second" value="public_transport">
-                                        Public transport
-                                    </label>
-                                    <label class="option-label">
-                                        <input type="checkbox" name="advanced-prefs-second" value="accessibility">
-                                        Accessibility-friendly
-                                    </label>
-                                    <label class="option-label">
-                                        <input type="checkbox" name="advanced-prefs-second" value="bikeable_paths">
-                                        Bikeable paths
-                                    </label>
-                                </div>
-                            </div>
-                            
-                            <!-- Time & Activity Section -->
-                            <div class="option-category">
-                                <h5>Time & Activities</h5>
-                                <div class="checkbox-grid">
-                                    <label class="option-label">
-                                        <input type="checkbox" name="advanced-prefs-second" value="morning_heavy">
-                                        Morning-heavy
-                                    </label>
-                                    <label class="option-label">
-                                        <input type="checkbox" name="advanced-prefs-second" value="late_start">
-                                        Late start days
-                                    </label>
-                                    <label class="option-label">
-                                        <input type="checkbox" name="advanced-prefs-second" value="include_downtime">
-                                        Include downtime
-                                    </label>
-                                    <label class="option-label">
-                                        <input type="checkbox" name="advanced-prefs-second" value="evenly_distribute">
-                                        Even distribution
-                                    </label>
-                                </div>
-                            </div>
-                            
-                            <!-- Experience Section -->
-                            <div class="option-category">
-                                <h5>Experience Focus</h5>
-                                <div class="slider-row">
-                                    <div class="slider-container">
-                                        <div class="slider-label-container">
-                                            <span class="slider-name">Tourist vs Local Experience</span>
-                                        </div>
-                                        <input type="range" min="1" max="5" value="3" class="preference-slider" id="tourist-local-slider-second"
-                                               data-min="" data-max="local_gems">
-                                        <div class="slider-bounds">
-                                            <span>Tourist</span>
-                                            <span>Local</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="checkbox-grid">
-                                    <label class="option-label">
-                                        <input type="checkbox" name="advanced-prefs-second" value="top_rated">
-                                        Top-rated
-                                    </label>
-                                    <label class="option-label">
-                                        <input type="checkbox" name="advanced-prefs-second" value="instagrammable">
-                                        Photo-worthy
-                                    </label>
-                                    <label class="option-label">
-                                        <input type="checkbox" name="advanced-prefs-second" value="weather_based">
-                                        Weather-adaptive
-                                    </label>
-                                </div>
-                            </div>
-                            
-                            <!-- Practical Considerations -->
-                            <div class="option-category">
-                                <h5>Practical Factors</h5>
-                                <div class="checkbox-grid">
-                                    <label class="option-label">
-                                        <input type="checkbox" name="advanced-prefs-second" value="free_wifi">
-                                        Free Wi-Fi
-                                    </label>
-                                    <label class="option-label">
-                                        <input type="checkbox" name="advanced-prefs-second" value="avoid_poor_service">
-                                        Good cell service
-                                    </label>
-                                    <label class="option-label">
-                                        <input type="checkbox" name="advanced-prefs-second" value="bookable_activities">
-                                        Bookable activities
-                                    </label>
-                                    <label class="option-label">
-                                        <input type="checkbox" name="advanced-prefs-second" value="avoid_sold_out">
-                                        Avoid crowds
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Custom Instructions Section -->
-            <div class="custom-instructions-container">
-                <h3>Custom Instructions</h3>
-                <p class="instructions-note">Add specific requests or requirements for your itinerary:</p>
-                <textarea id="custom-instructions" placeholder="e.g., 'Include vegetarian restaurants', 'Avoid early morning activities', 'Focus on kid-friendly places', 'Plan around nap time (1-3 PM)', 'Include accessible venues', 'Focus on rooftop bars and restaurants'..." rows="4"></textarea>
+            <!-- Add Special Wishes section here on page 2 -->
+            <div style="margin: 2rem 0; padding: 2rem; background: var(--bg-primary); border-radius: var(--radius-lg); border: 1px solid var(--border-color);">
+                <h4 style="color: var(--text-primary); font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center;">
+                    <span style="margin-right: 1rem; font-size: 1.5rem;">💫</span>
+                    Special Wishes & Custom Requests
+                </h4>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.95rem;">
+                    Have specific requests or special needs? Tell us what would make your trip perfect!
+                </p>
+                <textarea 
+                    id="special-wishes" 
+                    name="special-wishes" 
+                    placeholder="E.g., 'Include wheelchair accessible venues', 'I want to see street art', 'Find rooftop bars with city views', 'Include local markets for shopping'..."
+                    style="width: 100%; min-height: 100px; padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-size: 0.95rem; resize: vertical; font-family: inherit;"
+                    rows="4"></textarea>
             </div>
 
             <button id="regenerate-itinerary" class="regenerate-button">
-                <span class="regenerate-icon">↺</span> Regenerate Itinerary
+                <span class="regenerate-icon">✨</span> Regenerate Journey
             </button>
         </div>
     </div>
@@ -1285,7 +642,7 @@ html {
       const storedDepartureDate = localStorage.getItem('tripDepartureDate');
       const storedArrivalDate = localStorage.getItem('tripArrivalDate');
       const storedPreferences = localStorage.getItem('tripPreferences');
-      const storedTripStyle = localStorage.getItem('tripStyle') || 'balanced'; // Add this
+      const storedTripStyle = localStorage.getItem('tripStyle') || 'balanced';
       
       // Override getTripDetailsFromStorage to use these stored values
       window.getTripDetailsFromStorageOverride = function() {
@@ -1298,49 +655,230 @@ html {
         
         const preferences = storedPreferences ? JSON.parse(storedPreferences) : [];
         console.log('[second-page.js] Using stored preferences:', preferences);
-        console.log('[second-page.js] Using stored trip style:', storedTripStyle); // Add this
+        console.log('[second-page.js] Using stored trip style:', storedTripStyle);
         
         return {
           destination: storedDestination,
           departureDate: storedDepartureDate,
           arrivalDate: storedArrivalDate,
           preferences: preferences,
-          tripStyle: storedTripStyle // Add this
+          tripStyle: storedTripStyle
         };
       };
-    </script>
-    <script async src="https://maps.googleapis.com/maps/api/js?key=__GOOGLE_MAPS_API_KEY__&libraries=places&callback=initMapAndItinerary" loading="async"></script>
 
-    <!-- Update the bottom actions menu to include Excel: -->
-<div class="actions-preview-bar">
-    <div class="actions-container">
-        <button class="action-button" id="export-pdf-action" onclick="exportToPDF()">
-            <div class="action-icon">📄</div>
-            <span>Export PDF</span>
-        </button>
+      // Export functions
+      function exportToPDF() {
+        console.log('Exporting to PDF...');
+        if (typeof window.jsPDF === 'undefined') {
+          alert('PDF library is loading. Please try again in a moment.');
+          return;
+        }
+        try {
+          const { jsPDF } = window.jsPDF;
+          const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+          let y = 40;
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(22);
+          doc.text('Your Travel Itinerary', 40, y);
+          y += 30;
+          doc.setFontSize(12);
+          const tripDetails = getTripDetailsFromStorage();
+          if (tripDetails) {
+            doc.text(`Destination: ${tripDetails.destination}`, 40, y);
+            y += 18;
+            doc.text(`Dates: ${tripDetails.departureDate} to ${tripDetails.arrivalDate}`, 40, y);
+            y += 18;
+          }
+          y += 10;
+          if (itineraryData && itineraryData.length > 0) {
+            const dayGroups = {};
+            itineraryData.forEach(item => {
+              if (!dayGroups[item.day]) dayGroups[item.day] = [];
+              dayGroups[item.day].push(item);
+            });
+            Object.keys(dayGroups).forEach(dayName => {
+              if (y > 750) { doc.addPage(); y = 40; }
+              doc.setFontSize(14);
+              doc.setTextColor(40, 40, 40);
+              doc.text(dayName, 40, y);
+              y += 18;
+              dayGroups[dayName].forEach(item => {
+                if (y > 750) { doc.addPage(); y = 40; }
+                doc.setFontSize(11);
+                doc.setTextColor(60, 60, 60);
+                doc.text(`${item.time || 'N/A'} - ${item.activity || 'Activity'}`, 55, y);
+                y += 14;
+                doc.setFontSize(10);
+                doc.setTextColor(100, 100, 100);
+                doc.text(`Location: ${item.location || 'Location TBD'}`, 70, y);
+                y += 14;
+              });
+              y += 8;
+            });
+          }
+          doc.save(`${tripDetails?.destination || 'Travel'}_Itinerary.pdf`);
+          showNotification('PDF exported successfully!');
+        } catch (error) {
+          console.error('PDF export error:', error);
+          alert('Error creating PDF. Please try again.');
+        }
+      }
+
+      function exportToExcel() {
+        console.log('Exporting to Excel...');
         
-        <button class="action-button" id="export-excel-action" onclick="exportToExcel()">
-            <div class="action-icon">📊</div>
-            <span>Export Excel</span>
-        </button>
+        if (typeof XLSX === 'undefined') {
+          alert('Excel library is loading. Please try again in a moment.');
+          return;
+        }
         
-        <button class="action-button" id="export-calendar-action" onclick="exportToCalendar()">
-            <div class="action-icon">📅</div>
-            <span>Add to Calendar</span>
-        </button>
+        try {
+          const tripDetails = getTripDetailsFromStorage();
+          const worksheetData = [
+            ['Time', 'Activity', 'Location', 'Day'],
+            ...itineraryData.map(item => [
+              item.time || 'N/A',
+              item.activity || 'Activity',
+              item.location || 'Location TBD',
+              item.day || 'Day'
+            ])
+          ];
+          
+          const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+          const workbook = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(workbook, worksheet, 'Itinerary');
+          
+          XLSX.writeFile(workbook, `${tripDetails?.destination || 'Travel'}_Itinerary.xlsx`);
+          showNotification('Excel file exported successfully!');
+        } catch (error) {
+          console.error('Excel export error:', error);
+          alert('Error creating Excel file. Please try again.');
+        }
+      }
+
+      function exportToCalendar() {
+        console.log('Exporting to Calendar...');
         
-        <button class="action-button action-disabled">
-            <div class="action-icon">✈️</div>
-            <span>Book Flights</span>
-            <span class="soon-pill">Soon</span>
-        </button>
+        try {
+          const tripDetails = getTripDetailsFromStorage();
+          let icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//AItinerate//Travel Itinerary//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+`;
+
+          if (itineraryData && itineraryData.length > 0) {
+            itineraryData.forEach((item, index) => {
+              const startDate = new Date(tripDetails.departureDate);
+              const dayMatch = item.day.match(/Day (\d+)/);
+              if (dayMatch) {
+                startDate.setDate(startDate.getDate() + parseInt(dayMatch[1]) - 1);
+              }
+              
+              // Parse time
+              const timeMatch = item.time?.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/);
+              if (timeMatch) {
+                let hours = parseInt(timeMatch[1]);
+                const minutes = parseInt(timeMatch[2]);
+                if (timeMatch[3] === 'PM' && hours !== 12) hours += 12;
+                if (timeMatch[3] === 'AM' && hours === 12) hours = 0;
+                
+                startDate.setHours(hours, minutes, 0, 0);
+              }
+              
+              const endDate = new Date(startDate);
+              endDate.setHours(endDate.getHours() + 2); // Default 2 hour duration
+              
+              const formatDate = (date) => {
+                return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+              };
+              
+              icsContent += `BEGIN:VEVENT
+UID:${index + 1}@aitinerate.com
+DTSTART:${formatDate(startDate)}
+DTEND:${formatDate(endDate)}
+SUMMARY:${item.activity || 'Travel Activity'}
+DESCRIPTION:${item.activity || 'Travel Activity'}
+LOCATION:${item.location || ''}
+STATUS:CONFIRMED
+END:VEVENT
+`;
+            });
+          }
+          
+          icsContent += 'END:VCALENDAR';
+          
+          const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${tripDetails?.destination || 'Travel'}_Itinerary.ics`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+          
+          showNotification('Calendar file exported successfully!');
+        } catch (error) {
+          console.error('Calendar export error:', error);
+          alert('Error creating calendar file. Please try again.');
+        }
+      }
+    </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCnghfavV7G0Hy86_R2cSHze0KC5W9xZP0&libraries=places&callback=initMapAndItinerary" loading="async"></script>
+
+    <!-- Actions Bar -->
+    <div class="actions-preview-bar">
+        <div class="actions-container">
+            <button class="action-button" id="export-pdf-action" onclick="exportToPDF()">
+                <div class="action-icon">📄</div>
+                <span>Export PDF</span>
+            </button>
+            
+            <button class="action-button" id="export-excel-action" onclick="exportToExcel()">
+                <div class="action-icon">📊</div>
+                <span>Export Excel</span>
+            </button>
+            
+            <button class="action-button" id="export-calendar-action" onclick="exportToCalendar()">
+                <div class="action-icon">📅</div>
+                <span>Add to Calendar</span>
+            </button>
+            
+            <button class="action-button action-disabled">
+                <div class="action-icon">✈️</div>
+                <span>Book Flights</span>
+                <span class="soon-pill">Soon</span>
+            </button>
+        </div>
     </div>
-</div>
 
     <!-- Add jsPDF library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
     <!-- Add SheetJS library for Excel export -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- Hero Section -->
+    <div class="hero-section">
+            <div class="hero-content">
+                <h1 class="hero-title">Your Perfect Itinerary Awaits</h1>
+                <p class="hero-subtitle">Thoughtfully planned, perfectly personalized</p>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <span class="stat-number" id="activities-count">---</span>
+                        <span class="stat-label">Activities</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="trip-duration">--- days</span>
+                        <span class="stat-label">Adventure</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="destinations-count">---</span>
+                        <span class="stat-label">Places</span>
+                    </div>
+                </div>
+            </div>
+        </div>
 </body>
 </html>

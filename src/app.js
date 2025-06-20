@@ -1,309 +1,529 @@
-// Global variable to store selected place
-let selectedDestination = '';
-
-// Define initMap in the global scope so Google Maps API can find it
-function initMap() {
-    const container = document.getElementById('destination-autocomplete');
-
-    if (container) {
-        // Create a regular input element with proper ID
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.id = 'destination-input'; // Add this ID to match the label
-        input.placeholder = 'Enter a city, country, or region';
-        input.style.width = '100%';
-        input.style.padding = '12px';
-        input.style.border = '1px solid #ddd';
-        input.style.borderRadius = '4px';
-        input.style.fontSize = '16px';
-        container.appendChild(input);
-
-        // Initialize Google Places Autocomplete
-        const autocomplete = new google.maps.places.Autocomplete(input, {
-            types: ['(cities)']
-        });
-
-        autocomplete.addListener('place_changed', () => {
-            const place = autocomplete.getPlace();
-            selectedDestination = place.formatted_address || place.name || input.value;
-            console.log('Selected place:', selectedDestination);
-        });
-
-        // Update selected destination when user types directly
-        input.addEventListener('input', () => {
-            selectedDestination = input.value;
-        });
-    }
-}
-
-// Make sure Google Maps can find this function
-window.initMap = initMap;
-
-// Handle shared itinerary URLs
-function handleSharedItinerary() {
-    const urlParams = new URLSearchParams(window.location.search);
+(function() {
+    'use strict';
     
-    if (urlParams.get('shared') === 'true') {
-        try {
-            // Extract shared data from URL
-            const destination = urlParams.get('destination');
-            const departureDate = urlParams.get('departureDate');
-            const arrivalDate = urlParams.get('arrivalDate');
-            const preferences = urlParams.get('preferences');
-            const itinerary = urlParams.get('itinerary');
-            
-            if (destination && departureDate && arrivalDate && itinerary) {
-                // Store the shared data in localStorage
-                localStorage.setItem('tripDestination', destination);
-                localStorage.setItem('tripDepartureDate', departureDate);
-                localStorage.setItem('tripArrivalDate', arrivalDate);
-                localStorage.setItem('tripPreferences', preferences || '[]');
-                localStorage.setItem('sharedItinerary', itinerary);
+    // Encapsulate everything in an IIFE to avoid global conflicts
+    let selectedDestination = '';
+    
+    // Google Maps initialization
+    function initializeGoogleMaps() {
+        const destinationInput = document.getElementById('destination');
+        
+        if (destinationInput && typeof google !== 'undefined' && google.maps) {
+            try {
+                const autocomplete = new google.maps.places.Autocomplete(destinationInput, {
+                    types: ['(cities)']
+                });
+
+                autocomplete.addListener('place_changed', () => {
+                    const place = autocomplete.getPlace();
+                    selectedDestination = place.formatted_address || place.name || destinationInput.value;
+                    console.log('Selected place:', selectedDestination);
+                });
+
+                destinationInput.addEventListener('input', () => {
+                    selectedDestination = destinationInput.value;
+                });
                 
-                // Show a nice loading message and redirect
-                showSharedItineraryMessage(destination);
-                
-                // Redirect to the second page after a brief delay
-                setTimeout(() => {
-                    window.location.href = '/second-page';
-                }, 2000);
+                console.log('Google Maps autocomplete initialized');
+            } catch (error) {
+                console.error('Error initializing Google Maps:', error);
+                fallbackDestinationInput();
             }
-        } catch (error) {
-            console.error('Error handling shared itinerary:', error);
+        } else {
+            fallbackDestinationInput();
         }
     }
-}
-
-// Show a welcoming message for shared itineraries
-function showSharedItineraryMessage(destination) {
-    const modal = document.createElement('div');
-    modal.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.8);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-        padding: 20px;
-    `;
     
-    modal.innerHTML = `
-        <div style="
-            background: white;
-            border-radius: 16px;
-            padding: 40px;
-            max-width: 500px;
-            width: 100%;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        ">
-            <div style="
-                width: 80px;
-                height: 80px;
-                background: linear-gradient(135deg, #FF4C4C 0%, #FF7676 100%);
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin: 0 auto 20px;
-                font-size: 36px;
-            ">✈️</div>
-            <h3 style="margin-bottom: 15px; color: #333; font-size: 24px;">Welcome to a Shared Itinerary!</h3>
-            <p style="margin-bottom: 25px; color: #666; line-height: 1.6; font-size: 16px;">
-                Someone has shared their amazing <strong>${destination}</strong> travel plan with you. 
-                Loading their itinerary now...
-            </p>
-            <div style="
-                width: 40px;
-                height: 40px;
-                border: 4px solid #f3f3f3;
-                border-top: 4px solid #FF4C4C;
-                border-radius: 50%;
-                animation: spin 1s linear infinite;
-                margin: 20px auto;
-            "></div>
-            <p style="color: #888; font-size: 14px;">
-                Powered by AItinerate
-            </p>
-        </div>
-    `;
-    
-    // Add spinning animation
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+    // Fallback for when Google Maps is not available
+    function fallbackDestinationInput() {
+        const destinationInput = document.getElementById('destination');
+        if (destinationInput) {
+            destinationInput.addEventListener('input', () => {
+                selectedDestination = destinationInput.value;
+            });
+            console.log('Using fallback destination input');
         }
-    `;
-    document.head.appendChild(style);
+    }
     
-    document.body.appendChild(modal);
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Check for shared itinerary data in URL parameters first
-    handleSharedItinerary();
-
-    const tripForm = document.getElementById('trip-form');
-    const departureDateInput = document.getElementById('departure-date');
-    const arrivalDateInput = document.getElementById('arrival-date');
-
-    if (departureDateInput && arrivalDateInput) {
-        // Initialize Flatpickr for date inputs
-        flatpickr(departureDateInput, { dateFormat: "m/d/Y" });
-        flatpickr(arrivalDateInput, { dateFormat: "m/d/Y" });
-
-        // Prevent Enter key on date fields from submitting the form prematurely
-        [departureDateInput, arrivalDateInput].forEach(input => {
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
+    // Global initMap function for Google Maps callback
+    window.initMap = function() {
+        initializeGoogleMaps();
+    };
+    
+    // Handle shared itinerary URLs
+    function handleSharedItinerary() {
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        if (urlParams.get('shared') === 'true') {
+            try {
+                const destination = urlParams.get('destination');
+                const departureDate = urlParams.get('departureDate');
+                const arrivalDate = urlParams.get('arrivalDate');
+                const preferences = urlParams.get('preferences');
+                const itinerary = urlParams.get('itinerary');
+                
+                if (destination && departureDate && arrivalDate && itinerary) {
+                    localStorage.setItem('tripDestination', destination);
+                    localStorage.setItem('tripDepartureDate', departureDate);
+                    localStorage.setItem('tripArrivalDate', arrivalDate);
+                    localStorage.setItem('tripPreferences', preferences || '[]');
+                    localStorage.setItem('sharedItinerary', itinerary);
+                    
+                    showSharedItineraryMessage(destination);
+                    
+                    setTimeout(() => {
+                        window.location.href = '/second-page';
+                    }, 2000);
                 }
-            });
-        });
-    } else {
-        console.error('Date input fields not found for Flatpickr initialization.');
+            } catch (error) {
+                console.error('Error handling shared itinerary:', error);
+            }
+        }
     }
 
-    // FORM SUBMISSION HANDLER - MOVED OUTSIDE OF initMap
-    if (tripForm && departureDateInput && arrivalDateInput) {
-        tripForm.addEventListener('submit', function (event) {
-            event.preventDefault();
+    // Show shared itinerary message
+    function showSharedItineraryMessage(destination) {
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8); display: flex; align-items: center;
+            justify-content: center; z-index: 1000; padding: 20px;
+        `;
+        
+        modal.innerHTML = `
+            <div style="background: white; border-radius: 16px; padding: 40px; max-width: 500px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #FF4C4C 0%, #FF7676 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 36px;">✈️</div>
+                <h3 style="margin-bottom: 15px; color: #333; font-size: 24px;">Welcome to a Shared Itinerary!</h3>
+                <p style="margin-bottom: 25px; color: #666; line-height: 1.6; font-size: 16px;">Someone has shared their amazing <strong>${destination}</strong> travel plan with you. Loading their itinerary now...</p>
+                <div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #FF4C4C; border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto;"></div>
+                <p style="color: #888; font-size: 14px;">Powered by AItinerate</p>
+            </div>
+        `;
+        
+        const style = document.createElement('style');
+        style.textContent = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }';
+        document.head.appendChild(style);
+        document.body.appendChild(modal);
+    }
 
-            const departureDate = departureDateInput.value.trim();
-            const arrivalDate = arrivalDateInput.value.trim();
-            
-            // Get destination from autocomplete input or direct input
-            const destinationInput = document.querySelector('#destination-autocomplete input');
-            const destination = selectedDestination || (destinationInput ? destinationInput.value : '') || '';
+    // Initialize date pickers
+    function initializeDatePickers() {
+        const departureDateInput = document.getElementById('departure-date');
+        const arrivalDateInput = document.getElementById('arrival-date');
 
-            console.log('Form submitted with destination:', destination);
+        if (departureDateInput && arrivalDateInput) {
+            try {
+                if (typeof flatpickr !== 'undefined') {
+                    flatpickr(departureDateInput, { 
+                        dateFormat: "m/d/Y",
+                        minDate: "today",
+                        allowInput: true
+                    });
+                    flatpickr(arrivalDateInput, { 
+                        dateFormat: "m/d/Y",
+                        minDate: "today",
+                        allowInput: true
+                    });
+                    console.log('Flatpickr initialized successfully');
+                } else {
+                    console.warn('Flatpickr not loaded, using native date inputs');
+                    departureDateInput.type = 'date';
+                    arrivalDateInput.type = 'date';
+                    departureDateInput.min = new Date().toISOString().split('T')[0];
+                    arrivalDateInput.min = new Date().toISOString().split('T')[0];
+                }
 
-            if (!destination) {
-                alert('Please enter a destination.');
-                return;
+                [departureDateInput, arrivalDateInput].forEach(input => {
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error('Error initializing date pickers:', error);
+                departureDateInput.type = 'date';
+                arrivalDateInput.type = 'date';
             }
-
-            if (!departureDate || !arrivalDate) {
-                alert('Please enter both departure and arrival dates.');
-                return;
-            }
-
-            // Validate date order
-            if (new Date(departureDate) > new Date(arrivalDate)) {
-                alert('Departure date cannot be after arrival date');
-                return;
-            }
-
-            // Preferences
-            const selectedPreferences = [];
-            document.querySelectorAll('input[name="preferences"]:checked').forEach((checkbox) => {
-                selectedPreferences.push(checkbox.value);
-            });
-
-            // Advanced preferences
-            const advancedPreferences = [];
-            document.querySelectorAll('input[name="advanced-prefs"]:checked').forEach((checkbox) => {
-                advancedPreferences.push(checkbox.value);
-            });
-
-            // Get trip style
-            const tripStyleElement = document.querySelector('input[name="trip-style"]:checked');
-            const tripStyle = tripStyleElement ? tripStyleElement.value : 'balanced';
-
-            console.log('Storing data in localStorage...');
-            console.log('Destination:', destination);
-            console.log('Departure:', departureDate);
-            console.log('Arrival:', arrivalDate);
-            console.log('Preferences:', selectedPreferences);
-            console.log('Trip Style:', tripStyle); // Add this log
-
-            // Store in localStorage
-            localStorage.setItem('tripDestination', destination);
-            localStorage.setItem('tripDepartureDate', departureDate);
-            localStorage.setItem('tripArrivalDate', arrivalDate);
-            localStorage.setItem('tripPreferences', JSON.stringify(selectedPreferences));
-            localStorage.setItem('advancedPreferences', JSON.stringify(advancedPreferences));
-            localStorage.setItem('tripStyle', tripStyle); // Add this line
-
-            // Redirect to the next page
-            console.log('Redirecting to second-page...');
-            window.location.href = '/second-page';  // Remove .html extension
-        });
-    } else {
-        console.error('Form or date inputs not found for submission handler.');
+        }
     }
 
     // Handle advanced options toggle
-    const advancedOptionsToggle = document.getElementById('toggle-advanced-options');
-    const advancedOptionsContainer = document.getElementById('advanced-options-container');
-    const expandIcon = document.querySelector('.expand-icon');
+    function setupAdvancedToggle() {
+        const advancedToggle = document.getElementById('advanced-toggle');
+        const advancedOptions = document.getElementById('advanced-options');
+        const toggleIcon = document.querySelector('.toggle-icon');
 
-    if (advancedOptionsToggle && advancedOptionsContainer && expandIcon) {
-        advancedOptionsToggle.addEventListener('click', () => {
-            advancedOptionsContainer.classList.toggle('expanded');
-            expandIcon.classList.toggle('expanded');
-        });
+        if (advancedToggle && advancedOptions) {
+            console.log('Setting up advanced toggle');
+            
+            advancedToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const isExpanded = advancedOptions.classList.contains('expanded');
+                console.log('Toggle clicked, expanded:', isExpanded);
+                
+                if (isExpanded) {
+                    advancedOptions.classList.remove('expanded');
+                    if (toggleIcon) {
+                        toggleIcon.textContent = '▼';
+                        toggleIcon.style.transform = 'rotate(0deg)';
+                    }
+                } else {
+                    advancedOptions.classList.add('expanded');
+                    if (toggleIcon) {
+                        toggleIcon.textContent = '▲';
+                        toggleIcon.style.transform = 'rotate(180deg)';
+                    }
+                }
+            });
+        } else {
+            console.error('Advanced toggle elements not found');
+        }
     }
 
-    // Populate preference options
-    const preferenceOptions = [
-        { id: 'culture', label: 'Culture' },
-        { id: 'landmarks', label: 'Landmarks' },
-        { id: 'food', label: 'Foodie' },
-        { id: 'historical', label: 'Historical' },
-        { id: 'art', label: 'Art' },
-        { id: 'nature', label: 'Nature' },
-        { id: 'nightlife', label: 'Nightlife' },
-        { id: 'theme_parks', label: 'Theme Parks' }
-    ];
+    // Setup interactive form options
+    function setupFormInteractions() {
+        // Radio button selections
+        function setupRadioOptions(selector, groupName) {
+            const options = document.querySelectorAll(selector);
+            options.forEach(option => {
+                const radio = option.querySelector(`input[name="${groupName}"]`);
+                
+                option.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    options.forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+                    if (radio) radio.checked = true;
+                });
+            });
+        }
 
-    const preferencesList = document.querySelector('.preferences-list');
-    if (preferencesList) {
-        preferenceOptions.forEach(option => {
-            const label = document.createElement('label');
-            const input = document.createElement('input');
-            input.type = 'checkbox';
-            input.name = 'preferences';
-            input.value = option.id;
-            label.appendChild(input);
-            label.appendChild(document.createTextNode(' ' + option.label));
-            preferencesList.appendChild(label);
-        });
+        // Checkbox selections
+        function setupCheckboxOptions(selector, inputName) {
+            const options = document.querySelectorAll(selector);
+            options.forEach(option => {
+                const checkbox = option.querySelector(`input[name="${inputName}"]`);
+                const card = option.querySelector('.interest-card, .transport-card');
+                
+                option.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    if (checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        if (card) {
+                            card.classList.toggle('selected', checkbox.checked);
+                        }
+                    }
+                });
+                
+                if (checkbox && card) {
+                    card.classList.toggle('selected', checkbox.checked);
+                }
+            });
+        }
+
+        setupRadioOptions('.coverage-option', 'trip-coverage');
+        setupRadioOptions('.style-option', 'trip-style');
+        setupRadioOptions('.budget-option', 'budget');
+        setupRadioOptions('.dining-option', 'dining');
+        
+        setupCheckboxOptions('.interest-item', 'interests');
+        setupCheckboxOptions('.transport-option', 'transportation');
     }
 
-    // Handle slider inputs
-    const sliders = document.querySelectorAll('.preference-slider');
-    sliders.forEach(slider => {
-        slider.addEventListener('input', function () {
-            const value = parseInt(this.value);
-            const minValue = this.dataset.min;
-            const maxValue = this.dataset.max;
+    // Form submission handler
+    function setupFormSubmission() {
+        const tripForm = document.getElementById('trip-form');
+        const departureDateInput = document.getElementById('departure-date');
+        const arrivalDateInput = document.getElementById('arrival-date');
 
-            // Remove any previous selections for this pair
-            if (minValue) {
-                const minCheckbox = document.querySelector(`input[name="advanced-prefs"][value="${minValue}"]`);
-                if (minCheckbox) minCheckbox.checked = false;
-            }
+        if (tripForm && departureDateInput && arrivalDateInput) {
+            tripForm.addEventListener('submit', function (event) {
+                event.preventDefault();
 
-            if (maxValue) {
-                const maxCheckbox = document.querySelector(`input[name="advanced-prefs"][value="${maxValue}"]`);
-                if (maxCheckbox) maxCheckbox.checked = false;
-            }
+                const departureDate = departureDateInput.value.trim();
+                const arrivalDate = arrivalDateInput.value.trim();
+                const destinationInput = document.getElementById('destination');
+                const destination = selectedDestination || (destinationInput ? destinationInput.value : '');
 
-            // Set the appropriate checkbox based on the slider value
-            if (value === 1 && minValue) {
-                const minCheckbox = document.querySelector(`input[name="advanced-prefs"][value="${minValue}"]`);
-                if (minCheckbox) minCheckbox.checked = true;
-            } else if (value === 5 && maxValue) {
-                const maxCheckbox = document.querySelector(`input[name="advanced-prefs"][value="${maxValue}"]`);
-                if (maxCheckbox) maxCheckbox.checked = true;
+                if (!destination) {
+                    alert('Please enter a destination.');
+                    return;
+                }
+
+                if (!departureDate || !arrivalDate) {
+                    alert('Please enter both departure and arrival dates.');
+                    return;
+                }
+
+                if (new Date(departureDate) > new Date(arrivalDate)) {
+                    alert('Departure date cannot be after arrival date');
+                    return;
+                }
+
+                // Collect form data
+                const selectedInterests = Array.from(document.querySelectorAll('input[name="interests"]:checked')).map(cb => cb.value);
+                const tripCoverage = document.querySelector('input[name="trip-coverage"]:checked')?.value || 'single-city';
+                const tripStyle = document.querySelector('input[name="trip-style"]:checked')?.value || 'balanced';
+                const budget = document.querySelector('input[name="budget"]:checked')?.value || 'mid-range';
+                const groupSize = document.getElementById('group-size')?.value || '2';
+                const selectedTransportation = Array.from(document.querySelectorAll('input[name="transportation"]:checked')).map(cb => cb.value);
+                const dining = document.querySelector('input[name="dining"]:checked')?.value || 'local';
+
+                // Store in localStorage
+                localStorage.setItem('tripDestination', destination);
+                localStorage.setItem('tripDepartureDate', departureDate);
+                localStorage.setItem('tripArrivalDate', arrivalDate);
+                localStorage.setItem('tripCoverage', tripCoverage);
+                localStorage.setItem('tripPreferences', JSON.stringify(selectedInterests));
+                localStorage.setItem('tripStyle', tripStyle);
+                localStorage.setItem('tripBudget', budget);
+                localStorage.setItem('tripGroupSize', groupSize);
+                localStorage.setItem('tripTransportation', JSON.stringify(selectedTransportation));
+                localStorage.setItem('tripDining', dining);
+
+                console.log('Form data stored, redirecting...');
+                window.location.href = '/second-page';
+            });
+        }
+    }
+
+    // Inspiration destinations data - focused on activities
+const inspirationData = {
+    featured: [
+        {
+            title: "Tokyo, Japan",
+            description: "Experience ancient temples, modern technology, and incredible street food culture",
+            image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=800&q=80",
+            badges: ["Culture", "Food", "Adventure"],
+            activities: "Temple hopping, sushi making, robot shows"
+        },
+        {
+            title: "Santorini, Greece",
+            description: "Stunning sunsets, white-washed villages, and crystal-clear Mediterranean waters",
+            image: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=800&q=80",
+            badges: ["Romance", "Photography", "Relaxation"],
+            activities: "Sunset viewing, wine tasting, cliff hiking"
+        },
+        {
+            title: "Bali, Indonesia",
+            description: "Tropical paradise with rice terraces, spiritual temples, and vibrant culture",
+            image: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?auto=format&fit=crop&w=800&q=80",
+            badges: ["Nature", "Wellness", "Culture"],
+            activities: "Temple visits, yoga retreats, volcano hiking"
+        }
+    ],
+    
+    weekend: [
+        {
+            title: "Napa Valley, CA",
+            description: "World-class wineries and gourmet dining experiences",
+            image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=600&q=80",
+            badges: ["Food & Wine", "Romance"],
+            activities: "Wine tastings, vineyard tours, spa treatments"
+        },
+        {
+            title: "Charleston, SC",
+            description: "Historic charm with Southern hospitality and amazing cuisine",
+            image: "https://images.unsplash.com/photo-1518602164578-cd0074062767?auto=format&fit=crop&w=600&q=80",
+            badges: ["History", "Food", "Architecture"],
+            activities: "Historic tours, carriage rides, food walking tours"
+        },
+        {
+            title: "Big Sur, CA",
+            description: "Dramatic coastline with redwood forests and artistic communities",
+            image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=600&q=80",
+            badges: ["Nature", "Photography", "Art"],
+            activities: "Coastal drives, forest hikes, art galleries"
+        },
+        {
+            title: "Asheville, NC",
+            description: "Mountain town with craft breweries and outdoor adventures",
+            image: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=600&q=80",
+            badges: ["Adventure", "Craft Beer", "Music"],
+            activities: "Brewery tours, mountain biking, live music"
+        }
+    ],
+    
+    adventure: [
+        {
+            title: "Iceland Adventure",
+            description: "Northern lights, glaciers, and volcanic landscapes await exploration",
+            image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800&q=80",
+            badges: ["Adventure", "Nature", "Photography"],
+            activities: "Glacier hiking, northern lights tours, hot springs"
+        },
+        {
+            title: "Costa Rica Zip-lining",
+            description: "Canopy adventures through tropical rainforests",
+            image: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=800&q=80",
+            badges: ["Adventure", "Wildlife", "Nature"],
+            activities: "Zip-lining, wildlife tours, volcano hikes"
+        },
+        {
+            title: "Patagonia Trek",
+            description: "Epic hiking through pristine wilderness and dramatic peaks",
+            image: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=800&q=80",
+            badges: ["Hiking", "Wilderness", "Photography"],
+            activities: "Multi-day treks, wildlife spotting, camping"
+        }
+    ],
+    
+    romantic: [
+        {
+            title: "Paris, France",
+            description: "City of love with charming cafes and romantic river cruises",
+            image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=800&q=80",
+            badges: ["Romance", "Culture", "Art"],
+            activities: "Seine cruises, Louvre visits, wine tastings"
+        },
+        {
+            title: "Venice, Italy",
+            description: "Gondola rides through historic canals and intimate dining",
+            image: "https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?auto=format&fit=crop&w=800&q=80",
+            badges: ["Romance", "History", "Food"],
+            activities: "Gondola rides, St. Mark's Square, romantic dinners"
+        }
+    ],
+    
+    family: [
+        {
+            title: "Orlando, Florida",
+            description: "Theme park capital with magical experiences for all ages",
+            image: "https://images.unsplash.com/photo-1565552645632-d725f8bfc19a?auto=format&fit=crop&w=800&q=80",
+            badges: ["Family", "Entertainment", "Adventure"],
+            activities: "Disney World, Universal Studios, water parks"
+        },
+        {
+            title: "Yellowstone National Park",
+            description: "Wildlife encounters and geothermal wonders for nature-loving families",
+            image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80",
+            badges: ["Nature", "Wildlife", "Education"],
+            activities: "Geyser viewing, wildlife safaris, junior ranger programs"
+        },
+        {
+            title: "San Diego, CA",
+            description: "Perfect weather, beaches, and family-friendly attractions",
+            image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+            badges: ["Beaches", "Zoo", "Family"],
+            activities: "San Diego Zoo, beach days, Balboa Park"
+        }
+    ],
+    
+    group: [
+        {
+            title: "Las Vegas, Nevada",
+            description: "Entertainment capital with shows, dining, and nightlife adventures",
+            image: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=800&q=80",
+            badges: ["Nightlife", "Entertainment", "Dining"],
+            activities: "Shows, casino games, pool parties, group dining"
+        },
+        {
+            title: "Austin, Texas",
+            description: "Live music scene with BBQ tours and outdoor group activities",
+            image: "https://images.unsplash.com/photo-1531218150217-54595bc2b934?auto=format&fit=crop&w=800&q=80",
+            badges: ["Music", "Food", "Culture"],
+            activities: "Live music venues, BBQ tours, kayaking on Lady Bird Lake"
+        }
+    ]
+};
+
+// Function to create inspiration cards
+function createInspirationCard(destination, cardClass = 'inspiration-card') {
+    return `
+        <a href="#" class="${cardClass}" style="background-image: url('${destination.image}')">
+            <div class="card-overlay"></div>
+            <div class="card-info">
+                <div class="card-badges">
+                    ${destination.badges.map(badge => `<span class="card-badge">${badge}</span>`).join('')}
+                </div>
+                <h4 class="card-title">${destination.title}</h4>
+                <p class="card-description">${destination.description}</p>
+                <div class="card-details">
+                    <span class="card-activities">${destination.activities}</span>
+                </div>
+            </div>
+        </a>
+    `;
+}
+
+// Populate inspiration sections
+function populateInspirations() {
+    // Featured destinations
+    const featuredGrid = document.getElementById('featured-grid');
+    if (featuredGrid) {
+        featuredGrid.innerHTML = inspirationData.featured
+            .map(dest => createInspirationCard(dest, 'featured-card'))
+            .join('');
+    }
+
+    // Weekend getaways
+    const weekendGrid = document.getElementById('weekend-grid');
+    if (weekendGrid) {
+        weekendGrid.innerHTML = inspirationData.weekend
+            .map(dest => createInspirationCard(dest, 'weekend-card'))
+            .join('');
+    }
+
+    // Adventure trips
+    const adventureGrid = document.getElementById('adventure-grid');
+    if (adventureGrid) {
+        adventureGrid.innerHTML = inspirationData.adventure
+            .map(dest => createInspirationCard(dest, 'adventure-card'))
+            .join('');
+    }
+
+    // Romantic getaways
+    const romanticGrid = document.getElementById('romantic-grid');
+    if (romanticGrid) {
+        romanticGrid.innerHTML = inspirationData.romantic
+            .map(dest => createInspirationCard(dest, 'romantic-card'))
+            .join('');
+    }
+
+    // Family fun
+    const familyGrid = document.getElementById('family-grid');
+    if (familyGrid) {
+        familyGrid.innerHTML = inspirationData.family
+            .map(dest => createInspirationCard(dest, 'family-card'))
+            .join('');
+    }
+
+    // Group trips
+    const groupGrid = document.getElementById('group-grid');
+    if (groupGrid) {
+        groupGrid.innerHTML = inspirationData.group
+            .map(dest => createInspirationCard(dest, 'group-card'))
+            .join('');
+    }
+}
+
+// Main initialization
+document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, initializing app...');
+        
+        // Initialize all components
+        handleSharedItinerary();
+        initializeDatePickers();
+        setupAdvancedToggle();
+        setupFormInteractions();
+        setupFormSubmission();
+        populateInspirations();
+        
+        // Initialize Google Maps with delay to ensure DOM is ready
+        setTimeout(() => {
+            if (typeof google === 'undefined' || !google.maps) {
+                console.warn('Google Maps not loaded, using fallback');
+                fallbackDestinationInput();
+            } else {
+                initializeGoogleMaps();
             }
-        });
+        }, 1000);
+        
+        console.log('App initialization complete');
     });
-});
+
+})();
