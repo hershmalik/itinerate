@@ -179,52 +179,21 @@ function populateTrendingDestinations() {
     createTrendingCards(trendingData);
 }
 
+// Remove badges and shrink meta text for trending cards
 function createTrendingCards(data) {
+    // Only show a few categories on mobile (e.g. 3 cards)
+    const isMobile = window.innerWidth <= 600;
+    let filteredData = data;
+    if (isMobile) {
+        filteredData = data.slice(0, 3); // Only show first 3 cards on mobile
+    }
     const container = document.getElementById('trending-grid');
     if (!container) return;
-    
-    container.innerHTML = data.map(item => `
+    container.innerHTML = filteredData.map(item => `
         <div class="trending-card" onclick="selectDestination('${item.destination}', '${item.recommendedDuration}')">
             <img src="${item.image}" alt="${item.destination}" class="trending-card-image">
-            
-            <div class="trending-card-badges">
-                <div class="duration-badge">${item.recommendedDuration}</div>
-                <div class="price-badge">${item.priceRange}</div>
-            </div>
-            
             <div class="trending-card-content">
                 <h3 class="trending-card-title">${item.destination}</h3>
-                <p class="trending-card-description">${item.description}</p>
-                <div class="trending-card-meta">
-                    <div class="meta-item">
-                        <span class="meta-icon">📍</span>
-                        <span>${item.destination.split(',')[0]}</span>
-                    </div>
-                    <div class="meta-item">
-                        <span class="meta-icon">⭐</span>
-                        <span>Highly Rated</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="trending-card-highlights">
-                <div class="highlights-header">
-                    <h4 class="highlights-title">Experience Highlights</h4>
-                </div>
-                <div class="highlights-tags">
-                    ${item.highlights.map(highlight => `<span class="highlight-tag">${highlight}</span>`).join('')}
-                </div>
-                <div class="multi-city-suggestion" style="margin-top: 1rem;">
-                    <span class="multi-city-icon">🗺️</span>
-                    <span class="multi-city-text">Perfect for ${item.recommendedDuration} adventure</span>
-                </div>
-            </div>
-            
-            <div class="trending-card-overlay">
-                <button class="explore-btn">
-                    <span class="explore-icon">✈️</span>
-                    <span>Plan This Trip</span>
-                </button>
             </div>
         </div>
     `).join('');

@@ -324,11 +324,39 @@
             margin-bottom: var(--space-lg);
         }
 
-        .preference-toggles {
+        /* OVERRIDE: Use grid for compact two-column layout */
+        @media (min-width: 601px) {
+          .preference-toggles {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 0.5rem 1.2rem !important;
+            max-width: 420px !important;
+            margin: 0 auto 1.2rem auto !important;
+            justify-items: stretch !important;
+          }
+        }
+        @media (max-width: 600px) {
+          .preference-toggles {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 0.5rem 0.7rem !important;
+            max-width: 340px !important;
+            margin: 0 auto 1.2rem auto !important;
+            justify-items: center !important;
+          }
+          .preference-toggle {
+            min-width: 0;
+            width: 95%;
+            font-size: 0.85rem !important;
+            padding: 0.5rem 0.2rem !important;
+            text-align: center;
+            margin: 0 auto;
+            border-radius: 999px !important;
+            box-sizing: border-box;
             display: flex;
-            flex-wrap: wrap;
-            gap: var(--space-sm);
-            margin-bottom: var(--space-xl);
+            align-items: center;
+            justify-content: center;
+          }
         }
 
         .preference-toggle {
@@ -397,23 +425,21 @@
 
         /* Actions Bar */
         .actions-preview-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
+            position: static;
             background: var(--bg-primary);
+            box-shadow: none;
             border-top: 1px solid var(--border-color);
-            padding: var(--space-lg);
-            box-shadow: var(--shadow-xl);
-            z-index: 1000;
+            padding: 0.5rem 0;
+            margin-top: 2rem;
         }
 
         .actions-container {
-            max-width: 1200px;
+            max-width: 1000px;
             margin: 0 auto;
             display: flex;
-            gap: var(--space-md);
+            gap: 0.3rem;
             justify-content: center;
+            flex-wrap: wrap;
         }
 
         .action-button {
@@ -573,19 +599,12 @@
         <div id="customize-preferences" class="customize-preferences">
             <h3>🎨 Refine Your Journey</h3>
             <div class="preference-toggles">
-                <!-- Match the exact interests from page 1 -->
                 <button class="preference-toggle" data-preference="culture">Culture & History</button>
                 <button class="preference-toggle" data-preference="food">Food & Dining</button>
                 <button class="preference-toggle" data-preference="nature">Nature & Parks</button>
                 <button class="preference-toggle" data-preference="adventure">Adventure</button>
+                <button class="preference-toggle" data-preference="relaxation">Wellness & Relaxation</button>
                 <button class="preference-toggle" data-preference="nightlife">Nightlife</button>
-                <button class="preference-toggle" data-preference="shopping">Shopping</button>
-                <button class="preference-toggle" data-preference="art">Arts & Culture</button>
-                <button class="preference-toggle" data-preference="relaxation">Wellness</button>
-                <button class="preference-toggle" data-preference="sports">Sports & Events</button>
-                <button class="preference-toggle" data-preference="architecture">Architecture</button>
-                <button class="preference-toggle" data-preference="beaches">Beaches & Water</button>
-                <button class="preference-toggle" data-preference="photography">Photography</button>
             </div>
 
             <!-- Add Special Wishes section here on page 2 -->
@@ -824,26 +843,23 @@ END:VEVENT
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCnghfavV7G0Hy86_R2cSHze0KC5W9xZP0&libraries=places&callback=initMapAndItinerary" loading="async"></script>
 
     <!-- Actions Bar -->
-    <div class="actions-preview-bar">
-        <div class="actions-container">
-            <button class="action-button" id="export-pdf-action" onclick="exportToPDF()">
-                <div class="action-icon">📄</div>
-                <span>Export PDF</span>
+    <div class="actions-preview-bar" style="position: static; background: var(--bg-primary); box-shadow: none; border-top: 1px solid var(--border-color); padding: 0.5rem 0; margin-top: 2rem;">
+        <div class="actions-container" style="max-width: 1000px; margin: 0 auto; display: flex; gap: 0.3rem; justify-content: center; flex-wrap: wrap;">
+            <button class="action-button" id="export-pdf-action" onclick="exportToPDF()" style="min-width: 70px; padding: 0.3rem 0.7rem; font-size: 0.9rem; border-radius: 7px; flex-direction: row; gap: 0.3rem; align-items: center;">
+                <div class="action-icon" style="font-size: 1.1rem;">📄</div>
+                <span>PDF</span>
             </button>
-            
-            <button class="action-button" id="export-excel-action" onclick="exportToExcel()">
-                <div class="action-icon">📊</div>
-                <span>Export Excel</span>
+            <button class="action-button" id="export-excel-action" onclick="exportToExcel()" style="min-width: 70px; padding: 0.3rem 0.7rem; font-size: 0.9rem; border-radius: 7px; flex-direction: row; gap: 0.3rem; align-items: center;">
+                <div class="action-icon" style="font-size: 1.1rem;">📊</div>
+                <span>Excel</span>
             </button>
-            
-            <button class="action-button" id="export-calendar-action" onclick="exportToCalendar()">
-                <div class="action-icon">📅</div>
-                <span>Add to Calendar</span>
+            <button class="action-button" id="export-calendar-action" onclick="exportToCalendar()" style="min-width: 70px; padding: 0.3rem 0.7rem; font-size: 0.9rem; border-radius: 7px; flex-direction: row; gap: 0.3rem; align-items: center;">
+                <div class="action-icon" style="font-size: 1.1rem;">📅</div>
+                <span>Calendar</span>
             </button>
-            
-            <button class="action-button action-disabled">
-                <div class="action-icon">✈️</div>
-                <span>Book Flights</span>
+            <button class="action-button action-disabled" style="min-width: 70px; padding: 0.3rem 0.7rem; font-size: 0.9rem; border-radius: 7px; flex-direction: row; gap: 0.3rem; align-items: center;">
+                <div class="action-icon" style="font-size: 1.1rem;">✈️</div>
+                <span>Flights</span>
                 <span class="soon-pill">Soon</span>
             </button>
         </div>

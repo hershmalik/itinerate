@@ -433,7 +433,7 @@ function renderItineraryCards(itineraryItems) {
                     <span>🕒 ${item.time || ''}</span>
                     <span>⏱️ ${item.duration || ''}</span>
                 </div>
-                <div class="itinerary-card-title">${item.title || ''}</div>
+                <div class="itinerary-card-title">${item.activity || ''}</div>
                 <div class="itinerary-card-desc">${item.description || ''}</div>
                 <div class="itinerary-card-meta">
                     ${item.price ? `<span class="itinerary-card-price"><span class="icon">💰</span> ${item.price}</span>` : ''}

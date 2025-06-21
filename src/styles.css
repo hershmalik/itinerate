@@ -87,18 +87,18 @@ body {
 
 .nav-actions {
   display: flex;
-  gap: 1rem;
+  gap: 0.3rem;
   align-items: center;
 }
 
 .nav-btn {
-  padding: 0.6rem 1.5rem;
+  padding: 0.4rem 1.1rem;
   border: none;
-  border-radius: 12px;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   text-decoration: none;
   display: inline-block;
   text-align: center;
@@ -318,20 +318,16 @@ body {
 
 /* Travel Style Options */
 .style-options {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: stretch;
 }
 
 .style-option {
-  cursor: pointer;
-  position: relative;
-}
-
-.style-option input[type="radio"] {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .style-card {
@@ -339,12 +335,15 @@ body {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 1.5rem 1rem;
+  padding: 0.7rem 0.5rem;
   border: 2px solid #e1e8ed;
   border-radius: 16px;
   transition: all 0.3s ease;
   background: white;
   height: 100%;
+  min-width: 0;
+  min-height: 60px;
+  font-size: 0.95em;
 }
 
 .style-card:hover {
@@ -361,20 +360,39 @@ body {
 }
 
 .style-icon {
-  font-size: 2rem;
-  margin-bottom: 0.75rem;
+  font-size: 1.2rem;
+  margin-bottom: 0.3rem;
 }
 
 .style-name {
-  font-weight: 600;
-  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  margin-bottom: 0.2rem;
   color: #333;
 }
 
 .style-desc {
-  font-size: 0.9rem;
-  color: #666;
-  line-height: 1.4;
+  font-size: 0.8rem;
+  color: #333 !important;
+}
+
+@media (max-width: 700px) {
+  .style-options {
+    flex-direction: row;
+    gap: 0.3rem;
+  }
+  .style-card {
+    padding: 0.5rem 0.2rem;
+    font-size: 0.9em;
+  }
+  .style-icon {
+    font-size: 1rem;
+  }
+  .style-name {
+    font-size: 0.85rem;
+  }
+  .style-desc {
+    font-size: 0.7rem;
+  }
 }
 
 /* Budget Options */
@@ -480,14 +498,13 @@ body {
 }
 
 .interest-icon {
-  font-size: 1.5rem;
-  margin-right: 0.75rem;
+  font-size: 0.6em !important;
+  margin-right: 0.3rem;
 }
 
 .interest-name {
-  font-weight: 600;
-  color: #333;
-  font-size: 0.95rem;
+  color: #222 !important;
+  font-size: 0.65rem;
 }
 
 /* Submit Button */
@@ -610,10 +627,9 @@ body {
 }
 
 .card-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  margin-bottom: 0.75rem;
-  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.2rem;
 }
 
 .card-description {
@@ -628,7 +644,7 @@ body {
   font-weight: 600;
   opacity: 0;
   transition: opacity 0.3s ease;
-  font-size: 1rem;
+  font-size: 0.85rem;
 }
 
 .trending-card:hover .card-link {
@@ -994,13 +1010,13 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 16px 12px;
+    padding: 8px 4px;
     background: white;
     border: 2px solid #E5E7EB;
     border-radius: 12px;
     text-align: center;
     transition: all 0.3s ease;
-    min-height: 80px;
+    min-height: 48px;
 }
 
 .transport-card:hover {
@@ -1018,11 +1034,9 @@ body {
 }
 
 .transport-icon {
-    font-size: 24px;
-    margin-bottom: 8px;
-    display: block;
+    font-size: 32px !important;
+    margin-bottom: 2px;
 }
-
 .transport-name {
     font-size: 14px;
     font-weight: 500;
@@ -1069,9 +1083,8 @@ body {
 }
 
 .dining-icon {
-    font-size: 28px;
-    margin-bottom: 10px;
-    display: block;
+    font-size: 14px !important;
+    margin-bottom: 5px;
 }
 
 .dining-name {
@@ -1301,50 +1314,162 @@ body {
 }
 
 @media (max-width: 700px) {
-  .itinerary-card_header, .itinerary-card_body {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
+  /* --- MOBILE LAYOUT IMPROVEMENTS --- */
+  /* Where/Departure/Return: stack as 3 rows */
+  .form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
   }
-  .itinerary-card_img {
-    height: 70px;
+  /* Travel Style: 3 horizontal rows */
+  .style-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+  /* Interests: 2 columns */
+  .interests-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  /* Budget: horizontal scroll if needed */
+  .budget-options {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.5rem;
+  }
+  .budget-option {
+    min-width: 180px;
+    flex: 0 0 auto;
   }
 }
 
-@media (max-width: 900px) {
-  .itinerary-day-header,
-  .itinerary-day-cards-wrapper {
-    padding-left: 0.1rem;
-    padding-right: 0.1rem;
+/* Transport options: always dark font for readability */
+.transport-card, .transport-card.selected {
+  color: #222 !important;
+}
+.transport-card.selected .transport-name {
+  color: #fff !important;
+}
+
+/* Dining options: always dark font for readability */
+.dining-card, .dining-card.selected {
+  color: #222 !important;
+}
+.dining-card.selected .dining-name {
+  color: #fff !important;
+}
+
+/* Make all form text darker for readability */
+.form-group label,
+.section-title,
+.style-name,
+.budget-name,
+.coverage-name,
+.dining-name,
+.transport-name,
+.interest-name {
+  color: #181818 !important;
+}
+
+/* Remove radio/checkbox bubbles for custom options */
+.style-option input[type="radio"],
+.budget-option input[type="radio"],
+.coverage-option input[type="radio"],
+.dining-option input[type="radio"],
+.transport-option input[type="checkbox"],
+.interest-item input[type="checkbox"] {
+  display: none !important;
+}
+
+/* Condense advanced section: reduce vertical spacing */
+.advanced-options .form-section {
+  margin-bottom: 1.1rem;
+  padding-bottom: 0.2rem;
+}
+.coverage-options,
+.budget-options,
+.transport-options,
+.dining-options {
+  margin-top: 0.2rem;
+  margin-bottom: 0.2rem;
+}
+
+/* Reduce padding in advanced cards */
+.coverage-card,
+.budget-card,
+.transport-card,
+.dining-card {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+/* Shrink trending card city name and meta text */
+.trending-card-title {
+  font-size: 1rem !important;
+  font-weight: 600;
+  margin-bottom: 0.1rem;
+}
+.trending-card-meta {
+  font-size: 0.85rem !important;
+}
+
+/* Shrink nav actions for login/signup to fit one row */
+.nav-actions {
+  gap: 0.1rem !important;
+}
+.nav-btn, .nav-btn.primary {
+  font-size: 0.85rem !important;
+  padding: 0.25rem 0.7rem !important;
+  border-radius: 7px !important;
+}
+
+/* Shrink and unfreeze export menu on second page */
+.actions-preview-bar {
+  position: static !important;
+  background: var(--bg-primary) !important;
+  box-shadow: none !important;
+  border-top: 1px solid var(--border-color) !important;
+  padding: 0.5rem 0 !important;
+  margin-top: 2rem !important;
+}
+.actions-container {
+  max-width: 1000px !important;
+  margin: 0 auto !important;
+  display: flex !important;
+  gap: 0.3rem !important;
+  justify-content: center !important;
+  flex-wrap: wrap !important;
+}
+.action-button {
+  min-width: 70px !important;
+  padding: 0.3rem 0.7rem !important;
+  font-size: 0.9rem !important;
+  border-radius: 7px !important;
+  flex-direction: row !important;
+  gap: 0.3rem !important;
+  align-items: center !important;
+}
+.action-icon {
+  font-size: 1.1rem !important;
+}
+
+/* Preference Toggles */
+.preference-toggles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 1.2rem;
+  max-width: 420px;
+  margin: 0 auto 1.2rem auto;
+  justify-items: stretch;
+}
+
+@media (max-width: 600px) {
+  .preference-toggles {
+    grid-template-columns: 1fr;
+    gap: 0.4rem 0;
+    max-width: 95vw;
   }
-  .itinerary-card {
-    padding: 0.4rem 0.2rem 0.4rem 0.2rem;
-  }
-}
-
-/* Hide description by default, reveal on card hover */
-.hover-reveal {
-  opacity: 0;
-  max-height: 0;
-  overflow: hidden;
-  transition: opacity 0.3s, max-height 0.3s;
-}
-
-.inspiration-card:hover .hover-reveal,
-.featured-card:hover .hover-reveal,
-.weekend-card:hover .hover-reveal,
-.adventure-card:hover .hover-reveal,
-.romantic-card:hover .hover-reveal,
-.family-card:hover .hover-reveal,
-.group-card:hover .hover-reveal {
-  opacity: 1;
-  max-height: 200px;
-}
-
-.transport-desc, .dining-desc {
-  display: block;
-  margin-top: 0.5em;
-  font-size: 0.95em;
-  color: #444;
-  opacity: 0.85;
-  text-align: center;
 }
