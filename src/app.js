@@ -460,10 +460,20 @@ function populateInspirations() {
     // Weekend getaways
     const weekendGrid = document.getElementById('weekend-grid');
     if (weekendGrid) {
-        // Remove duplicates by image URL
-        const uniqueWeekend = inspirationData.weekend.filter((dest, idx, arr) =>
-            arr.findIndex(d => d.image === dest.image) === idx
-        );
+        // Remove duplicates by full image URL and ensure valid data
+        let uniqueWeekend = [];
+        let seen = new Set();
+        for (const dest of inspirationData.weekend) {
+            if (!dest.image || !dest.title) continue;
+            const url = dest.image.trim();
+            if (!seen.has(url)) {
+                seen.add(url);
+                uniqueWeekend.push(dest);
+            }
+        }
+        if (isMobile) {
+            uniqueWeekend = uniqueWeekend.slice(0, 3); // Only show first 3 unique cards on mobile
+        }
         weekendGrid.innerHTML = uniqueWeekend
             .map(dest => createInspirationCard(dest, 'weekend-card'))
             .join('');

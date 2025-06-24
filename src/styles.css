@@ -2022,3 +2022,10 @@ body {
     font-weight: 500 !important;
   }
 }
+
+/* Hide weekend section on mobile */
+@media (max-width: 768px) {
+  .weekend-section {
+    display: none !important;
+  }
+}
