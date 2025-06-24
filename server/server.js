@@ -22,7 +22,7 @@ if (!process.env.OPENAI_API_KEY) {
 // Add missing constant
 const MAX_DAYS_PER_CHUNK = 5;
 
-const PORT = process.env.PORT || 3000; // Use standard port 3000, let hosting platform handle it
+const PORT = process.env.PORT || 10000; // Use standard port 3000, let hosting platform handle it
 
 const app = express();
 
