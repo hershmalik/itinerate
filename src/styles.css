@@ -249,17 +249,24 @@ body {
 
 .suggestions-dropdown {
   position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: white;
-  border: 2px solid #e1e8ed;
-  border-top: none;
-  border-radius: 0 0 16px 16px;
-  max-height: 200px;
-  overflow-y: auto;
-  z-index: 100;
+  z-index: 10;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  margin-top: 2px;
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
   display: none;
+}
+
+.suggestion-item {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.suggestion-item:hover {
+  background: #f0f4ff;
 }
 
 /* Advanced Options */
@@ -810,6 +817,18 @@ body {
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
 }
 
+@media (max-width: 700px) {
+  .featured-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .featured-card {
+    height: 200px;
+    min-height: 140px;
+  }
+}
+
 /* Weekend Section - Horizontal scroll */
 .weekend-section {
   margin-bottom: 4rem;
@@ -1146,6 +1165,28 @@ body {
   margin-bottom: 0.15rem;
 }
 
+.itinerary-card-header-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.2rem;
+}
+.itinerary-card-time {
+  display: flex;
+  align-items: center;
+  font-size: 1.08rem;
+  color: #2563eb;
+  font-weight: 600;
+  gap: 0.3rem;
+}
+.time-icon {
+  font-size: 1.3rem;
+  color: #2563eb;
+  margin-right: 0.1rem;
+}
+
 .itinerary-card-img {
   width: 100%;
   height: 90px;
@@ -1330,6 +1371,7 @@ body {
   /* Interests: 2 columns */
   .interests-grid {
     grid-template-columns: 1fr 1fr !important;
+    gap: 0.5rem !important;
   }
   /* Budget: horizontal scroll if needed */
   .budget-options {
@@ -1343,6 +1385,42 @@ body {
   .budget-option {
     min-width: 180px;
     flex: 0 0 auto;
+  }
+  .featured-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .featured-card {
+    height: 200px;
+    min-height: 140px;
+  }
+  .interests-grid {
+    width: 100% !important;
+    max-width: none !important;
+    box-sizing: border-box !important;
+    overflow-x: visible !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  .interest-item {
+    min-width: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .interest-card {
+    min-width: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  body, html {
+    overflow-x: hidden !important;
   }
 }
 
@@ -1471,5 +1549,476 @@ body {
     grid-template-columns: 1fr;
     gap: 0.4rem 0;
     max-width: 95vw;
+  }
+}
+
+/* Force action and regenerate buttons to display icons on the right */
+.action-button, .regenerate-button {
+  flex-direction: row-reverse !important;
+}
+
+/* Results Page: Two-column layout for itinerary and map */
+@media (min-width: 1000px) {
+  .results-flex-layout {
+    display: flex;
+    gap: 2.5rem;
+    align-items: flex-start;
+  }
+  .results-main-col {
+    flex: 2 1 0;
+    min-width: 0;
+  }
+  .results-map-col {
+    flex: 1 1 350px;
+    min-width: 350px;
+    max-width: 500px;
+    position: sticky;
+    top: 40px;
+    align-self: flex-start;
+  }
+  #map-container {
+    margin-bottom: 0;
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+@media (max-width: 999px) {
+  .results-flex-layout {
+    display: block;
+  }
+  .results-map-col {
+    max-width: 100%;
+    margin-top: 2rem;
+  }
+}
+
+/* Flatpickr override for compact form */
+.flatpickr-calendar {
+  font-family: inherit;
+  font-size: 1rem;
+  z-index: 2000 !important;
+}
+.flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange, .flatpickr-day:hover {
+  background: var(--accent-color, #2563eb);
+  color: #fff;
+}
+
+/* Modern search bar styles for compact-trip-form */
+.modern-search-bar {
+  background: #f7f7f8;
+  border-radius: 18px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  padding: 32px 24px 18px 24px;
+  max-width: 1200px;
+  margin: 32px auto 0 auto;
+}
+.search-fields-row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 24px;
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  flex: 1 1 0;
+}
+.form-group label {
+  font-size: 15px;
+  font-weight: 500;
+  margin-bottom: 7px;
+  color: #222;
+}
+.form-group input,
+.form-group select {
+  height: 44px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 12px;
+  padding: 0 14px;
+  font-size: 17px;
+  background: #fff;
+  transition: border 0.2s;
+}
+.form-group input:focus,
+.form-group select:focus {
+  border-color: #1a2aff;
+  outline: none;
+}
+.outlined-btn {
+  height: 44px;
+  border: 2px solid #1a2aff;
+  background: #fff;
+  color: #1a2aff;
+  border-radius: 22px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.outlined-btn:hover {
+  background: #1a2aff;
+  color: #fff;
+}
+.update-btn-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 140px;
+}
+.update-btn {
+  width: 100%;
+  margin-bottom: 0;
+}
+.advanced-link {
+  color: #1a2aff;
+  font-size: 15px;
+  text-decoration: underline;
+  margin-top: 2px;
+  margin-left: 6px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+.suggestions-dropdown {
+  position: absolute;
+  z-index: 10;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  margin-top: 2px;
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .search-fields-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .modern-search-bar {
+    padding: 18px 8px 12px 8px;
+  }
+}
+
+/* Modern Trip Bar Styles */
+.modern-trip-bar-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1.2rem;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  position: static;
+  overflow-x: auto;
+}
+.modern-trip-bar-fields {
+  display: flex;
+  flex-direction: row;
+  gap: 1.1rem;
+  flex: 1 1 0;
+  min-width: 0;
+}
+.floating-update-btn {
+  margin-left: 1.2rem;
+  min-width: 36px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.10);
+  font-size: 1.25rem;
+  border-radius: 50%;
+  background: var(--accent-color);
+  color: #fff;
+  border: none;
+  transition: background 0.2s;
+}
+.floating-update-btn:hover {
+  background: var(--accent-hover);
+}
+
+/* Modern Trip Search Bar Styles */
+.modern-trip-search-bar {
+  background: #fff;
+  border-radius: 2.5rem;
+  box-shadow: 0 4px 24px rgba(37,99,235,0.10);
+  padding: 1.2rem 2rem 1.2rem 2rem;
+  margin: 2rem auto 1.2rem auto;
+  max-width: 1100px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.7rem;
+}
+.modern-trip-search-fields {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1.1rem;
+  width: 100%;
+}
+.modern-trip-search-field {
+  display: flex;
+  align-items: center;
+  background: #f8f9fa;
+  border-radius: 2rem;
+  padding: 0.5rem 1.2rem;
+  box-shadow: 0 1px 4px rgba(37,99,235,0.04);
+  min-width: 150px;
+  flex: 1 1 0;
+  font-size: 1rem;
+}
+.modern-trip-search-field input,
+.modern-trip-search-field select {
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  padding: 0.3rem 0.5rem;
+  outline: none;
+  width: 100%;
+}
+.modern-trip-search-field input:focus,
+.modern-trip-search-field select:focus {
+  background: #e9ecef;
+  border-radius: 1.5rem;
+}
+.modern-search-btn-pill {
+  background: var(--accent-color);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-left: 1.2rem;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.10);
+  transition: background 0.2s;
+}
+.modern-search-btn-pill:hover {
+  background: var(--accent-hover);
+}
+.modern-trip-search-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 1.1rem;
+  justify-content: center;
+  align-items: center;
+  margin-top: 0.2rem;
+}
+.modern-pill-btn {
+  background: #f8f9fa;
+  color: var(--accent-color);
+  border: none;
+  border-radius: 999px;
+  padding: 0.65rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  box-shadow: 0 1px 4px rgba(37,99,235,0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modern-pill-btn:hover {
+  background: var(--accent-color);
+  color: #fff;
+}
+@media (max-width: 900px) {
+  .modern-trip-search-bar {
+    padding: 1rem 0.5rem;
+    max-width: 100vw;
+  }
+  .modern-trip-search-fields {
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+  .modern-search-btn-pill {
+    margin-left: 0;
+    margin-top: 0.7rem;
+  }
+  .modern-trip-search-actions {
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+}
+
+/* Modern Action Button */
+.modern-action-btn {
+  background: #f8f9fa;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.08);
+  color: #2563eb;
+  font-size: 1.5rem;
+  margin: 0 0.2rem;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+}
+.modern-action-btn:hover, .modern-action-btn:focus {
+  background: #2563eb;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(37,99,235,0.18);
+  outline: none;
+}
+
+/* Material Icons */
+.material-icons {
+  font-family: 'Material Icons', Arial, sans-serif;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 1.7rem;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded');
+
+.material-symbols-rounded {
+  font-family: 'Material Symbols Rounded', 'Material Icons', Arial, sans-serif;
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+  font-size: 1.7rem;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  vertical-align: middle;
+}
+
+/* Specific Button Enhancements */
+.add-activity-btn.modern-action-btn {
+  margin: 0.7rem auto 0.2rem auto;
+  background: #eaf1ff;
+  color: #2563eb;
+  width: 44px;
+  height: 44px;
+  font-size: 2rem;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.10);
+}
+.add-activity-btn.modern-action-btn:hover, .add-activity-btn.modern-action-btn:focus {
+  background: #2563eb;
+  color: #fff;
+}
+.itinerary-card-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.2rem;
+  justify-content: flex-end;
+  margin-bottom: 0.2rem;
+}
+
+/* --- INTERESTS: Make bigger and bolder --- */
+.interests-grid {
+  gap: 1.3rem;
+}
+.interest-card {
+  padding: 1.35rem 1.7rem;
+  font-size: 1.15rem;
+  min-height: 64px;
+}
+.interest-icon {
+  font-size: 2.1rem !important;
+  margin-right: 0.7rem;
+}
+.interest-name {
+  font-size: 1.13rem;
+  font-weight: 600;
+}
+
+/* --- ADVANCED SECTION: Make a bit smaller --- */
+.coverage-card,
+.budget-card,
+.dining-card,
+.transport-card {
+  padding: 0.7rem 0.5rem !important;
+  font-size: 0.98rem !important;
+  min-height: 44px !important;
+}
+.coverage-icon,
+.budget-icon,
+.dining-icon,
+.transport-icon {
+  font-size: 1.45rem !important;
+  margin-bottom: 0.3rem !important;
+}
+.coverage-name,
+.budget-name,
+.dining-name,
+.transport-name {
+  font-size: 1.01rem !important;
+  font-weight: 600;
+}
+.coverage-desc,
+.budget-desc,
+.dining-desc {
+  font-size: 0.85rem !important;
+}
+
+/* --- Reduce grid gaps for advanced options --- */
+.coverage-options,
+.budget-options,
+.dining-options,
+.transport-options {
+  gap: 0.7rem !important;
+}
+
+/* --- FINAL MOBILE INTERESTS GRID OVERRIDE --- */
+@media (max-width: 700px) {
+  .interests-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.4rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+  }
+  .interest-item {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+  .interest-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    font-size: 0.85rem !important;
+    padding: 0.55rem 0.2rem !important;
+    border-radius: 10px !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+  }
+  .interest-icon {
+    font-size: 1.1rem !important;
+    margin-right: 0.3rem !important;
+  }
+  .interest-name {
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
   }
 }

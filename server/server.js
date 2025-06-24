@@ -533,9 +533,10 @@ function removeDuplicateActivities(itinerary) {
   const uniqueItinerary = [];
   
   itinerary.forEach(item => {
-    // Create a unique key based on activity and location
-    const key = `${item.activity.toLowerCase().trim()}-${item.location.toLowerCase().trim()}`;
-    
+    // Safe toLowerCase for activity and location
+    const activityKey = (item && typeof item.activity === 'string') ? item.activity.toLowerCase().trim() : '';
+    const locationKey = (item && typeof item.location === 'string') ? item.location.toLowerCase().trim() : '';
+    const key = `${activityKey}-${locationKey}`;
     if (!seen.has(key)) {
       seen.add(key);
       uniqueItinerary.push(item);
@@ -629,14 +630,12 @@ function mapWeatherConditionToIcon(conditions, icon) {
         'rain': '10d',
         'snow': '13d'
     };
-    
-    const lowerConditions = conditions.toLowerCase();
+    const lowerConditions = (typeof conditions === 'string') ? conditions.toLowerCase() : '';
     for (const [key, value] of Object.entries(conditionMap)) {
         if (lowerConditions.includes(key)) {
             return value;
         }
     }
-    
     return icon || '01d'; // Default icon
 }
 
@@ -830,3 +829,134 @@ app.get('/api/trending-destinations', async (req, res) => {
         });
     }
 });
+
+// === ADD ACTIVITY ENDPOINT (AI-Generated) ===
+app.post('/api/add-activity', async (req, res) => {
+    try {
+        const { day, destination, preferences, itinerary, advancedPreferences, tripStyle } = req.body;
+        if (!day || !destination || !preferences || !Array.isArray(itinerary)) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+        // Generate descriptor tags for existing activities
+        const existingTags = new Set(itinerary.map(a => (a && typeof a.activity === 'string' ? a.activity.toLowerCase().trim() : '')));
+        // Compose prompt for OpenAI
+        let userPrompt = `Suggest a single new activity for a travel itinerary in ${destination} on ${day}.\n` +
+            `Traveler preferences: ${preferences.join(', ')}.\n` +
+            (advancedPreferences && advancedPreferences.length > 0 ? `Advanced preferences: ${advancedPreferences.join(', ')}.\n` : '') +
+            (tripStyle ? `Trip style: ${tripStyle}.\n` : '') +
+            `Do NOT suggest any of these activities: ${Array.from(existingTags).join('; ')}.\n` +
+            `Respond as a JSON object with fields: day, time, activity, location, and a descriptorTags array (e.g. [\"museum\", \"art\", \"morning\"]).`;
+        const messages = [
+            { role: 'system', content: 'You are a travel planner AI.' },
+            { role: 'user', content: userPrompt }
+        ];
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: 'gpt-3.5-turbo',
+                messages,
+                temperature: 0.8,
+                max_tokens: 400
+            })
+        });
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`OpenAI API error (${response.status}): ${errorText}`);
+        }
+        let responseText = (await response.json()).choices[0].message.content;
+        responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        let newActivity;
+        try {
+            newActivity = JSON.parse(responseText);
+        } catch (e) {
+            // fallback: try to extract JSON
+            const match = responseText.match(/\{[\s\S]*\}/);
+            newActivity = match ? JSON.parse(match[0]) : null;
+        }
+        newActivity = sanitizeActivityObject(newActivity);
+        if (!newActivity) return res.status(500).json({ error: 'Failed to parse AI response' });
+        res.json(newActivity);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to add activity', message: error.message });
+    }
+});
+
+// === REGENERATE ACTIVITY ENDPOINT (AI-Generated) ===
+app.post('/api/regenerate-activity', async (req, res) => {
+    try {
+        const { day, time, destination, preferences, itinerary, oldActivity, advancedPreferences, tripStyle } = req.body;
+        if (!day || !time || !destination || !preferences || !Array.isArray(itinerary) || !oldActivity) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+        // Generate descriptor tags for old activity
+        const oldTags = oldActivity.descriptorTags || [];
+        const existingTags = new Set(itinerary.map(a => (a && typeof a.activity === 'string' ? a.activity.toLowerCase().trim() : '')));
+        // Compose prompt for OpenAI
+        let userPrompt = `Suggest a new activity for a travel itinerary in ${destination} on ${day} at ${time}.\n` +
+            `Traveler preferences: ${preferences.join(', ')}.\n` +
+            (advancedPreferences && advancedPreferences.length > 0 ? `Advanced preferences: ${advancedPreferences.join(', ')}.\n` : '') +
+            (tripStyle ? `Trip style: ${tripStyle}.\n` : '') +
+            `The new activity should be similar to this one: ${oldActivity.activity}.\n` +
+            (oldTags.length > 0 ? `Descriptor tags: ${oldTags.join(', ')}.\n` : '') +
+            `Do NOT suggest any of these activities: ${Array.from(existingTags).join('; ')}.\n` +
+            `Respond as a JSON object with fields: day, time, activity, location, and a descriptorTags array (e.g. [\"museum\", \"art\", \"morning\"]).`;
+        const messages = [
+            { role: 'system', content: 'You are a travel planner AI.' },
+            { role: 'user', content: userPrompt }
+        ];
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: 'gpt-3.5-turbo',
+                messages,
+                temperature: 0.8,
+                max_tokens: 400
+            })
+        });
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`OpenAI API error (${response.status}): ${errorText}`);
+        }
+        let responseText = (await response.json()).choices[0].message.content;
+        responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        let newActivity;
+        try {
+            newActivity = JSON.parse(responseText);
+        } catch (e) {
+            // fallback: try to extract JSON
+            const match = responseText.match(/\{[\s\S]*\}/);
+            newActivity = match ? JSON.parse(match[0]) : null;
+        }
+        newActivity = sanitizeActivityObject(newActivity);
+        if (!newActivity) return res.status(500).json({ error: 'Failed to parse AI response' });
+        res.json(newActivity);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to regenerate activity', message: error.message });
+    }
+});
+
+// Helper to sanitize activity objects
+function sanitizeActivityObject(obj) {
+    if (!obj) return obj;
+    if (!obj.activity || typeof obj.activity !== 'string' || !obj.activity.trim()) {
+        obj.activity = 'Unknown Activity';
+    }
+    if (!obj.location || typeof obj.location !== 'string' || !obj.location.trim()) {
+        obj.location = 'Unknown Location';
+    }
+    if (!obj.day || typeof obj.day !== 'string' || !obj.day.trim()) {
+        obj.day = 'Unknown Day';
+    }
+    if (!obj.time || typeof obj.time !== 'string' || !obj.time.trim()) {
+        obj.time = 'Unknown Time';
+    }
+    return obj;
+}

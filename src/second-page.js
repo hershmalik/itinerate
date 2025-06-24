@@ -93,6 +93,128 @@ window.addEventListener('DOMContentLoaded', () => {
       });
     });
   }
+
+  // --- Interests & Advanced Options Modal Logic ---
+  const interestsBtn = document.getElementById('open-interests-modal');
+  const interestsModal = document.getElementById('interests-modal');
+  const interestsClose = document.getElementById('close-interests-modal');
+  const interestsApply = document.getElementById('apply-interests-modal');
+  if (interestsBtn && interestsModal) interestsBtn.onclick = () => interestsModal.style.display = 'flex';
+  if (interestsClose && interestsModal) interestsClose.onclick = () => interestsModal.style.display = 'none';
+  if (interestsApply && interestsModal) interestsApply.onclick = () => { interestsModal.style.display = 'none'; };
+
+  // Advanced Modal (for both button and link)
+  const advBtn = document.getElementById('open-advanced-modal');
+  const advLink = document.getElementById('open-advanced-modal-link');
+  const advModal = document.getElementById('advanced-modal');
+  const advClose = document.getElementById('close-advanced-modal');
+  const advApply = document.getElementById('apply-advanced-modal');
+
+  if (advBtn && advModal) {
+    advBtn.onclick = () => advModal.style.display = 'flex';
+  }
+  if (advLink && advModal) {
+    advLink.onclick = (e) => { e.preventDefault(); advModal.style.display = 'flex'; };
+  }
+  if (advClose && advModal) {
+    advClose.onclick = () => advModal.style.display = 'none';
+  }
+  if (advApply && advModal) {
+    advApply.onclick = () => {
+      // Collect advanced options (e.g. price, room type)
+      const checked = Array.from(advModal.querySelectorAll('input[type="checkbox"]:checked'));
+      const selected = checked.map(cb => cb.value);
+      localStorage.setItem('advancedPreferences', JSON.stringify(selected));
+      advModal.style.display = 'none';
+      // Optionally, regenerate itinerary if advanced options affect it
+      regenerateItineraryWithUpdatedPreferences();
+    };
+  }
+
+  // Custom Instructions Modal
+  const customInstructionsLink = document.getElementById('open-custom-instructions-link');
+  const customInstructionsModal = document.getElementById('custom-instructions-modal');
+  const customInstructionsClose = document.getElementById('close-custom-instructions-modal');
+  const customInstructionsApply = document.getElementById('apply-custom-instructions-modal');
+  if (customInstructionsLink && customInstructionsModal) customInstructionsLink.onclick = (e) => { e.preventDefault(); customInstructionsModal.style.display = 'flex'; };
+  if (customInstructionsClose && customInstructionsModal) customInstructionsClose.onclick = () => customInstructionsModal.style.display = 'none';
+  if (customInstructionsApply && customInstructionsModal) customInstructionsApply.onclick = () => {
+    const textarea = document.getElementById('custom-instructions-textarea');
+    if (textarea) {
+      localStorage.setItem('customInstructions', textarea.value);
+    }
+    customInstructionsModal.style.display = 'none';
+  };
+
+  // Close modals on outside click
+  window.onclick = function(event) {
+    if (event.target === interestsModal) interestsModal.style.display = 'none';
+    if (event.target === advModal) advModal.style.display = 'none';
+  };
+
+  // --- Compact Form Enhancements (Date Picker, Autocomplete, Modals) ---
+  // Date pickers
+  if (window.flatpickr) {
+    const depPicker = flatpickr('#compact-departure-date', {
+      minDate: 'today',
+      dateFormat: 'Y-m-d',
+      onChange: function(selectedDates, dateStr) {
+        arrPicker.set('minDate', dateStr);
+      }
+    });
+    const arrPicker = flatpickr('#compact-arrival-date', {
+      minDate: 'today',
+      dateFormat: 'Y-m-d'
+    });
+    // --- PATCH: Set values from localStorage after flatpickr init ---
+    const depVal = localStorage.getItem('tripDepartureDate');
+    const arrVal = localStorage.getItem('tripArrivalDate');
+    if (depVal) document.getElementById('compact-departure-date').value = depVal;
+    if (arrVal) document.getElementById('compact-arrival-date').value = arrVal;
+  }
+  // REMOVE custom autocomplete for destination input entirely. Only use Google Maps Places Autocomplete
+
+  // Modal popups for filters and advanced (compact form, use unique variable names)
+  const compactFiltersBtn = document.getElementById('open-filters-modal');
+  const compactFiltersModal = document.getElementById('filters-modal');
+  const compactFiltersClose = document.getElementById('close-filters-modal');
+  const compactFiltersApply = document.getElementById('apply-filters-modal');
+  if (compactFiltersBtn && compactFiltersModal) compactFiltersBtn.onclick = () => compactFiltersModal.style.display = 'flex';
+  if (compactFiltersClose && compactFiltersModal) compactFiltersClose.onclick = () => compactFiltersModal.style.display = 'none';
+  if (compactFiltersApply && compactFiltersModal) compactFiltersApply.onclick = () => { compactFiltersModal.style.display = 'none'; };
+  const compactAdvBtn = document.getElementById('open-advanced-modal');
+  const compactAdvModal = document.getElementById('advanced-modal');
+  const compactAdvClose = document.getElementById('close-advanced-modal');
+  const compactAdvApply = document.getElementById('apply-advanced-modal');
+  if (compactAdvBtn && compactAdvModal) compactAdvBtn.onclick = () => compactAdvModal.style.display = 'flex';
+  if (compactAdvClose && compactAdvModal) compactAdvClose.onclick = () => compactAdvModal.style.display = 'none';
+  if (compactAdvApply && compactAdvModal) compactAdvApply.onclick = () => { compactAdvModal.style.display = 'none'; };
+  window.addEventListener('click', function(event) {
+    if (event.target === compactFiltersModal) compactFiltersModal.style.display = 'none';
+    if (event.target === compactAdvModal) compactAdvModal.style.display = 'none';
+  });
+
+  // Remove the 'Refine Your Journey' card if it exists
+  const refineCard = document.getElementById('customize-preferences');
+  if (refineCard) refineCard.style.display = 'none';
+
+  // Make the 'Your Vision' card much smaller
+  const visionCard = document.getElementById('preferences-summary');
+  if (visionCard) {
+    visionCard.style.padding = '0.75rem 1.2rem';
+    visionCard.style.marginBottom = '1rem';
+    visionCard.style.borderRadius = '0.5rem';
+    visionCard.style.fontSize = '0.95rem';
+    visionCard.querySelector('.section-title').style.fontSize = '1.1rem';
+    visionCard.querySelector('.section-title').style.marginBottom = '0.5rem';
+    visionCard.querySelector('.section-title').style.fontWeight = '600';
+    visionCard.querySelector('.section-title').style.padding = '0';
+    visionCard.querySelector('.section-title').style.border = 'none';
+    visionCard.querySelector('.section-title').style.boxShadow = 'none';
+    visionCard.querySelector('.section-title').style.background = 'none';
+    visionCard.style.boxShadow = 'none';
+    visionCard.style.border = '1px solid var(--border-color)';
+  }
 });
 
 // Get trip details from storage
@@ -379,6 +501,7 @@ function getUnsplashImageUrl(query) {
 }
 
 function renderItineraryCards(itineraryItems) {
+    normalizeDayLabels(itineraryItems);
     const container = document.getElementById('itinerary-cards-container');
     if (!container) return;
     container.innerHTML = '';
@@ -386,16 +509,12 @@ function renderItineraryCards(itineraryItems) {
     const dayGroups = {};
     itineraryItems.forEach((item, idx) => {
         if (!dayGroups[item.day]) dayGroups[item.day] = [];
-        dayGroups[item.day].push({ ...enhanceActivityData(item, idx) });
+        dayGroups[item.day].push({ ...enhanceActivityData(item, idx), _globalIdx: idx });
     });
-    // Sort days by extracting the date from the day string if possible
     const sortedDayKeys = Object.keys(dayGroups).sort((a, b) => {
-        const dateA = a.match(/Day (\d+): (.+)/);
-        const dateB = b.match(/Day (\d+): (.+)/);
-        if (dateA && dateB) {
-            return parseInt(dateA[1]) - parseInt(dateB[1]);
-        }
-        return a.localeCompare(b);
+        const valA = getDaySortValue(a, itineraryItems.findIndex(i => i.day === a));
+        const valB = getDaySortValue(b, itineraryItems.findIndex(i => i.day === b));
+        return valA - valB;
     });
     sortedDayKeys.forEach((dayName, dayIndex) => {
         const activities = dayGroups[dayName];
@@ -407,10 +526,10 @@ function renderItineraryCards(itineraryItems) {
         }
         // Day card container
         const dayCard = document.createElement('div');
-        dayCard.className = 'itinerary-day-card'; // Use a class for styling
+        dayCard.className = 'itinerary-day-card';
         // Day header (blue gradient)
         const dayHeader = document.createElement('div');
-        dayHeader.className = 'itinerary-day-header'; // Use a class for styling
+        dayHeader.className = 'itinerary-day-header';
         dayHeader.innerHTML = `
             <div class="itinerary-day-header-title">
                 <span>📅</span> ${displayDate}
@@ -425,70 +544,288 @@ function renderItineraryCards(itineraryItems) {
         const cardsWrapper = document.createElement('div');
         cardsWrapper.className = 'itinerary-day-cards-wrapper';
 
-        activities.forEach(item => {
+        activities.forEach((item, activityIdx) => {
             const card = document.createElement('div');
             card.className = 'itinerary-card';
+            card.setAttribute('data-day', dayName);
+            card.setAttribute('data-time', item.time);
+            card.setAttribute('data-activity', item.activity);
+            // Modern icon buttons only, horizontally aligned with time
             card.innerHTML = `
-                <div class="itinerary-card-header">
-                    <span>🕒 ${item.time || ''}</span>
-                    <span>⏱️ ${item.duration || ''}</span>
+                <div class="itinerary-card-header-row">
+                  <div class="itinerary-card-time"><span class="material-symbols-rounded time-icon">schedule</span> ${item.time || ''}</div>
+                  <div class="itinerary-card-actions">
+                    <button class="icon-btn regen-btn modern-action-btn" title="Regenerate activity" aria-label="Regenerate activity" tabindex="0">
+                      <span class="material-symbols-rounded">autorenew</span>
+                    </button>
+                    <button class="icon-btn delete-btn modern-action-btn" title="Delete activity" aria-label="Delete activity" tabindex="0">
+                      <span class="material-symbols-rounded">delete</span>
+                    </button>
+                  </div>
                 </div>
                 <div class="itinerary-card-title">${item.activity || ''}</div>
-                <div class="itinerary-card-desc">${item.description || ''}</div>
                 <div class="itinerary-card-meta">
                     ${item.price ? `<span class="itinerary-card-price"><span class="icon">💰</span> ${item.price}</span>` : ''}
                     ${item.rating ? `<span class="itinerary-card-rating"><span class="icon">⭐</span> ${item.rating}</span>` : ''}
-                    ${item.reviews ? `<span class="itinerary-card-reviews">${item.reviews} reviews</span>` : ''}
                 </div>
-                <div class="itinerary-card-location"><span>📍</span> <span>${item.location || ''}</span></div>
-                ${item.mapLink ? `<a href="${item.mapLink}" target="_blank" class="itinerary-card-map-link">View Location</a>` : ''}
+                ${item.location && item.mapLink ? `<div class="itinerary-card-location"><a href="${item.mapLink}" target="_blank" class="itinerary-card-map-link">📍 ${item.location}</a></div>` : item.location ? `<div class="itinerary-card-location">📍 ${item.location}</div>` : ''}
             `;
             cardsWrapper.appendChild(card);
         });
         dayCard.appendChild(cardsWrapper);
+        // Modern add button (icon only, more modern look)
+        const addDayBtn = document.createElement('button');
+        addDayBtn.className = 'add-activity-btn modern-action-btn modern-plus-btn';
+        addDayBtn.title = 'Add activity to this day';
+        addDayBtn.setAttribute('aria-label', 'Add activity to this day');
+        addDayBtn.innerHTML = '<span class="material-symbols-rounded">add</span>';
+        addDayBtn.setAttribute('data-day', dayName);
+        addDayBtn.onclick = handleAddActivity;
+        dayCard.appendChild(addDayBtn);
         container.appendChild(dayCard);
+    });
+
+    // Attach event listeners for actions
+    container.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.onclick = handleDeleteActivity;
+    });
+    container.querySelectorAll('.regen-btn').forEach(btn => {
+        btn.onclick = handleRegenerateActivity;
     });
 }
 
-// Helper function to show notification
-function showNotification(message, type = 'success') {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.textContent = message;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: ${type === 'success' ? '#28a745' : '#dc3545'};
-        color: white;
-        padding: 12px 24px;
-        border-radius: 6px;
-        z-index: 1000;
-        animation: slideIn 0.3s ease;
-    `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
+// Helper: normalize all day labels to match the first occurrence for each date
+function normalizeDayLabels(itineraryItems) {
+    // Map from date string (e.g. '2025-06-25') to canonical day label
+    const dateToDayLabel = {};
+    // Helper to extract date from day label
+    function extractDate(dayLabel) {
+        // Try to extract ISO or US date
+        let match = dayLabel.match(/(\d{4}-\d{2}-\d{2})/);
+        if (match) return match[1];
+        match = dayLabel.match(/([A-Za-z]+,?\s+[A-Za-z]+\s+\d{1,2},\s+\d{4})/);
+        if (match) return new Date(match[1]).toISOString().split('T')[0];
+        match = dayLabel.match(/([A-Za-z]+\s+\d{1,2},\s+\d{4})/);
+        if (match) return new Date(match[1]).toISOString().split('T')[0];
+        return dayLabel;
+    }
+    // First pass: build map
+    itineraryItems.forEach(item => {
+        const date = extractDate(item.day);
+        if (date && !dateToDayLabel[date]) {
+            dateToDayLabel[date] = item.day;
+        }
+    });
+    // Second pass: update all day fields
+    itineraryItems.forEach(item => {
+        const date = extractDate(item.day);
+        if (date && dateToDayLabel[date]) {
+            item.day = dateToDayLabel[date];
+        }
+    });
 }
 
-// Parse time helper function
-function parseTime(timeStr) {
-    if (!timeStr) return 0;
-    const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-    if (!match) return 0;
-    
-    let hours = parseInt(match[1]);
-    const minutes = parseInt(match[2]);
-    const ampm = match[3].toUpperCase();
-    
-    if (ampm === 'PM' && hours !== 12) hours += 12;
-    if (ampm === 'AM' && hours === 12) hours = 0;
-    
-    return hours * 60 + minutes;
+// Helper: get canonical day label for a given day (by date or by fuzzy match)
+function getCanonicalDayLabel(day, itineraryItems) {
+    // Try exact match first
+    if (itineraryItems.some(item => item.day === day)) return day;
+    // Try to match by date (e.g., 'Tuesday, June 24, 2025' vs 'Tuesday')
+    // Extract date from any day label in the itinerary
+    function extractDate(dayLabel) {
+        let match = dayLabel.match(/(\d{4}-\d{2}-\d{2})/);
+        if (match) return match[1];
+        match = dayLabel.match(/([A-Za-z]+,?\s+[A-Za-z]+\s+\d{1,2},\s+\d{4})/);
+        if (match) return new Date(match[1]).toISOString().split('T')[0];
+        match = dayLabel.match(/([A-Za-z]+\s+\d{1,2},\s+\d{4})/);
+        if (match) return new Date(match[1]).toISOString().split('T')[0];
+        return null;
+    }
+    // Try to match by weekday name
+    const dayWeekday = day.split(',')[0].trim();
+    for (const item of itineraryItems) {
+        const itemWeekday = item.day.split(',')[0].trim();
+        if (itemWeekday === dayWeekday) return item.day;
+        // Try by date
+        const dayDate = extractDate(day);
+        const itemDate = extractDate(item.day);
+        if (dayDate && itemDate && dayDate === itemDate) return item.day;
+    }
+    // Fallback: return the original
+    return day;
 }
+
+// Helper function to extract and sort day values
+function getDaySortValue(dayLabel, fallbackIndex = 0) {
+  // Try to extract a date from any part of the label (e.g. 'Monday, June 24, 2025' or 'Day 2: Monday, June 24, 2025')
+  // Match: e.g. 'Monday, June 24, 2025' or 'June 24, 2025' or '2025-06-24'
+  let dateMatch = dayLabel.match(/(\d{4}-\d{2}-\d{2})|([A-Za-z]+,?\s+[A-Za-z]+\s+\d{1,2},\s+\d{4})|([A-Za-z]+\s+\d{1,2},\s+\d{4})/);
+  if (dateMatch) {
+    let dateStr = dateMatch[1] || dateMatch[2] || dateMatch[3];
+    const parsed = Date.parse(dateStr);
+    if (!isNaN(parsed)) return parsed;
+  }
+  // Fallback: use the order in which the day appears (for stable sort)
+  return 1000000 + fallbackIndex;
+}
+
+// Fix add activity: insert new activity at the end of the correct day in the flat array
+async function handleAddActivity(e) {
+    let day = e.target.getAttribute('data-day');
+    if (!day && e.target.parentElement) {
+        day = e.target.parentElement.getAttribute('data-day');
+    }
+    const tripDetails = getTripDetailsFromStorage();
+    if (!day || !tripDetails?.destination) return;
+    let baseUrl;
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        baseUrl = 'http://localhost:3001';
+    } else {
+        baseUrl = window.location.origin;
+    }
+    try {
+        const response = await fetch(`${baseUrl}/api/add-activity`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                day,
+                destination: tripDetails.destination,
+                departureDate: tripDetails.departureDate,
+                arrivalDate: tripDetails.arrivalDate,
+                preferences: tripDetails.preferences,
+                tripStyle: tripDetails.tripStyle,
+                itinerary: itineraryData
+            })
+        });
+        if (!response.ok) throw new Error('Failed to add activity');
+        const newActivity = await response.json();
+        // Find last index of this day in the flat array
+        let lastIdx = -1;
+        for (let i = itineraryData.length - 1; i >= 0; i--) {
+            if (itineraryData[i].day === day) {
+                lastIdx = i;
+                break;
+            }
+        }
+        if (lastIdx !== -1) {
+            // Force newActivity.day to match canonical label
+            newActivity.day = getCanonicalDayLabel(day, itineraryData);
+            itineraryData.splice(lastIdx + 1, 0, newActivity);
+        } else {
+            newActivity.day = getCanonicalDayLabel(day, itineraryData);
+            itineraryData.push(newActivity);
+        }
+        normalizeDayLabels(itineraryData);
+        renderItineraryCards(itineraryData);
+        await populateItineraryTable(itineraryData);
+        await displayMapAndMarkers(itineraryData);
+        populateDaySelectors(itineraryData);
+    } catch (err) {
+        alert('Error adding activity: ' + err.message);
+    }
+}
+
+// Fix regenerate: use day, time, activity to find and replace the correct activity
+async function handleRegenerateActivity(e) {
+    const card = e.target.closest('.itinerary-card');
+    if (!card) return;
+    const day = card.getAttribute('data-day');
+    const time = card.getAttribute('data-time');
+    const activity = card.getAttribute('data-activity');
+    const tripDetails = getTripDetailsFromStorage();
+    if (!day || !time || !activity || !tripDetails?.destination) return;
+    // Find the correct activity in the flat array
+    const idx = itineraryData.findIndex(item => item.day === day && item.time === time && item.activity === activity);
+    if (idx === -1) return;
+    const activityToReplace = itineraryData[idx];
+    let baseUrl;
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        baseUrl = 'http://localhost:3001';
+    } else {
+        baseUrl = window.location.origin;
+    }
+    try {
+        const response = await fetch(`${baseUrl}/api/regenerate-activity`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                day,
+                time: activityToReplace.time,
+                destination: tripDetails.destination,
+                departureDate: tripDetails.departureDate,
+                arrivalDate: tripDetails.arrivalDate,
+                preferences: tripDetails.preferences,
+                tripStyle: tripDetails.tripStyle,
+                itinerary: itineraryData,
+                oldActivity: activityToReplace
+            })
+        });
+        if (!response.ok) throw new Error('Failed to regenerate activity');
+        const regeneratedActivity = await response.json();
+        // Force regeneratedActivity.day to match canonical label
+        regeneratedActivity.day = getCanonicalDayLabel(day, itineraryData);
+        itineraryData[idx] = regeneratedActivity;
+        normalizeDayLabels(itineraryData);
+        renderItineraryCards(itineraryData);
+        await populateItineraryTable(itineraryData);
+        await displayMapAndMarkers(itineraryData);
+        populateDaySelectors(itineraryData);
+        // Scroll the updated card into view
+        setTimeout(() => {
+            const updatedCard = document.querySelector(`.itinerary-card[data-day="${day}"][data-time="${time}"][data-activity="${activity}"]`);
+            if (updatedCard) {
+                updatedCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 300);
+    } catch (err) {
+        alert('Error regenerating activity: ' + err.message);
+    }
+}
+
+// Add handleDeleteActivity for itinerary card delete button
+function handleDeleteActivity(e) {
+    const card = e.target.closest('.itinerary-card');
+    if (!card) return;
+    const day = card.getAttribute('data-day');
+    const time = card.getAttribute('data-time');
+    const activity = card.getAttribute('data-activity');
+    // Find the correct activity in the flat array
+    const idx = itineraryData.findIndex(item => item.day === day && item.time === time && item.activity === activity);
+    if (idx === -1) return;
+    itineraryData.splice(idx, 1);
+    renderItineraryCards(itineraryData);
+    populateItineraryTable(itineraryData);
+    displayMapAndMarkers(itineraryData);
+    populateDaySelectors(itineraryData);
+}
+
+// Add flatpickr library and CSS for date pickers if not already present
+(function ensureFlatpickrLoaded() {
+  if (!window.flatpickr) {
+    var link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css';
+    document.head.appendChild(link);
+    var script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/flatpickr';
+    script.onload = function() {
+      // Re-initialize date pickers after flatpickr loads
+      if (window.flatpickr) {
+        flatpickr('#compact-departure-date', {
+          minDate: 'today',
+          dateFormat: 'Y-m-d',
+          onChange: function(selectedDates, dateStr) {
+            if (window.compactArrPicker) window.compactArrPicker.set('minDate', dateStr);
+          }
+        });
+        window.compactArrPicker = flatpickr('#compact-arrival-date', {
+          minDate: 'today',
+          dateFormat: 'Y-m-d'
+        });
+      }
+    };
+    document.body.appendChild(script);
+  }
+})();
 
 // Enhanced loading with progression
 function showLoadingWithProgression() {
@@ -659,8 +996,7 @@ async function populateItineraryTable(itineraryItems) {
                     <th>Time</th>
                     <th>Activity</th>
                     <th>Location</th>
-                    <th>Rating</th>
-                    <th>Info</th>
+                    <th>Day</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -678,13 +1014,17 @@ async function populateItineraryTable(itineraryItems) {
         dayGroups[item.day].push(item);
     });
 
-    // Populate table with enhanced data
-    Object.keys(dayGroups).forEach((dayName, dayIndex) => {
+    // Robust sort by date, fallback to original order
+    const sortedDayKeys = Object.keys(dayGroups).sort((a, b) => {
+        const valA = getDaySortValue(a, itineraryItems.findIndex(i => i.day === a));
+        const valB = getDaySortValue(b, itineraryItems.findIndex(i => i.day === b));
+        return valA - valB;
+    });
+
+    sortedDayKeys.forEach((dayName, dayIndex) => {
         const dayItems = dayGroups[dayName];
-        
         // Add weather info to day header
         const weatherInfo = generateWeatherForDay(dayIndex);
-        
         // Day header with weather
         const dayHeaderRow = document.createElement("tr");
         dayHeaderRow.className = "day-header-row";
@@ -700,7 +1040,6 @@ async function populateItineraryTable(itineraryItems) {
             </td>
         `;
         tbody.appendChild(dayHeaderRow);
-
         // Day activities with enhanced information
         dayItems.forEach((item, index) => {
             const enhancedItem = enhanceActivityData(item, index);
@@ -715,34 +1054,7 @@ async function populateItineraryTable(itineraryItems) {
                     <div>${enhancedItem.location || "No location"}</div>
                     ${enhancedItem.mapLink ? `<a href="${enhancedItem.mapLink}" target="_blank" style="color: var(--accent-color); font-size: 0.8rem; text-decoration: none;">📍 View on Google Maps</a>` : ''}
                 </td>
-                <td>
-                    <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                        <div style="color: #ffa500; font-size: 14px;">${enhancedItem.stars}</div>
-                        <div style="font-weight: 600; font-size: 0.9rem;">${enhancedItem.rating}</div>
-                        <div style="font-size: 0.75rem; color: var(--text-secondary);">(${enhancedItem.reviews})</div>
-                    </div>
-                </td>
-                <td>
-                    <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem;">
-                        <div style="display: flex; align-items: center; gap: 6px;">
-                            <span style="color: var(--text-secondary);">💰</span>
-                            <span style="font-weight: 600;">${enhancedItem.price}</span>
-                            <span>${enhancedItem.priceLevel}</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 6px;">
-                            <span>${enhancedItem.categoryIcon}</span>
-                            <span style="background: ${enhancedItem.categoryColor}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">${enhancedItem.category}</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 6px;">
-                            <span style="color: var(--text-secondary);">⏱️</span>
-                            <span>${enhancedItem.duration}</span>
-                        </div>
-                        ${enhancedItem.paymentMethod ? `<div style="display: flex; align-items: center; gap: 6px;">
-                            <span style="color: var(--text-secondary);">💳</span>
-                            <span style="font-size: 0.75rem;">${enhancedItem.paymentMethod}</span>
-                        </div>` : ''}
-                    </div>
-                </td>
+                <td>${dayName}</td>
             `;
             tbody.appendChild(row);
         });
@@ -815,9 +1127,15 @@ function enhanceActivityData(item, index) {
     }
 
     // Generate Google Maps link
-    const mapLink = item.location ? 
-        `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}` : 
-        null;
+    let mapLink = null;
+    if (item.location) {
+        const tripDetails = getTripDetailsFromStorage && getTripDetailsFromStorage();
+        let fullLocation = item.location;
+        if (tripDetails && tripDetails.destination && !fullLocation.toLowerCase().includes(tripDetails.destination.toLowerCase())) {
+            fullLocation = `${fullLocation}, ${tripDetails.destination}`;
+        }
+        mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullLocation)}`;
+    }
 
     // Add payment method for some activities
     const paymentMethods = ['Bring payment method', 'Cash recommended', 'Cards accepted', null];
@@ -907,36 +1225,41 @@ async function displayMapAndMarkers(items) {
             const locationCounts = {};
             items.forEach(item => {
                 if (item.location && item.location !== tripDetails.destination) {
-                    const location = item.location;
-                    if (!locationCounts[location]) {
-                        locationCounts[location] = [];
+                    // Append destination if not already present in location string
+                    let fullLocation = item.location;
+                    if (!fullLocation.toLowerCase().includes(tripDetails.destination.toLowerCase())) {
+                        fullLocation = `${fullLocation}, ${tripDetails.destination}`;
                     }
-                    locationCounts[location].push(item);
+                    if (!locationCounts[fullLocation]) {
+                        locationCounts[fullLocation] = [];
+                    }
+                    // Store the original item but with the fullLocation for geocoding
+                    locationCounts[fullLocation].push({ ...item, _fullLocation: fullLocation });
                 }
             });
-            for (const [location, activities] of Object.entries(locationCounts)) {
+            for (const [fullLocation, activities] of Object.entries(locationCounts)) {
                 try {
-                    const locationPos = await geocodeLocation(location);
+                    const locationPos = await geocodeLocation(fullLocation);
                     pathCoords.push(locationPos);
                     bounds.extend(locationPos);
                     const marker = new google.maps.Marker({
                         position: locationPos,
                         map: map,
-                        title: location,
+                        title: fullLocation,
                         icon: {
                             url: getMarkerIcon(activities[0]),
                             scaledSize: new google.maps.Size(30, 30)
                         }
                     });
                     const infoWindow = new google.maps.InfoWindow({
-                        content: createInfoWindowContent(location, activities)
+                        content: createInfoWindowContent(fullLocation, activities)
                     });
                     marker.addListener('click', () => {
                         infoWindow.open(map, marker);
                     });
                     currentMarkers.push(marker);
                 } catch (err) {
-                    console.warn(`[Map] Could not geocode location: ${location}`);
+                    console.warn(`[Map] Could not geocode location: ${fullLocation}`);
                 }
             }
             // Fit map to show all pins if there are any, else center on centerPos
@@ -1109,3 +1432,39 @@ function filterMapByDay(selectedDay, items) {
 
 // Ensure Google Maps callback works
 window.initMapAndItinerary = initMapAndItinerary;
+
+// Custom Instructions Modal
+const customInstructionsLink = document.getElementById('open-custom-instructions-link');
+const customInstructionsModal = document.getElementById('custom-instructions-modal');
+const customInstructionsClose = document.getElementById('close-custom-instructions-modal');
+const customInstructionsApply = document.getElementById('apply-custom-instructions-modal');
+if (customInstructionsLink && customInstructionsModal) customInstructionsLink.onclick = (e) => { e.preventDefault(); customInstructionsModal.style.display = 'flex'; };
+if (customInstructionsClose && customInstructionsModal) customInstructionsClose.onclick = () => customInstructionsModal.style.display = 'none';
+if (customInstructionsApply && customInstructionsModal) customInstructionsApply.onclick = () => {
+  const textarea = document.getElementById('custom-instructions-textarea');
+  if (textarea) {
+    localStorage.setItem('customInstructions', textarea.value);
+  }
+  customInstructionsModal.style.display = 'none';
+};
+
+// --- Add handler for compact trip form (search bar) ---
+const compactTripForm = document.getElementById('compact-trip-form');
+if (compactTripForm) {
+  compactTripForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    // Save current search bar values to localStorage
+    const destination = document.getElementById('compact-destination')?.value || '';
+    const departureDate = document.getElementById('compact-departure-date')?.value || '';
+    const arrivalDate = document.getElementById('compact-arrival-date')?.value || '';
+    const tripStyle = document.getElementById('compact-trip-style')?.value || 'balanced';
+    localStorage.setItem('tripDestination', destination);
+    localStorage.setItem('tripDepartureDate', departureDate);
+    localStorage.setItem('tripArrivalDate', arrivalDate);
+    localStorage.setItem('tripStyle', tripStyle);
+    // Remove any override so getTripDetailsFromStorage uses latest
+    delete window.getTripDetailsFromStorageOverride;
+    // Regenerate itinerary with new values
+    generateItinerary();
+  });
+}

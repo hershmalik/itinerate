@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.12/css/weather-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         /* Professional Design System - Matching Page 1 */
         :root {
@@ -508,6 +509,74 @@
         }
         .hero-section > * { position: relative; z-index: 1; }
 
+        /* Navigation Header */
+        .main-navigation {
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--space-sm) var(--space-lg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .nav-brand .brand-logo {
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-brand .logo-icon {
+            margin-right: 0.5rem;
+            font-size: 1.8rem;
+        }
+
+        .nav-menu {
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: var(--space-sm);
+        }
+
+        .nav-btn {
+            background: var(--accent-color);
+            color: var(--text-inverse);
+            border: none;
+            padding: var(--space-sm) var(--space-md);
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn.primary {
+            background: var(--primary-color);
+            color: var(--text-inverse);
+        }
+
+        .nav-btn:hover {
+            background: var(--accent-hover);
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .container {
@@ -532,283 +601,883 @@
                 padding: var(--space-sm);
             }
         }
+
+        /* Compact Trip Planning Form */
+        .compact-trip-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: flex-end;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .compact-trip-form .form-group {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .compact-trip-form label {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .compact-trip-form input,
+        .compact-trip-form select {
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        .compact-trip-form button {
+            padding: 0.75rem 1.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Hide original header h1 and p on small screens */
+        @media (max-width: 600px) {
+          header h1,
+          header p {
+            display: none;
+          }
+        }
+
+        /* Results Flex Layout */
+        .results-flex-layout {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-lg);
+        }
+        .results-main-col {
+            flex: 1;
+            min-width: 300px;
+        }
+        .results-map-col {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        /* Modern Search Bar */
+        .modern-search-bar {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+          background: var(--bg-secondary);
+          padding: 1.5rem;
+          border-radius: var(--radius-lg);
+          box-shadow: 0 4px 24px rgba(37,99,235,0.10);
+          border: 1px solid var(--border-color);
+        }
+
+        .modern-trip-search-bar {
+            padding: 0.7rem 0.5rem !important;
+            border-radius: 0.7rem !important;
+            box-shadow: none !important;
+            border: 1px solid var(--border-color) !important;
+            margin: 0.5rem 0 !important;
+          }
+          .modern-trip-search-fields {
+            flex-direction: column !important;
+            gap: 0.5rem !important;
+          }
+          .modern-trip-search-field {
+            min-width: 0 !important;
+            width: 100% !important;
+            padding: 0.5rem 0.7rem !important;
+            font-size: 0.95rem !important;
+            border-radius: 0.5rem !important;
+          }
+          .modern-trip-style-field {
+            min-width: 0 !important;
+            width: 100% !important;
+            padding-right: 0 !important;
+          }
+          .modern-search-btn {
+            width: 100% !important;
+            padding: 0.7rem 0 !important;
+            font-size: 1rem !important;
+            border-radius: 0.5rem !important;
+            margin-top: 0.3rem !important;
+          }
+          .modern-trip-search-actions {
+            flex-direction: column !important;
+            gap: 0.5rem !important;
+            margin-top: 0.5rem !important;
+          }
+          .modern-pill-btn, .modern-advanced-link {
+            width: 100% !important;
+            padding: 0.7rem 0 !important;
+            font-size: 1rem !important;
+            border-radius: 0.5rem !important;
+            margin: 0 !important;
+          }
+
+        /* Professional Design Tweaks */
+        /* Interests and Custom Instructions buttons */
+        #open-interests-modal,
+        #open-custom-instructions-link {
+          flex: 1;
+          min-width: 120px;
+          padding: 0.75rem 1.2rem;
+          font-size: 0.875rem;
+          font-weight: 500;
+          border-radius: var(--radius-md);
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid var(--accent-color);
+          background: var(--bg-secondary);
+          color: var(--accent-color);
+        }
+        #open-interests-modal:hover,
+        #open-custom-instructions-link:hover {
+          background: var(--accent-color);
+          color: #fff;
+        }
+        /* Update button */
+        #update-itinerary {
+          flex: 1;
+          min-width: 120px;
+          padding: 0.75rem 1.2rem;
+          font-size: 0.875rem;
+          font-weight: 600;
+          border-radius: var(--radius-md);
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--accent-color);
+          color: var(--text-inverse);
+          border: none;
+        }
+        #update-itinerary:hover {
+          background: var(--accent-hover);
+          transform: translateY(-2px);
+          box-shadow: var(--shadow-lg);
+        }
+        /* Advanced Search link */
+        #open-advanced-modal-link {
+          display: inline-block;
+          margin-top: 0.5rem;
+          color: var(--accent-color);
+          font-size: 0.875rem;
+          text-align: center;
+          text-decoration: none;
+        }
+
+        #open-advanced-modal-link:hover {
+          text-decoration: underline;
+        }
+
+        /* Modernized Trip Planning Ribbon */
+        .modernized-trip-bar {
+          background: #fff;
+          border-radius: 2.5rem;
+          box-shadow: 0 4px 24px rgba(37,99,235,0.10);
+          padding: 1.2rem 2rem 1.2rem 2rem;
+          margin: 2rem auto 2.5rem auto;
+          max-width: 1100px;
+          display: flex;
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .modern-trip_bar_fields {
+          display: flex;
+          flex: 1 1 0;
+          gap: 1.2rem;
+          align-items: center;
+        }
+        .modern-trip-bar-field {
+          display: flex;
+          align-items: center;
+          background: #f8f9fa;
+          border-radius: 2rem;
+          padding: 0.5rem 1.2rem;
+          box-shadow: 0 1px 4px rgba(37,99,235,0.04);
+          min-width: 170px;
+          position: relative;
+        }
+        .modern-trip-style-field {
+          min-width: 140px;
+          padding-right: 1.2rem;
+        }
+        .modern-trip-bar_label {
+          font-size: 1rem;
+          color: #2563eb;
+          font-weight: 500;
+          margin-right: 0.5rem;
+          min-width: 40px;
+        }
+        .modern-trip_bar_field select {
+          background: transparent;
+          border: none;
+          font-size: 1rem;
+          color: #222;
+          font-weight: 500;
+          padding: 0.2rem 1.2rem 0.2rem 0.2rem;
+          border-radius: 1.2rem;
+          appearance: none;
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          outline: none;
+          cursor: pointer;
+        }
+        .modern-trip-bar-field select:focus {
+          background: #e9ecef;
+        }
+        .floating-update-btn {
+          position: absolute;
+          right: 2.2rem;
+          bottom: 1.2rem;
+          z-index: 10;
+          box-shadow: 0 4px 16px rgba(37,99,235,0.13);
+        }
+        .modernized-trip-bar {
+          position: relative;
+        }
+        @media (max-width: 900px) {
+          .floating-update-btn {
+            right: 1rem;
+            bottom: 1rem;
+          }
+        }
+        @media (max-width: 600px) {
+          .floating-update-btn {
+            right: 0.5rem;
+            bottom: 0.5rem;
+            padding: 0.5rem 1.2rem;
+            font-size: 1rem;
+          }
+        }
+
+        /* Label for Trip Style Selector */
+        .modern-trip-bar-label {
+          font-size: 1rem;
+          color: #2563eb;
+          font-weight: 500;
+          margin-right: 0.7rem;
+        }
+
+        .modern-style-dropdown {
+          background: #f8f9fa;
+          border: none;
+          border-radius: 2rem;
+          padding: 0.5rem 2.2rem 0.5rem 1.2rem;
+          font-size: 1rem;
+          font-weight: 500;
+          color: #2563eb;
+          box-shadow: 0 1px 4px rgba(37,99,235,0.04);
+          appearance: none;
+          outline: none;
+          cursor: pointer;
+          min-width: 120px;
+        }
+        .modern-style-dropdown:focus {
+          background: #e9ecef;
+        }
+        .modern-style-dropdown option {
+          color: #222;
+        }
+
+        /* New styles for balanced trip form */
+        .balanced-trip-form {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+          width: 100%;
+        }
+        .balanced-trip-form-fields {
+          display: flex;
+          flex-direction: column;
+          gap: 0.8rem;
+        }
+        .balanced-trip-form-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          align-items: center;
+        }
+        .modern-trip-bar-field {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          padding: 0.8rem 1.2rem;
+          border-radius: var(--radius-md);
+          border: 1px solid var(--border-color);
+          background: var(--bg-primary);
+          color: var(--text-primary);
+          font-size: 0.875rem;
+          font-weight: 500;
+          transition: all 0.2s ease;
+        }
+        .modern-trip-bar-field:hover {
+          background: var(--accent-color);
+          color: var(--text-inverse);
+          border-color: var(--accent-color);
+        }
+        .modern-search-btn {
+          padding: 0.8rem 1.5rem;
+          font-size: 0.875rem;
+          font-weight: 600;
+          border-radius: var(--radius-lg);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          transition: all 0.2s ease;
+        }
+        .modern-search-btn:hover {
+          background: var(--accent-hover);
+          transform: translateY(-2px);
+          box-shadow: var(--shadow-lg);
+        }
+
+        /* Refactored styles for modern horizontal trip form */
+        .modern-horizontal-trip-form {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+        .modern-trip_bar_row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: var(--space-md);
+        }
+        .modern-trip_bar_actions {
+          display: flex;
+          justify-content: center;
+          gap: var(--space-sm);
+          flex-wrap: wrap;
+        }
+        .modern-pill_btn {
+          background: var(--accent-color);
+          color: var(--text-inverse);
+          border: none;
+          padding: var(--space-sm) var(--space-md);
+          border-radius: var(--radius-md);
+          font-size: 0.875rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .modern-pill_btn:hover {
+          background: var(--accent-hover);
+        }
+
+        /* --- MOBILE FRIENDLY MENU & SEARCH BAR --- */
+        @media (max-width: 600px) {
+          .modern-trip-search-bar {
+            padding: 0.7rem 0.5rem !important;
+            border-radius: 0.7rem !important;
+            box-shadow: none !important;
+            border: 1px solid var(--border-color) !important;
+            margin: 0.5rem 0 !important;
+          }
+          .modern-trip-search-fields {
+            flex-direction: column !important;
+            gap: 0.5rem !important;
+          }
+          .modern-trip-search-field {
+            min-width: 0 !important;
+            width: 100% !important;
+            padding: 0.5rem 0.7rem !important;
+            font-size: 0.95rem !important;
+            border-radius: 0.5rem !important;
+          }
+          .modern-trip-style-field {
+            min-width: 0 !important;
+            width: 100% !important;
+            padding-right: 0 !important;
+          }
+          .modern-search-btn {
+            width: 100% !important;
+            padding: 0.7rem 0 !important;
+            font-size: 1rem !important;
+            border-radius: 0.5rem !important;
+            margin-top: 0.3rem !important;
+          }
+          .modern-trip-search-actions {
+            flex-direction: column !important;
+            gap: 0.5rem !important;
+            margin-top: 0.5rem !important;
+          }
+          .modern-pill-btn, .modern-advanced-link {
+            width: 100% !important;
+            padding: 0.7rem 0 !important;
+            font-size: 1rem !important;
+            border-radius: 0.5rem !important;
+            margin: 0 !important;
+          }
+        }
     </style>
 </head>
 <body>
+    <!-- Navigation Header (copied from index.html) -->
+    <nav class="main-navigation">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="index.html" class="brand-logo">
+                    <span class="logo-icon">🧭</span>
+                    AItinerate
+                </a>
+            </div>
+            <div class="nav-menu">
+                <div class="nav-actions">
+                    <button class="nav-btn">Login</button>
+                    <button class="nav-btn primary">Sign Up</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
     <header>
         <div class="container">
             <h1>Your Dream Journey</h1>
             <p>AI-powered travel planning, crafted with precision</p>
+            <!-- Unified Trip Planning Ribbon (modeled after home page and VRBO/United) -->
+            <form id="compact-trip-form" class="modern-trip-search-bar">
+              <div class="modern-trip-search-fields">
+                <div class="modern-trip-search-field"><span class="modern-trip-bar-icon">📍</span><input type="text" id="compact-destination" name="destination" placeholder="Where to?" required autocomplete="new-password" /></div>
+                <div class="modern-trip-search-field"><span class="modern-trip-bar-icon">📅</span><input type="text" id="compact-departure-date" name="departure-date" placeholder="Departure" required autocomplete="off" readonly /></div>
+                <div class="modern-trip-search-field"><span class="modern-trip-bar-icon">📅</span><input type="text" id="compact-arrival-date" name="arrival-date" placeholder="Return" required autocomplete="off" readonly /></div>
+                <div class="modern-trip-search-field modern-trip-style-field"><select id="compact-trip-style" name="trip-style" class="modern-style-dropdown"><option value="relaxed">Relaxed</option><option value="balanced" selected>Balanced</option><option value="packed">Packed</option></select></div>
+              </div>
+              <div class="modern-trip-search-actions">
+                <button type="button" id="open-interests-modal" class="modern-pill-btn">Interests</button>
+                <button type="button" id="open-custom-instructions-link" class="modern-pill-btn">Custom Instructions</button>
+                <a href="#" id="open-advanced-modal-link" class="modern-pill-btn modern-advanced-link">Advanced Search</a>
+              </div>
+              <button type="submit" id="update-itinerary" class="modern-search-btn modern-search-btn-pill" title="Update Itinerary" style="margin-top:1rem;"><span class="modern-search-icon">🔍</span></button>
+            </form>
         </div>
     </header>
     
     <div class="container">
-        <div class="content-section">
-                <div id="preferences-summary">
-                    <h2 class="section-title">✨ Your Vision</h2>
-                    <ul id="preferences-list"></ul>
-                </div>
-
-            <!-- Jump to Day selector for itinerary table -->
-            <div class="map-controls" style="margin-bottom: 1.5rem;">
-                <div class="day-filter">
-                    <label for="itinerary-day-selector">Jump to day:</label>
-                    <select id="itinerary-day-selector">
-                        <option value="all">Show all days</option>
-                    </select>
-                </div>
-            </div>
-
-            <div id="itinerary-chatbot">
-                <div class="trip-details">
-                    <!-- Loading Spinner -->
-                    <div id="loading-indicator" class="loading-spinner">
-                        <div class="loading-container">
-                            <div class="spinner"></div>
-                            <div class="loading-text">Weaving your perfect adventure...</div>
-                            <div class="loading-text" style="font-size: 0.875rem; opacity: 0.8;">Our AI is discovering hidden gems and crafting magical moments</div>
-                        </div>
+        <div class="results-flex-layout">
+          <div class="results-main-col">
+            <div class="content-section">
+                    <div id="preferences-summary">
+                        <h2 class="section-title">✨ Your Vision</h2>
+                        <ul id="preferences-list"></ul>
                     </div>
-                    
-                    <div id="error-message" class="error-message"></div>
+
+                <!-- Jump to Day selector for itinerary table -->
+                <div class="map-controls" style="margin-bottom: 1.5rem;">
+                    <div class="day-filter">
+                        <label for="itinerary-day-selector">Jump to day:</label>
+                        <select id="itinerary-day-selector">
+                            <option value="all">Show all days</option>
+                        </select>
+                    </div>
                 </div>
-                <!-- Add this section for the itinerary display -->
-                <div id="itinerary-display" style="display: none;">
-                    <!-- Table will be inserted here by JavaScript -->
+
+                <div id="itinerary-chatbot">
+                    <div class="trip-details">
+                        <!-- Loading Spinner -->
+                        <div id="loading-indicator" class="loading-spinner">
+                            <div class="loading-container">
+                                <div class="spinner"></div>
+                                <div class="loading-text">Weaving your perfect adventure...</div>
+                                <div class="loading-text" style="font-size: 0.875rem; opacity: 0.8;">Our AI is discovering hidden gems and crafting magical moments</div>
+                            </div>
+                        </div>
+                        
+                        <div id="error-message" class="error-message"></div>
+                    </div>
+                    <!-- Add this section for the itinerary display -->
+                    <div id="itinerary-display" style="display: none;">
+                        <!-- Table will be inserted here by JavaScript -->
+                    </div>
                 </div>
             </div>
-        </div>
+            <div id="itinerary-cards-container" style="margin-bottom: 2rem;"></div>
+            <div id="customize-preferences" class="customize-preferences">
+                <h3>🎨 Refine Your Journey</h3>
+                <div class="preference-toggles">
+                    <button class="preference-toggle" data-preference="culture">Culture & History</button>
+                    <button class="preference-toggle" data-preference="food">Food & Dining</button>
+                    <button class="preference-toggle" data-preference="nature">Nature & Parks</button>
+                    <button class="preference-toggle" data-preference="adventure">Adventure</button>
+                    <button class="preference-toggle" data-preference="relaxation">Wellness & Relaxation</button>
+                    <button class="preference-toggle" data-preference="nightlife">Nightlife</button>
+                </div>
 
-        <!-- VRBO-inspired Card Layout for Itinerary Days -->
-        <div id="itinerary-cards-container" style="margin-bottom: 2rem;"></div>
-
-        <!-- Update the map section -->
-        <div class="content-section" id="map-container">
-            <h2 class="section-title">🗺️ Your Adventure Map</h2>
-            <div class="map-controls">
-                <div class="day-filter">
-                    <label for="day-selector">Explore by day:</label>
-                    <select id="day-selector">
-                        <option value="all">Show all days</option>
-                    </select>
+                <!-- Add Special Wishes section here on page 2 -->
+                <div style="margin: 2rem 0; padding: 2rem; background: var(--bg-primary); border-radius: var(--radius-lg); border: 1px solid var(--border-color);">
+                    <h4 style="color: var(--text-primary); font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center;">
+                        <span style="margin-right: 1rem; font-size: 1.5rem;">💫</span>
+                        Special Wishes & Custom Requests
+                    </h4>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.95rem;">
+                        Have specific requests or special needs? Tell us what would make your trip perfect!
+                    </p>
+                    <textarea 
+                        id="special-wishes" 
+                        name="special-wishes" 
+                        placeholder="E.g., 'Include wheelchair accessible venues', 'I want to see street art', 'Find rooftop bars with city views', 'Include local markets for shopping'..."
+                        style="width: 100%; min-height: 100px; padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-size: 0.95rem; resize: vertical; font-family: inherit;"
+                        rows="4"></textarea>
                 </div>
             </div>
-            <div id="map"></div>
-        </div>
 
-        <div id="customize-preferences" class="customize-preferences">
-            <h3>🎨 Refine Your Journey</h3>
-            <div class="preference-toggles">
-                <button class="preference-toggle" data-preference="culture">Culture & History</button>
-                <button class="preference-toggle" data-preference="food">Food & Dining</button>
-                <button class="preference-toggle" data-preference="nature">Nature & Parks</button>
-                <button class="preference-toggle" data-preference="adventure">Adventure</button>
-                <button class="preference-toggle" data-preference="relaxation">Wellness & Relaxation</button>
-                <button class="preference-toggle" data-preference="nightlife">Nightlife</button>
+            <!-- Itinerary Table (hidden by default) -->
+            <div class="content-section" id="itinerary-table-container" style="display: none;">
+                <h2 class="section-title">📅 Your Detailed Itinerary</h2>
+                <table id="itinerary-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Activity</th>
+                            <th>Location</th>
+                            <th>Day</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Dynamic content will be inserted by JavaScript -->
+                    </tbody>
+                </table>
             </div>
-
-            <!-- Add Special Wishes section here on page 2 -->
-            <div style="margin: 2rem 0; padding: 2rem; background: var(--bg-primary); border-radius: var(--radius-lg); border: 1px solid var(--border-color);">
-                <h4 style="color: var(--text-primary); font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center;">
-                    <span style="margin-right: 1rem; font-size: 1.5rem;">💫</span>
-                    Special Wishes & Custom Requests
-                </h4>
-                <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.95rem;">
-                    Have specific requests or special needs? Tell us what would make your trip perfect!
-                </p>
-                <textarea 
-                    id="special-wishes" 
-                    name="special-wishes" 
-                    placeholder="E.g., 'Include wheelchair accessible venues', 'I want to see street art', 'Find rooftop bars with city views', 'Include local markets for shopping'..."
-                    style="width: 100%; min-height: 100px; padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-size: 0.95rem; resize: vertical; font-family: inherit;"
-                    rows="4"></textarea>
+          </div>
+          <div class="results-map-col">
+            <div class="content-section" id="map-container">
+                <h2 class="section-title">🗺️ Your Adventure Map</h2>
+                <div class="map-controls">
+                    <div class="day-filter">
+                        <label for="day-selector">Explore by day:</label>
+                        <select id="day-selector">
+                            <option value="all">Show all days</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="map"></div>
             </div>
-
-            <!-- Regenerate Button -->
-            <button id="regenerate-itinerary" class="regenerate-button">
-                <span class="regenerate-icon">✨</span> Regenerate Journey
-            </button>
+          </div>
         </div>
 
-        <!-- Itinerary Table (hidden by default) -->
-        <div class="content-section" id="itinerary-table-container" style="display: none;">
-            <h2 class="section-title">📅 Your Detailed Itinerary</h2>
-            <table id="itinerary-table">
-                <thead>
-                    <tr>
-                        <th>Time</th>
-                        <th>Activity</th>
-                        <th>Location</th>
-                        <th>Day</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Dynamic content will be inserted by JavaScript -->
-                </tbody>
-            </table>
+        <!-- Interests Modal (was Filters) -->
+        <div id="interests-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(34,34,34,0.25); z-index:1000; align-items:center; justify-content:center;">
+          <div style="background:#fff; border-radius:1rem; max-width:350px; width:90%; margin:auto; padding:2rem; box-shadow:0 8px 32px rgba(37,99,235,0.10); position:relative;">
+            <h3 style="margin-bottom:1rem; font-size:1.2rem; color:var(--accent-color);">Select Interests</h3>
+            <div style="display:flex; flex-wrap:wrap; gap:0.7rem; margin-bottom:1.5rem;">
+              <label><input type="checkbox" class="interest-checkbox" value="culture"> Culture & History</label>
+              <label><input type="checkbox" class="interest-checkbox" value="food"> Food & Dining</label>
+              <label><input type="checkbox" class="interest-checkbox" value="nature"> Nature & Parks</label>
+              <label><input type="checkbox" class="interest-checkbox" value="adventure"> Adventure</label>
+              <label><input type="checkbox" class="interest-checkbox" value="relaxation"> Wellness & Relaxation</label>
+              <label><input type="checkbox" class="interest-checkbox" value="nightlife"> Nightlife</label>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:0.5rem;">
+              <button type="button" id="close-interests-modal" style="background:var(--bg-secondary); color:var(--accent-color); border:1px solid var(--accent-color); border-radius:0.5rem; padding:0.5rem 1.2rem; cursor:pointer;">Cancel</button>
+              <button type="button" id="apply-interests-modal" style="background:var(--accent-color); color:#fff; border:none; border-radius:0.5rem; padding:0.5rem 1.2rem; cursor:pointer;">Apply</button>
+            </div>
+          </div>
         </div>
-    </div>
 
-    <script src="second-page.js"></script>
-    <script>
-      // Store trip details in variables right away
-      const storedDestination = localStorage.getItem('tripDestination');
-      const storedDepartureDate = localStorage.getItem('tripDepartureDate');
-      const storedArrivalDate = localStorage.getItem('tripArrivalDate');
-      const storedPreferences = localStorage.getItem('tripPreferences');
-      const storedTripStyle = localStorage.getItem('tripStyle') || 'balanced';
-      
-      // Override getTripDetailsFromStorage to use these stored values
-      window.getTripDetailsFromStorageOverride = function() {
-        console.log('[second-page.js] Using pre-stored values instead of reading from localStorage again');
-        
-        if (!storedDestination || !storedDepartureDate || !storedArrivalDate) {
-          console.error('[second-page.js] Missing stored trip details');
-          return null;
-        }
-        
-        const preferences = storedPreferences ? JSON.parse(storedPreferences) : [];
-        console.log('[second-page.js] Using stored preferences:', preferences);
-        console.log('[second-page.js] Using stored trip style:', storedTripStyle);
-        
-        return {
-          destination: storedDestination,
-          departureDate: storedDepartureDate,
-          arrivalDate: storedArrivalDate,
-          preferences: preferences,
-          tripStyle: storedTripStyle
-        };
-      };
+        <!-- Advanced Options Modal -->
+        <div id="advanced-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(34,34,34,0.25); z-index:1000; align-items:center; justify-content:center;">
+          <div style="background:#fff; border-radius:1rem; max-width:420px; width:95%; margin:auto; padding:2rem; box-shadow:0 8px 32px rgba(37,99,235,0.10); position:relative;">
+            <h3 style="margin-bottom:1rem; font-size:1.2rem; color:var(--accent-color);">Advanced Options</h3>
+            <!-- Trip Coverage -->
+            <div class="form-section">
+              <h3 class="section-title" style="font-size:1.1rem; margin-bottom:0.7rem;">Trip Coverage</h3>
+              <div class="coverage-options">
+                <label class="coverage-option">
+                  <input type="checkbox" name="advanced-trip-coverage" value="single-city">
+                  <span>Stay Local</span>
+                </label>
+                <label class="coverage-option">
+                  <input type="checkbox" name="advanced-trip-coverage" value="multi-city">
+                  <span>Multi-City</span>
+                </label>
+              </div>
+            </div>
+            <!-- Budget Range -->
+            <div class="form-section">
+              <h3 class="section-title" style="font-size:1.1rem; margin-bottom:0.7rem;">Budget Range</h3>
+              <div class="budget-options">
+                <label class="budget-option">
+                  <input type="checkbox" name="advanced-budget" value="budget">
+                  <span>Budget</span>
+                </label>
+                <label class="budget-option">
+                  <input type="checkbox" name="advanced-budget" value="mid-range">
+                  <span>Mid-range</span>
+                </label>
+                <label class="budget-option">
+                  <input type="checkbox" name="advanced-budget" value="luxury">
+                  <span>Luxury</span>
+                </label>
+              </div>
+            </div>
+            <!-- Group Size -->
+            <div class="form-section">
+              <h3 class="section-title" style="font-size:1.1rem; margin-bottom:0.7rem;">Group Size</h3>
+              <div class="form-group">
+                <select name="advanced-group-size" id="advanced-group-size" style="width:100%; padding:0.5rem; border-radius:0.5rem; border:1px solid var(--border-color);">
+                  <option value="1">Solo traveler</option>
+                  <option value="2" selected>Couple</option>
+                  <option value="3-4">Small group (3-4)</option>
+                  <option value="5+">Large group (5+)</option>
+                </select>
+              </div>
+            </div>
+            <!-- Transportation Preferences (checkboxes, visually styled as buttons) -->
+            <div class="form-section">
+              <h3 class="section-title" style="font-size:1.1rem; margin-bottom:0.7rem;">Transportation</h3>
+              <div class="transport-options">
+                <label class="transport-option">
+                  <input type="checkbox" name="advanced-transportation" value="walking">
+                  <span>Walking</span>
+                </label>
+                <label class="transport-option">
+                  <input type="checkbox" name="advanced-transportation" value="public-transport">
+                  <span>Public Transit</span>
+                </label>
+                <label class="transport-option">
+                  <input type="checkbox" name="advanced-transportation" value="rideshare">
+                  <span>Rideshare/Taxi</span>
+                </label>
+                <label class="transport-option">
+                  <input type="checkbox" name="advanced-transportation" value="rental-car">
+                  <span>Rental Car</span>
+                </label>
+              </div>
+            </div>
+            <!-- Dining Preferences (checkboxes, visually styled as buttons) -->
+            <div class="form-section">
+              <h3 class="section-title" style="font-size:1.1rem; margin-bottom:0.7rem;">Dining Style</h3>
+              <div class="dining-options">
+                <label class="dining-option">
+                  <input type="checkbox" name="advanced-dining" value="local">
+                  <span>Local Favorites</span>
+                </label>
+                <label class="dining-option">
+                  <input type="checkbox" name="advanced-dining" value="fine-dining">
+                  <span>Fine Dining</span>
+                </label>
+                <label class="dining-option">
+                  <input type="checkbox" name="advanced-dining" value="mixed">
+                  <span>Mixed</span>
+                </label>
+              </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1.5rem;">
+              <button type="button" id="close-advanced-modal" style="background:var(--bg-secondary); color:var(--accent-color); border:1px solid var(--accent-color); border-radius:0.5rem; padding:0.5rem 1.2rem; cursor:pointer;">Cancel</button>
+              <button type="button" id="apply-advanced-modal" style="background:var(--accent-color); color:#fff; border:none; border-radius:0.5rem; padding:0.5rem 1.2rem; cursor:pointer;">Apply</button>
+            </div>
+          </div>
+        </div>
 
-      // Export functions
-      function exportToPDF() {
-        console.log('Exporting to PDF...');
-        if (typeof window.jsPDF === 'undefined') {
-          alert('PDF library is loading. Please try again in a moment.');
-          return;
-        }
-        try {
-          const { jsPDF } = window.jsPDF;
-          const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-          let y = 40;
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(22);
-          doc.text('Your Travel Itinerary', 40, y);
-          y += 30;
-          doc.setFontSize(12);
-          const tripDetails = getTripDetailsFromStorage();
-          if (tripDetails) {
-            doc.text(`Destination: ${tripDetails.destination}`, 40, y);
-            y += 18;
-            doc.text(`Dates: ${tripDetails.departureDate} to ${tripDetails.arrivalDate}`, 40, y);
-            y += 18;
-          }
-          y += 10;
-          if (itineraryData && itineraryData.length > 0) {
-            const dayGroups = {};
-            itineraryData.forEach(item => {
-              if (!dayGroups[item.day]) dayGroups[item.day] = [];
-              dayGroups[item.day].push(item);
-            });
-            Object.keys(dayGroups).forEach(dayName => {
-              if (y > 750) { doc.addPage(); y = 40; }
-              doc.setFontSize(14);
-              doc.setTextColor(40, 40, 40);
-              doc.text(dayName, 40, y);
-              y += 18;
-              dayGroups[dayName].forEach(item => {
-                if (y > 750) { doc.addPage(); y = 40; }
-                doc.setFontSize(11);
-                doc.setTextColor(60, 60, 60);
-                doc.text(`${item.time || 'N/A'} - ${item.activity || 'Activity'}`, 55, y);
-                y += 14;
-                doc.setFontSize(10);
-                doc.setTextColor(100, 100, 100);
-                doc.text(`Location: ${item.location || 'Location TBD'}`, 70, y);
-                y += 14;
+        <!-- Custom Instructions Modal -->
+        <div id="custom-instructions-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(34,34,34,0.25); z-index:1000; align-items:center; justify-content:center;">
+          <div style="background:#fff; border-radius:1rem; max-width:420px; width:95%; margin:auto; padding:2rem; box-shadow:0 8px 32px rgba(37,99,235,0.10); position:relative;">
+            <h3 style="margin-bottom:1rem; font-size:1.2rem; color:var(--accent-color);">Custom Instructions</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.95rem;">Add any special requests or instructions for your itinerary. These will be sent to the AI when updating your search.</p>
+            <textarea id="custom-instructions-textarea" placeholder="E.g., 'Include vegan restaurants', 'Prefer scenic train rides', 'No hiking', etc." style="width: 100%; min-height: 100px; padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-size: 0.95rem; resize: vertical; font-family: inherit;" rows="4"></textarea>
+            <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1.5rem;">
+              <button type="button" id="close-custom-instructions-modal" style="background:var(--bg-secondary); color:var(--accent-color); border:1px solid var(--accent-color); border-radius:0.5rem; padding:0.5rem 1.2rem; cursor:pointer;">Cancel</button>
+              <button type="button" id="apply-custom-instructions-modal" style="background:var(--accent-color); color:#fff; border:none; border-radius:0.5rem; padding:0.5rem 1.2rem; cursor:pointer;">Apply</button>
+            </div>
+          </div>
+        </div>
+
+        <script src="second-page.js"></script>
+        <script>
+          // Store trip details in variables right away
+          const storedDestination = localStorage.getItem('tripDestination');
+          const storedDepartureDate = localStorage.getItem('tripDepartureDate');
+          const storedArrivalDate = localStorage.getItem('tripArrivalDate');
+          const storedPreferences = localStorage.getItem('tripPreferences');
+          const storedTripStyle = localStorage.getItem('tripStyle') || 'balanced';
+          
+          // Override getTripDetailsFromStorage to use these stored values
+          window.getTripDetailsFromStorageOverride = function() {
+            console.log('[second-page.js] Using pre-stored values instead of reading from localStorage again');
+            
+            if (!storedDestination || !storedDepartureDate || !storedArrivalDate) {
+              console.error('[second-page.js] Missing stored trip details');
+              return null;
+            }
+            
+            const preferences = storedPreferences ? JSON.parse(storedPreferences) : [];
+            console.log('[second-page.js] Using stored preferences:', preferences);
+            console.log('[second-page.js] Using stored trip style:', storedTripStyle);
+            
+            return {
+              destination: storedDestination,
+              departureDate: storedDepartureDate,
+              arrivalDate: storedArrivalDate,
+              preferences: preferences,
+              tripStyle: storedTripStyle
+            };
+          };
+
+          // Google Maps Autocomplete for 'Where to?' field on second page
+          function initSecondPageAutocomplete() {
+            var input = document.getElementById('compact-destination');
+            if (input && window.google && window.google.maps) {
+              var autocomplete = new google.maps.places.Autocomplete(input, {
+                types: ['(cities)'],
+                fields: ['address_components', 'geometry', 'name']
               });
-              y += 8;
-            });
+              autocomplete.addListener('place_changed', function() {
+                var place = autocomplete.getPlace();
+                // Optionally, handle place selection here
+              });
+            }
           }
-          doc.save(`${tripDetails?.destination || 'Travel'}_Itinerary.pdf`);
-          showNotification('PDF exported successfully!');
-        } catch (error) {
-          console.error('PDF export error:', error);
-          alert('Error creating PDF. Please try again.');
-        }
-      }
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+              if (window.google && window.google.maps) initSecondPageAutocomplete();
+              else window.initSecondPageAutocomplete = initSecondPageAutocomplete;
+            });
+          } else {
+            if (window.google && window.google.maps) initSecondPageAutocomplete();
+            else window.initSecondPageAutocomplete = initSecondPageAutocomplete;
+          }
 
-      function exportToExcel() {
-        console.log('Exporting to Excel...');
-        
-        if (typeof XLSX === 'undefined') {
-          alert('Excel library is loading. Please try again in a moment.');
-          return;
-        }
-        
-        try {
-          const tripDetails = getTripDetailsFromStorage();
-          const worksheetData = [
-            ['Time', 'Activity', 'Location', 'Day'],
-            ...itineraryData.map(item => [
-              item.time || 'N/A',
-              item.activity || 'Activity',
-              item.location || 'Location TBD',
-              item.day || 'Day'
-            ])
-          ];
-          
-          const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-          const workbook = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(workbook, worksheet, 'Itinerary');
-          
-          XLSX.writeFile(workbook, `${tripDetails?.destination || 'Travel'}_Itinerary.xlsx`);
-          showNotification('Excel file exported successfully!');
-        } catch (error) {
-          console.error('Excel export error:', error);
-          alert('Error creating Excel file. Please try again.');
-        }
-      }
-
-      function exportToCalendar() {
-        console.log('Exporting to Calendar...');
-        
-        try {
-          const tripDetails = getTripDetailsFromStorage();
-          let icsContent = `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//AItinerate//Travel Itinerary//EN
-CALSCALE:GREGORIAN
-METHOD:PUBLISH
-`;
-
-          if (itineraryData && itineraryData.length > 0) {
-            itineraryData.forEach((item, index) => {
-              const startDate = new Date(tripDetails.departureDate);
-              const dayMatch = item.day.match(/Day (\d+)/);
-              if (dayMatch) {
-                startDate.setDate(startDate.getDate() + parseInt(dayMatch[1]) - 1);
+          // Export functions
+          function exportToPDF() {
+            console.log('Exporting to PDF...');
+            if (typeof window.jsPDF === 'undefined') {
+              alert('PDF library is loading. Please try again in a moment.');
+              return;
+            }
+            try {
+              const { jsPDF } = window.jsPDF;
+              const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+              let y = 40;
+              doc.setFont('helvetica', 'normal');
+              doc.setFontSize(22);
+              doc.text('Your Travel Itinerary', 40, y);
+              y += 30;
+              doc.setFontSize(12);
+              const tripDetails = getTripDetailsFromStorage();
+              if (tripDetails) {
+                doc.text(`Destination: ${tripDetails.destination}`, 40, y);
+                y += 18;
+                doc.text(`Dates: ${tripDetails.departureDate} to ${tripDetails.arrivalDate}`, 40, y);
+                y += 18;
               }
-              
-              // Parse time
-              const timeMatch = item.time?.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/);
-              if (timeMatch) {
-                let hours = parseInt(timeMatch[1]);
-                const minutes = parseInt(timeMatch[2]);
-                if (timeMatch[3] === 'PM' && hours !== 12) hours += 12;
-                if (timeMatch[3] === 'AM' && hours === 12) hours = 0;
-                
-                startDate.setHours(hours, minutes, 0, 0);
+              y += 10;
+              if (itineraryData && itineraryData.length > 0) {
+                const dayGroups = {};
+                itineraryData.forEach(item => {
+                  if (!dayGroups[item.day]) dayGroups[item.day] = [];
+                  dayGroups[item.day].push(item);
+                });
+                Object.keys(dayGroups).forEach(dayName => {
+                  if (y > 750) { doc.addPage(); y = 40; }
+                  doc.setFontSize(14);
+                  doc.setTextColor(40, 40, 40);
+                  doc.text(dayName, 40, y);
+                  y += 18;
+                  dayGroups[dayName].forEach(item => {
+                    if (y > 750) { doc.addPage(); y = 40; }
+                    doc.setFontSize(11);
+                    doc.setTextColor(60, 60, 60);
+                    doc.text(`${item.time || 'N/A'} - ${item.activity || 'Activity'}`, 55, y);
+                    y += 14;
+                    doc.setFontSize(10);
+                    doc.setTextColor(100, 100, 100);
+                    doc.text(`Location: ${item.location || 'Location TBD'}`, 70, y);
+                    y += 14;
+                  });
+                  y += 8;
+                });
               }
+              doc.save(`${tripDetails?.destination || 'Travel'}_Itinerary.pdf`);
+              showNotification('PDF exported successfully!');
+            } catch (error) {
+              console.error('PDF export error:', error);
+              alert('Error creating PDF. Please try again.');
+            }
+          }
+
+          function exportToExcel() {
+            console.log('Exporting to Excel...');
+            
+            if (typeof XLSX === 'undefined') {
+              alert('Excel library is loading. Please try again in a moment.');
+              return;
+            }
+            
+            try {
+              const tripDetails = getTripDetailsFromStorage();
+              const worksheetData = [
+                ['Time', 'Activity', 'Location', 'Day'],
+                ...itineraryData.map(item => [
+                  item.time || 'N/A',
+                  item.activity || 'Activity',
+                  item.location || 'Location TBD',
+                  item.day || 'Day'
+                ])
+              ];
               
-              const endDate = new Date(startDate);
-              endDate.setHours(endDate.getHours() + 2); // Default 2 hour duration
+              const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+              const workbook = XLSX.utils.book_new();
+              XLSX.utils.book_append_sheet(workbook, worksheet, 'Itinerary');
               
-              const formatDate = (date) => {
-                return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-              };
+              XLSX.writeFile(workbook, `${tripDetails?.destination || 'Travel'}_Itinerary.xlsx`);
+              showNotification('Excel file exported successfully!');
+            } catch (error) {
+              console.error('Excel export error:', error);
+              alert('Error creating Excel file. Please try again.');
+            }
+          }
+
+          function exportToCalendar() {
+            console.log('Exporting to Calendar (ICS)...');
+            try {
+              const tripDetails = getTripDetailsFromStorage();
+              let icsContent = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Your Dream Itinerary//NONSGML v1.0//EN\nCALSCALE:GREGORIAN\nMETHOD:PUBLISH\n`;
               
-              icsContent += `BEGIN:VEVENT
+              if (itineraryData && itineraryData.length > 0) {
+                itineraryData.forEach((item, index) => {
+                  const startTime = item.time;
+                  const startDate = new Date(tripDetails.departureDate);
+                  startDate.setHours(0, 0, 0, 0);
+                  
+                  // Parse time if available
+                  if (startTime) {
+                    const timeMatch = startTime.match(/(\d+):(\d+)\s*(AM|PM)?/);
+                    if (timeMatch) {
+                      let hours = parseInt(timeMatch[1], 10);
+                      const minutes = parseInt(timeMatch[2], 10);
+                      const isPM = timeMatch[3] && timeMatch[3].toUpperCase() === 'PM';
+                      
+                      if (isPM && hours !== 12) hours += 12;
+                      if (!isPM && hours === 12) hours = 0;
+                      
+                      startDate.setHours(hours, minutes, 0, 0);
+                    }
+                  }
+                  
+                  const endDate = new Date(startDate);
+                  endDate.setHours(endDate.getHours() + 2); // Default 2 hour duration
+                  
+                  const formatDate = (date) => {
+                    return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+                  };
+                  
+                  icsContent += `BEGIN:VEVENT
 UID:${index + 1}@aitinerate.com
 DTSTART:${formatDate(startDate)}
 DTEND:${formatDate(endDate)}
@@ -818,78 +1487,146 @@ LOCATION:${item.location || ''}
 STATUS:CONFIRMED
 END:VEVENT
 `;
-            });
+                });
+              }
+              
+              icsContent += 'END:VCALENDAR';
+              
+              const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = `${tripDetails?.destination || 'Travel'}_Itinerary.ics`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(url);
+              
+              showNotification('Calendar file exported successfully!');
+            } catch (error) {
+              console.error('Calendar export error:', error);
+              alert('Error creating calendar file. Please try again.');
+            }
           }
-          
-          icsContent += 'END:VCALENDAR';
-          
-          const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `${tripDetails?.destination || 'Travel'}_Itinerary.ics`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-          
-          showNotification('Calendar file exported successfully!');
-        } catch (error) {
-          console.error('Calendar export error:', error);
-          alert('Error creating calendar file. Please try again.');
-        }
-      }
-    </script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCnghfavV7G0Hy86_R2cSHze0KC5W9xZP0&libraries=places&callback=initMapAndItinerary" loading="async"></script>
 
-    <!-- Actions Bar -->
-    <div class="actions-preview-bar" style="position: static; background: var(--bg-primary); box-shadow: none; border-top: 1px solid var(--border-color); padding: 0.5rem 0; margin-top: 2rem;">
-        <div class="actions-container" style="max-width: 1000px; margin: 0 auto; display: flex; gap: 0.3rem; justify-content: center; flex-wrap: wrap;">
-            <button class="action-button" id="export-pdf-action" onclick="exportToPDF()" style="min-width: 70px; padding: 0.3rem 0.7rem; font-size: 0.9rem; border-radius: 7px; flex-direction: row; gap: 0.3rem; align-items: center;">
-                <div class="action-icon" style="font-size: 1.1rem;">📄</div>
-                <span>PDF</span>
-            </button>
-            <button class="action-button" id="export-excel-action" onclick="exportToExcel()" style="min-width: 70px; padding: 0.3rem 0.7rem; font-size: 0.9rem; border-radius: 7px; flex-direction: row; gap: 0.3rem; align-items: center;">
-                <div class="action-icon" style="font-size: 1.1rem;">📊</div>
-                <span>Excel</span>
-            </button>
-            <button class="action-button" id="export-calendar-action" onclick="exportToCalendar()" style="min-width: 70px; padding: 0.3rem 0.7rem; font-size: 0.9rem; border-radius: 7px; flex-direction: row; gap: 0.3rem; align-items: center;">
-                <div class="action-icon" style="font-size: 1.1rem;">📅</div>
-                <span>Calendar</span>
-            </button>
-            <button class="action-button action-disabled" style="min-width: 70px; padding: 0.3rem 0.7rem; font-size: 0.9rem; border-radius: 7px; flex-direction: row; gap: 0.3rem; align-items: center;">
-                <div class="action-icon" style="font-size: 1.1rem;">✈️</div>
-                <span>Flights</span>
-                <span class="soon-pill">Soon</span>
-            </button>
+          // Set default values for page 2 fields from localStorage (page 1 selections)
+          document.addEventListener('DOMContentLoaded', function () {
+            // Trip form fields
+            const destination = localStorage.getItem('tripDestination');
+            const departureDate = localStorage.getItem('tripDepartureDate');
+            const arrivalDate = localStorage.getItem('tripArrivalDate');
+            const tripStyle = localStorage.getItem('tripStyle');
+            const preferences = localStorage.getItem('tripPreferences');
+            // Advanced modal fields
+            const advCoverage = JSON.parse(localStorage.getItem('advancedTripCoverage') || '[]');
+            const advBudget = JSON.parse(localStorage.getItem('advancedBudget') || '[]');
+            const advGroupSize = localStorage.getItem('advancedGroupSize');
+            const advTransport = JSON.parse(localStorage.getItem('advancedTransportation') || '[]');
+            const advDining = JSON.parse(localStorage.getItem('advancedDining') || '[]');
+
+            // Trip form
+            if (destination) document.getElementById('compact-destination').value = destination;
+            if (departureDate) document.getElementById('compact-departure-date').value = departureDate;
+            if (arrivalDate) document.getElementById('compact-arrival-date').value = arrivalDate;
+            if (tripStyle) document.getElementById('compact-trip-style').value = tripStyle;
+
+            // Preferences toggles (interests)
+            if (preferences) {
+              let prefs = [];
+              try { prefs = JSON.parse(preferences); } catch {}
+              document.querySelectorAll('.preference-toggle').forEach(btn => {
+                if (prefs.includes(btn.dataset.preference)) {
+                  btn.classList.add('active');
+                } else {
+                  btn.classList.remove('active');
+                }
+              });
+              document.querySelectorAll('.interest-checkbox').forEach(cb => {
+                cb.checked = prefs.includes(cb.value);
+              });
+            }
+
+            // Advanced modal: Trip Coverage
+            if (advCoverage && Array.isArray(advCoverage)) {
+              document.querySelectorAll('input[name="advanced-trip-coverage"]').forEach(cb => {
+                cb.checked = advCoverage.includes(cb.value);
+              });
+            }
+            // Advanced modal: Budget
+            if (advBudget && Array.isArray(advBudget)) {
+              document.querySelectorAll('input[name="advanced-budget"]').forEach(cb => {
+                cb.checked = advBudget.includes(cb.value);
+              });
+            }
+            // Advanced modal: Group Size
+            if (advGroupSize) {
+              document.getElementById('advanced-group-size').value = advGroupSize;
+            }
+            // Advanced modal: Transportation
+            if (advTransport && Array.isArray(advTransport)) {
+              document.querySelectorAll('input[name="advanced-transportation"]').forEach(cb => {
+                cb.checked = advTransport.includes(cb.value);
+              });
+            }
+            // Advanced modal: Dining
+            if (advDining && Array.isArray(advDining)) {
+              document.querySelectorAll('input[name="advanced-dining"]').forEach(cb => {
+                cb.checked = advDining.includes(cb.value);
+              });
+            }
+          });
+        </script>
+
+        <!-- Actions Bar -->
+        <div class="actions-preview-bar" style="position: static; background: var(--bg-primary); box-shadow: none; border-top: 1px solid var(--border-color); padding: 0.5rem 0; margin-top: 2rem;">
+            <div class="actions-container" style="max-width: 1000px; margin: 0 auto; display: flex; gap: 0.3rem; justify-content: center; flex-wrap: wrap;">
+                <button class="action-button" id="export-pdf-action" onclick="exportToPDF()" style="min-width: 70px; padding: 0.3rem 0.7rem; font-size: 0.9rem; border-radius: 7px; flex-direction: row; gap: 0.3rem; align-items: center;">
+                    <div class="action-icon" style="font-size: 1.1rem;">📄</div>
+                    <span>PDF</span>
+                </button>
+                <button class="action-button" id="export-excel-action" onclick="exportToExcel()" style="min-width: 70px; padding: 0.3rem 0.7rem; font-size: 0.9rem; border-radius: 7px; flex-direction: row; gap: 0.3rem; align-items: center;">
+                    <div class="action-icon" style="font-size: 1.1rem;">📊</div>
+                    <span>Excel</span>
+                </button>
+                               <button class="action-button" id="export-calendar-action" onclick="exportToCalendar()" style="min-width: 70px; padding: 0.3rem 0.7rem; font-size: 0.9rem; border-radius: 7px; flex-direction: row; gap: 0.3rem; align-items: center;">
+                    <div class="action-icon" style="font-size: 1.1rem;">📅</div>
+                    <span>Calendar</span>
+                </button>
+                <button class="action-button action-disabled" style="min-width: 70px; padding: 0.3rem 0.7rem; font-size: 0.9rem; border-radius: 7px; flex-direction: row; gap: 0.3rem; align-items: center;">
+                    <div class="action-icon" style="font-size: 1.1rem;">✈️</div>
+                    <span>Flights</span>
+                    <span class="soon-pill">Soon</span>
+                </button>
+            </div>
         </div>
-    </div>
 
-    <!-- Add jsPDF library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- Add SheetJS library for Excel export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+        <!-- Add jsPDF library -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+        <!-- Add SheetJS library for Excel export -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-    <!-- Hero Section -->
-    <div class="hero-section">
-      <div class="hero-content">
-        <h1 class="hero-title">Your Perfect Itinerary Awaits</h1>
-        <p class="hero-subtitle">Thoughtfully planned, perfectly personalized</p>
-        <div class="hero-stats">
-          <div class="stat-item">
-            <span class="stat-number" id="activities-count">---</span>
-            <span class="stat-label">Activities</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-number" id="trip-duration">--- days</span>
-            <span class="stat-label">Adventure</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-number" id="destinations-count">---</span>
-            <span class="stat-label">Places</span>
+        <!-- Hero Section -->
+        <div class="hero-section">
+          <div class="hero-content">
+            <h1 class="hero-title">Your Perfect Itinerary Awaits</h1>
+            <p class="hero-subtitle">Thoughtfully planned, perfectly personalized</p>
+            <div class="hero-stats">
+              <div class="stat-item">
+                <span class="stat-number" id="activities-count">---</span>
+                <span class="stat-label">Activities</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-number" id="trip-duration">--- days</span>
+                <span class="stat-label">Adventure</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-number" id="destinations-count">---</span>
+                <span class="stat-label">Places</span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
-</body>
+
+        <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCnghfavV7G0Hy86_R2cSHze0KC5W9xZP0&libraries=places&callback=initMapAndItinerary" loading="async"></script>
+    </body>
 </html>

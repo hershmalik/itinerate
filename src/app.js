@@ -433,20 +433,15 @@ const inspirationData = {
 
 // Function to create inspiration cards
 function createInspirationCard(destination, cardClass = 'inspiration-card') {
-    // Always use the static image from the data for every destination
-    const imgTag = `<img src="${destination.image}" alt="${destination.title}" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0;background:#f8fafc;">`;
+    // Only show the city name (title) on the card
+    // On mobile, zoom out the background image
+    const isMobile = window.innerWidth <= 768;
+    const bgSize = isMobile ? '120%' : 'cover';
     return `
-        <a href="#" class="${cardClass}" style="position:relative;overflow:hidden;">
-            ${imgTag}
-            <div class="card-overlay" style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:1;"></div>
-            <div class="card-info" style="position:relative;z-index:2;">
-                <div class="card-badges">
-                    ${destination.badges.map(badge => `<span class="card-badge">${badge}</span>`).join('')}
-                </div>
+        <a href="#" class="${cardClass}" style="background-image: url('${destination.image}'); background-size: ${bgSize}; background-position: center;">
+            <div class="card-overlay"></div>
+            <div class="card-info">
                 <h4 class="card-title">${destination.title}</h4>
-                <div class="card-details hover-reveal">
-                    <span class="card-activities">${destination.activities}</span>
-                </div>
             </div>
         </a>
     `;
@@ -454,6 +449,7 @@ function createInspirationCard(destination, cardClass = 'inspiration-card') {
 
 // Populate inspiration sections
 function populateInspirations() {
+    const isMobile = window.innerWidth <= 768;
     // Featured destinations
     const featuredGrid = document.getElementById('featured-grid');
     if (featuredGrid) {
@@ -461,45 +457,53 @@ function populateInspirations() {
             .map(dest => createInspirationCard(dest, 'featured-card'))
             .join('');
     }
-
     // Weekend getaways
     const weekendGrid = document.getElementById('weekend-grid');
     if (weekendGrid) {
-        weekendGrid.innerHTML = inspirationData.weekend
+        // Remove duplicates by image URL
+        const uniqueWeekend = inspirationData.weekend.filter((dest, idx, arr) =>
+            arr.findIndex(d => d.image === dest.image) === idx
+        );
+        weekendGrid.innerHTML = uniqueWeekend
             .map(dest => createInspirationCard(dest, 'weekend-card'))
             .join('');
     }
-
-    // Adventure trips
-    const adventureGrid = document.getElementById('adventure-grid');
-    if (adventureGrid) {
-        adventureGrid.innerHTML = inspirationData.adventure
-            .map(dest => createInspirationCard(dest, 'adventure-card'))
-            .join('');
-    }
-
-    // Romantic getaways
-    const romanticGrid = document.getElementById('romantic-grid');
-    if (romanticGrid) {
-        romanticGrid.innerHTML = inspirationData.romantic
-            .map(dest => createInspirationCard(dest, 'romantic-card'))
-            .join('');
-    }
-
-    // Family fun
-    const familyGrid = document.getElementById('family-grid');
-    if (familyGrid) {
-        familyGrid.innerHTML = inspirationData.family
-            .map(dest => createInspirationCard(dest, 'family-card'))
-            .join('');
-    }
-
-    // Group trips
-    const groupGrid = document.getElementById('group-grid');
-    if (groupGrid) {
-        groupGrid.innerHTML = inspirationData.group
-            .map(dest => createInspirationCard(dest, 'group-card'))
-            .join('');
+    if (!isMobile) {
+        // Desktop: show all sections
+        const adventureGrid = document.getElementById('adventure-grid');
+        if (adventureGrid) {
+            adventureGrid.innerHTML = inspirationData.adventure
+                .map(dest => createInspirationCard(dest, 'adventure-card'))
+                .join('');
+        }
+        const romanticGrid = document.getElementById('romantic-grid');
+        if (romanticGrid) {
+            romanticGrid.innerHTML = inspirationData.romantic
+                .map(dest => createInspirationCard(dest, 'romantic-card'))
+                .join('');
+        }
+        const familyGrid = document.getElementById('family-grid');
+        if (familyGrid) {
+            familyGrid.innerHTML = inspirationData.family
+                .map(dest => createInspirationCard(dest, 'family-card'))
+                .join('');
+        }
+        const groupGrid = document.getElementById('group-grid');
+        if (groupGrid) {
+            groupGrid.innerHTML = inspirationData.group
+                .map(dest => createInspirationCard(dest, 'group-card'))
+                .join('');
+        }
+    } else {
+        // Mobile: hide last 3 sections
+        const adventureSection = document.querySelector('.adventure-section');
+        if (adventureSection) adventureSection.style.display = 'none';
+        const romanticSection = document.querySelector('.romantic-section');
+        if (romanticSection) romanticSection.style.display = 'none';
+        const familySection = document.querySelector('.family-section');
+        if (familySection) familySection.style.display = 'none';
+        const groupSection = document.querySelector('.group-section');
+        if (groupSection) groupSection.style.display = 'none';
     }
 }
 
