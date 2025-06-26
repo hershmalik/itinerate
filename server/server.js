@@ -531,18 +531,19 @@ function generateDateMapping(startDate, endDate) {
 function removeDuplicateActivities(itinerary) {
   const seen = new Set();
   const uniqueItinerary = [];
-  
   itinerary.forEach(item => {
-    // Safe toLowerCase for activity and location
-    const activityKey = (item && typeof item.activity === 'string') ? item.activity.toLowerCase().trim() : '';
-    const locationKey = (item && typeof item.location === 'string') ? item.location.toLowerCase().trim() : '';
-    const key = `${activityKey}-${locationKey}`;
+    if (!item || !item.activity || !item.day || !item.time || !item.location) return; // filter blanks
+    // Use day, time, activity, and location for uniqueness
+    const dayKey = (typeof item.day === 'string') ? item.day.toLowerCase().trim() : '';
+    const timeKey = (typeof item.time === 'string') ? item.time.toLowerCase().trim() : '';
+    const activityKey = (typeof item.activity === 'string') ? item.activity.toLowerCase().trim() : '';
+    const locationKey = (typeof item.location === 'string') ? item.location.toLowerCase().trim() : '';
+    const key = `${dayKey}-${timeKey}-${activityKey}-${locationKey}`;
     if (!seen.has(key)) {
       seen.add(key);
       uniqueItinerary.push(item);
     }
   });
-  
   console.log(`Removed ${itinerary.length - uniqueItinerary.length} duplicate activities`);
   return uniqueItinerary;
 }

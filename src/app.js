@@ -4,36 +4,6 @@
     // Encapsulate everything in an IIFE to avoid global conflicts
     let selectedDestination = '';
     
-    // Google Maps initialization
-    function initializeGoogleMaps() {
-        const destinationInput = document.getElementById('destination');
-        
-        if (destinationInput && typeof google !== 'undefined' && google.maps) {
-            try {
-                const autocomplete = new google.maps.places.Autocomplete(destinationInput, {
-                    types: ['(cities)']
-                });
-
-                autocomplete.addListener('place_changed', () => {
-                    const place = autocomplete.getPlace();
-                    selectedDestination = place.formatted_address || place.name || destinationInput.value;
-                    console.log('Selected place:', selectedDestination);
-                });
-
-                destinationInput.addEventListener('input', () => {
-                    selectedDestination = destinationInput.value;
-                });
-                
-                console.log('Google Maps autocomplete initialized');
-            } catch (error) {
-                console.error('Error initializing Google Maps:', error);
-                fallbackDestinationInput();
-            }
-        } else {
-            fallbackDestinationInput();
-        }
-    }
-    
     // Fallback for when Google Maps is not available
     function fallbackDestinationInput() {
         const destinationInput = document.getElementById('destination');
@@ -44,11 +14,6 @@
             console.log('Using fallback destination input');
         }
     }
-    
-    // Global initMap function for Google Maps callback
-    window.initMap = function() {
-        initializeGoogleMaps();
-    };
     
     // Handle shared itinerary URLs
     function handleSharedItinerary() {
@@ -235,63 +200,74 @@
     }
 
     // Form submission handler
-    function setupFormSubmission() {
-        const tripForm = document.getElementById('trip-form');
-        const departureDateInput = document.getElementById('departure-date');
-        const arrivalDateInput = document.getElementById('arrival-date');
+    // function setupFormSubmission() {
+    //     const tripForm = document.getElementById('trip-form');
+    //     const departureDateInput = document.getElementById('departure-date');
+    //     const arrivalDateInput = document.getElementById('arrival-date');
 
-        if (tripForm && departureDateInput && arrivalDateInput) {
-            tripForm.addEventListener('submit', function (event) {
-                event.preventDefault();
+    //     if (tripForm && departureDateInput && arrivalDateInput) {
+    //         tripForm.addEventListener('submit', function (event) {
+    //             event.preventDefault();
+    //
+    //             const departureDate = departureDateInput.value.trim();
+    //             const arrivalDate = arrivalDateInput.value.trim();
+    //             const destination = getDestinationValue();
+    //
+    //             if (!destination) {
+    //                 alert('Please enter a destination.');
+    //                 return;
+    //             }
+    //
+    //             if (!departureDate || !arrivalDate) {
+    //                 alert('Please enter both departure and arrival dates.');
+    //                 return;
+    //             }
+    //
+    //             if (new Date(departureDate) > new Date(arrivalDate)) {
+    //                 alert('Departure date cannot be after arrival date');
+    //                 return;
+    //             }
+    //
+    //             // Collect form data
+    //             const selectedInterests = Array.from(document.querySelectorAll('input[name="interests"]:checked')).map(cb => cb.value);
+    //             const tripCoverage = document.querySelector('input[name="trip-coverage"]:checked')?.value || 'single-city';
+    //             const tripStyle = document.querySelector('input[name="trip-style"]:checked')?.value || 'balanced';
+    //             const budget = document.querySelector('input[name="budget"]:checked')?.value || 'mid-range';
+    //             const groupSize = document.getElementById('group-size')?.value || '2';
+    //             const selectedTransportation = Array.from(document.querySelectorAll('input[name="transportation"]:checked')).map(cb => cb.value);
+    //             const dining = document.querySelector('input[name="dining"]:checked')?.value || 'local';
+    //
+    //             // Store in localStorage
+    //             localStorage.setItem('tripDestination', destination);
+    //             localStorage.setItem('tripDepartureDate', departureDate);
+    //             localStorage.setItem('tripArrivalDate', arrivalDate);
+    //             localStorage.setItem('tripCoverage', tripCoverage);
+    //             localStorage.setItem('tripPreferences', JSON.stringify(selectedInterests));
+    //             localStorage.setItem('tripStyle', tripStyle);
+    //             localStorage.setItem('tripBudget', budget);
+    //             localStorage.setItem('tripGroupSize', groupSize);
+    //             localStorage.setItem('tripTransportation', JSON.stringify(selectedTransportation));
+    //             localStorage.setItem('tripDining', dining);
+    //
+    //             console.log('Form data stored, redirecting...');
+    //             window.location.href = '/second-page';
+    //         });
+    //     }
+    // }
 
-                const departureDate = departureDateInput.value.trim();
-                const arrivalDate = arrivalDateInput.value.trim();
-                const destinationInput = document.getElementById('destination');
-                const destination = selectedDestination || (destinationInput ? destinationInput.value : '');
+    // Patch: Custom validation for gmp-place-autocomplete
+function getDestinationValue() {
+  const gmp = document.querySelector('gmp-place-autocomplete, gmpx-place-autocomplete');
+  if (gmp && gmp.value) return gmp.value;
+  // fallback: try shadow input
+  if (gmp && gmp.shadowRoot) {
+    const input = gmp.shadowRoot.querySelector('input');
+    if (input && input.value) return input.value;
+  }
+  return '';
+}
 
-                if (!destination) {
-                    alert('Please enter a destination.');
-                    return;
-                }
-
-                if (!departureDate || !arrivalDate) {
-                    alert('Please enter both departure and arrival dates.');
-                    return;
-                }
-
-                if (new Date(departureDate) > new Date(arrivalDate)) {
-                    alert('Departure date cannot be after arrival date');
-                    return;
-                }
-
-                // Collect form data
-                const selectedInterests = Array.from(document.querySelectorAll('input[name="interests"]:checked')).map(cb => cb.value);
-                const tripCoverage = document.querySelector('input[name="trip-coverage"]:checked')?.value || 'single-city';
-                const tripStyle = document.querySelector('input[name="trip-style"]:checked')?.value || 'balanced';
-                const budget = document.querySelector('input[name="budget"]:checked')?.value || 'mid-range';
-                const groupSize = document.getElementById('group-size')?.value || '2';
-                const selectedTransportation = Array.from(document.querySelectorAll('input[name="transportation"]:checked')).map(cb => cb.value);
-                const dining = document.querySelector('input[name="dining"]:checked')?.value || 'local';
-
-                // Store in localStorage
-                localStorage.setItem('tripDestination', destination);
-                localStorage.setItem('tripDepartureDate', departureDate);
-                localStorage.setItem('tripArrivalDate', arrivalDate);
-                localStorage.setItem('tripCoverage', tripCoverage);
-                localStorage.setItem('tripPreferences', JSON.stringify(selectedInterests));
-                localStorage.setItem('tripStyle', tripStyle);
-                localStorage.setItem('tripBudget', budget);
-                localStorage.setItem('tripGroupSize', groupSize);
-                localStorage.setItem('tripTransportation', JSON.stringify(selectedTransportation));
-                localStorage.setItem('tripDining', dining);
-
-                console.log('Form data stored, redirecting...');
-                window.location.href = '/second-page';
-            });
-        }
-    }
-
-    // Inspiration destinations data - focused on activities
+// Inspiration destinations data - focused on activities
 const inspirationData = {
     featured: [
         {
@@ -526,7 +502,7 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeDatePickers();
         setupAdvancedToggle();
         setupFormInteractions();
-        setupFormSubmission();
+        // setupFormSubmission();
         populateInspirations();
         
         // Initialize Google Maps with delay to ensure DOM is ready
@@ -534,9 +510,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (typeof google === 'undefined' || !google.maps) {
                 console.warn('Google Maps not loaded, using fallback');
                 fallbackDestinationInput();
-            } else {
-                initializeGoogleMaps();
-            }
+            } 
         }, 1000);
         
         console.log('App initialization complete');

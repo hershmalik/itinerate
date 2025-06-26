@@ -10,7 +10,10 @@ let map, geocoder, itineraryData = [], currentMarkers = [], dayPaths = [], dayGr
 const markerData = new WeakMap();
 let weatherForecasts = [];
 
+const API_BASE_URL = "http://localhost:10000";
+
 window.addEventListener('DOMContentLoaded', () => {
+  console.log('[DEBUG] DOMContentLoaded fired');
   console.log("[second-page.js] DOMContentLoaded: tripDestination =", localStorage.getItem('tripDestination'));
   
   // Handle slider inputs on second page
@@ -222,7 +225,6 @@ function getTripDetailsFromStorage() {
     if (window.getTripDetailsFromStorageOverride) {
         return window.getTripDetailsFromStorageOverride();
     }
-    
     // Check if this is a shared itinerary first
     const sharedItinerary = localStorage.getItem('sharedItinerary');
     if (sharedItinerary) {
@@ -232,41 +234,45 @@ function getTripDetailsFromStorage() {
             const arrivalDate = localStorage.getItem('tripArrivalDate');
             const preferences = JSON.parse(localStorage.getItem('tripPreferences') || '[]');
             const tripStyle = localStorage.getItem('tripStyle') || 'balanced';
-            
-            // Parse the shared itinerary data
             itineraryData = JSON.parse(sharedItinerary);
-            
-            if (!destination || !departureDate || !arrivalDate) return null;
-            
+            if (!destination || !departureDate || !arrivalDate) {
+                document.getElementById("error-message").textContent = "Trip details not found. Please start from the home page.";
+                document.getElementById("error-message").style.display = "block";
+                return null;
+            }
             return { destination, departureDate, arrivalDate, preferences, tripStyle };
         } catch (e) {
             console.error('Error parsing shared itinerary:', e);
         }
     }
-    
     try {
         const destination = localStorage.getItem('tripDestination');
         const departureDate = localStorage.getItem('tripDepartureDate');
         const arrivalDate = localStorage.getItem('tripArrivalDate');
         const preferences = JSON.parse(localStorage.getItem('tripPreferences') || '[]');
         const tripStyle = localStorage.getItem('tripStyle') || 'balanced';
-        
-        if (!destination || !departureDate || !arrivalDate) return null;
-        
+        if (!destination || !departureDate || !arrivalDate) {
+            document.getElementById("error-message").textContent = "Trip details not found. Please start from the home page.";
+            document.getElementById("error-message").style.display = "block";
+            return null;
+        }
         return { destination, departureDate, arrivalDate, preferences, tripStyle };
     } catch (e) {
         console.error('Error parsing localStorage:', e);
+        document.getElementById("error-message").textContent = "Trip details not found. Please start from the home page.";
+        document.getElementById("error-message").style.display = "block";
         return null;
     }
 }
 
 // Initialize map and generate itinerary
 async function initMapAndItinerary() {
+    console.log('[DEBUG] initMapAndItinerary called');
     console.log("Google Maps API loaded, initializing...");
     
     // Check if Google Maps is loaded
     if (typeof google === 'undefined' || !google.maps) {
-        console.error('Google Maps API not loaded');
+        console.error('[DEBUG] Google Maps API not loaded');
         document.getElementById("error-message").textContent = "Map service unavailable. Other features will work normally.";
         document.getElementById("error-message").style.display = "block";
         // Continue without map
@@ -279,14 +285,13 @@ async function initMapAndItinerary() {
     try {
         map = new google.maps.Map(document.getElementById("map"), {
             zoom: 12,
-            center: { lat: 40.7128, lng: -74.0060 }, // Default to NYC
+            center: { lat: 40.7128, lng: -74.0060 },
             mapId: "ITINERARY_MAP"
-            // styles: [ ... ] // REMOVED: Cannot use styles with mapId
         });
         geocoder = new google.maps.Geocoder();
-        console.log("Map initialized successfully");
+        console.log('[DEBUG] Map initialized successfully');
     } catch (error) {
-        console.error("Error initializing map:", error);
+        console.error('[DEBUG] Error initializing map:', error);
         // Continue without map
     }
     
@@ -294,8 +299,9 @@ async function initMapAndItinerary() {
         displayPreferences();
         initializePreferenceToggles();
         await generateItinerary();
+        console.log('[DEBUG] Itinerary generation complete');
     } catch (error) {
-        console.error("Error initializing:", error);
+        console.error('[DEBUG] Error initializing:', error);
         document.getElementById("error-message").textContent = error.message;
         document.getElementById("error-message").style.display = "block";
     }
@@ -411,30 +417,38 @@ async function regenerateItineraryWithUpdatedPreferences() {
 
 // Enhanced generateItinerary function with better loading
 async function generateItinerary() {
+    console.log('[DEBUG] generateItinerary called');
     const errorMessageDiv = document.getElementById("error-message");
     const itineraryDisplayDiv = document.getElementById("itinerary-display");
+    showLoadingWithProgression();
+    if (errorMessageDiv) errorMessageDiv.style.display = "none";
+    if (itineraryDisplayDiv) itineraryDisplayDiv.style.display = "none";
 
-    try {
-        showLoadingWithProgression();
-        
-        if (errorMessageDiv) errorMessageDiv.style.display = "none";
-        if (itineraryDisplayDiv) itineraryDisplayDiv.style.display = "none";
-
-        const tripDetails = getTripDetailsFromStorage();
-        if (!tripDetails) {
-            throw new Error("Trip details not found. Please return to the previous page.");
+    // --- Wait for trip details to be available (poll for up to 1s) ---
+    let tripDetails = getTripDetailsFromStorage();
+    let waited = 0;
+    while (!tripDetails && waited < 1000) {
+        await new Promise(res => setTimeout(res, 100));
+        waited += 100;
+        tripDetails = getTripDetailsFromStorage();
+    }
+    if (!tripDetails) {
+        if (errorMessageDiv) {
+            errorMessageDiv.textContent = "Trip details not found. Please return to the previous page.";
+            errorMessageDiv.style.display = "block";
         }
-
-        // Simple base URL detection
+        const loadingIndicator = document.getElementById("loading-indicator");
+        if (loadingIndicator) loadingIndicator.style.display = "none";
+        return;
+    }
+    try {
         let baseUrl;
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            baseUrl = 'http://localhost:3001';
+            baseUrl = 'http://localhost:10000';
         } else {
             baseUrl = window.location.origin;
         }
-        
-        console.log('Using API base URL:', baseUrl);
-
+        console.log('[DEBUG] Using API base URL:', baseUrl);
         const params = new URLSearchParams({
             destination: tripDetails.destination,
             departureDate: tripDetails.departureDate,
@@ -443,28 +457,25 @@ async function generateItinerary() {
             advancedPreferences: JSON.stringify([]),
             tripStyle: tripDetails.tripStyle || 'balanced'
         });
-
-        console.log('Request URL:', `${baseUrl}/generate-itinerary?${params.toString()}`);
-
-        const response = await fetch(`${baseUrl}/generate-itinerary?${params.toString()}`);
-        
+        const requestUrl = `${baseUrl}/generate-itinerary?${params.toString()}`;
+        console.log('[DEBUG] Request URL:', requestUrl);
+        const response = await fetch(requestUrl);
+        console.log('[DEBUG] API response status:', response.status);
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('Server response:', errorText);
+            console.error('[DEBUG] Server response:', errorText);
             throw new Error(`Server error: ${response.status} - ${errorText}`);
         }
-
         const data = await response.json();
         let rawItinerary = data.itinerary;
-
-        // Fix and enhance the itinerary data
+        console.log('[DEBUG] Raw itinerary from API:', rawItinerary);
         itineraryData = enhanceAndFixItinerary(rawItinerary, tripDetails);
-
+        console.log('[DEBUG] Enhanced itineraryData:', itineraryData);
         renderItineraryCards(itineraryData);
         await populateItineraryTable(itineraryData);
-        await displayMapAndMarkers(itineraryData); // always show all pins after load
+        await displayMapAndMarkers(itineraryData);
         populateDaySelectors(itineraryData);
-
+        console.log('[DEBUG] Finished rendering itinerary and map');
         // Update hero stats
         try {
             const activitiesCount = itineraryData.length;
@@ -476,10 +487,9 @@ async function generateItinerary() {
         } catch (e) {
             // If elements not found, do nothing
         }
-
         if (itineraryDisplayDiv) itineraryDisplayDiv.style.display = "block";
     } catch (error) {
-        console.error("Error generating itinerary:", error);
+        console.error('[DEBUG] Error generating itinerary:', error);
         if (errorMessageDiv) {
             errorMessageDiv.textContent = `Error: ${error.message}`;
             errorMessageDiv.style.display = "block";
@@ -678,7 +688,7 @@ async function handleAddActivity(e) {
     if (!day || !tripDetails?.destination) return;
     let baseUrl;
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        baseUrl = 'http://localhost:3001';
+        baseUrl = 'http://localhost:10000';
     } else {
         baseUrl = window.location.origin;
     }
@@ -739,7 +749,7 @@ async function handleRegenerateActivity(e) {
     const activityToReplace = itineraryData[idx];
     let baseUrl;
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        baseUrl = 'http://localhost:3001';
+        baseUrl = 'http://localhost:10000';
     } else {
         baseUrl = window.location.origin;
     }
@@ -1433,6 +1443,19 @@ function filterMapByDay(selectedDay, items) {
 // Ensure Google Maps callback works
 window.initMapAndItinerary = initMapAndItinerary;
 
+// --- Google Places Autocomplete for 'Where to' field ---
+document.addEventListener('DOMContentLoaded', function() {
+  if (window.google && window.google.maps && window.google.maps.places) {
+    var input = document.getElementById('compact-destination');
+    if (input) {
+      new google.maps.places.Autocomplete(input, {
+        types: ['(cities)'],
+        fields: ['address_components', 'geometry', 'name']
+      });
+    }
+  }
+});
+
 // Custom Instructions Modal
 const customInstructionsLink = document.getElementById('open-custom-instructions-link');
 const customInstructionsModal = document.getElementById('custom-instructions-modal');
@@ -1466,5 +1489,244 @@ if (compactTripForm) {
     delete window.getTripDetailsFromStorageOverride;
     // Regenerate itinerary with new values
     generateItinerary();
+    // Close the mobile drawer after search
+    const drawer = document.getElementById('mobile-search-drawer');
+    if (drawer) drawer.classList.remove('open');
+    const openBtn = document.getElementById('open-search-drawer');
+    if (openBtn) openBtn.style.display = 'block';
+  });
+}
+
+// Ensure itinerary generation always runs
+document.addEventListener('DOMContentLoaded', function() {
+    // Ensure itinerary generation always runs
+    if (typeof window.initMapAndItinerary === 'function') {
+        window.initMapAndItinerary();
+    }
+});
+
+// --- Mobile drawer logic ---
+function isMobileDrawerEnabled() {
+  // Always enable the drawer, regardless of screen size
+  return true;
+}
+
+function showMobileDrawer(show) {
+  const drawer = document.getElementById('mobile-search-drawer');
+  const openBtn = document.getElementById('open-search-drawer');
+  if (!drawer || !openBtn) return;
+  if (show) {
+    drawer.classList.add('open');
+    openBtn.style.display = 'none';
+  } else {
+    drawer.classList.remove('open');
+    openBtn.style.display = 'block';
+  }
+}
+
+function setupMobileDrawer() {
+  const drawer = document.getElementById('mobile-search-drawer');
+  const openBtn = document.getElementById('open-search-drawer');
+  const closeBtn = document.getElementById('close-search-drawer');
+  if (!drawer || !openBtn || !closeBtn) return;
+  openBtn.onclick = () => showMobileDrawer(true);
+  closeBtn.onclick = () => showMobileDrawer(false);
+  drawer.addEventListener('click', function(e) {
+    if (e.target === drawer) showMobileDrawer(false);
+  });
+  // Always start closed
+  showMobileDrawer(false);
+}
+
+// --- Call setupMobileDrawer IMMEDIATELY so menu always works ---
+setupMobileDrawer();
+
+// --- Call setupMobileDrawer on DOMContentLoaded ---
+// window.addEventListener('DOMContentLoaded', () => {
+//   setupMobileDrawer();
+// });
+
+// Refine Results button opens the drawer on desktop
+document.addEventListener('DOMContentLoaded', function() {
+  var refineBtn = document.getElementById('refine-results-btn');
+  var refineModal = document.getElementById('refine-modal');
+  var closeRefineModal = document.getElementById('close-refine-modal');
+  if (refineBtn && refineModal) {
+    refineBtn.addEventListener('click', function() {
+      refineModal.style.display = 'flex';
+      setupRefineAccordion(); // Ensure accordion logic is always attached when modal opens
+    });
+  }
+  if (closeRefineModal && refineModal) {
+    closeRefineModal.addEventListener('click', function() {
+      refineModal.style.display = 'none';
+    });
+  }
+  window.addEventListener('click', function(event) {
+    if (event.target === refineModal) refineModal.style.display = 'none';
+  });
+});
+
+// --- Refine Modal Enhancements ---
+window.addEventListener('DOMContentLoaded', () => {
+  // a) Make refine button less tall
+  const refineBtn = document.getElementById('refine-update-itinerary');
+  if (refineBtn) {
+    refineBtn.style.padding = '0.5rem 1rem';
+    refineBtn.style.height = '2.2rem';
+    refineBtn.style.fontSize = '0.9rem';
+  }
+
+  // b) Date picker and city autocomplete for modal
+  if (window.flatpickr) {
+    const refineDepPicker = flatpickr('#refine-departure-date', {
+      minDate: 'today',
+      dateFormat: 'Y-m-d',
+      onChange: function(selectedDates, dateStr) {
+        if (window.refineArrPicker) window.refineArrPicker.set('minDate', dateStr);
+      }
+    });
+    window.refineArrPicker = flatpickr('#refine-arrival-date', {
+      minDate: 'today',
+      dateFormat: 'Y-m-d'
+    });
+    // Set values from localStorage if available
+    const depVal = localStorage.getItem('tripDepartureDate');
+    const arrVal = localStorage.getItem('tripArrivalDate');
+    if (depVal) document.getElementById('refine-departure-date').value = depVal;
+    if (arrVal) document.getElementById('refine-arrival-date').value = arrVal;
+  }
+  if (window.google && window.google.maps && window.google.maps.places) {
+    var refineInput = document.getElementById('refine-destination');
+    if (refineInput) {
+      new google.maps.places.Autocomplete(refineInput, {
+        types: ['(cities)'],
+        fields: ['address_components', 'geometry', 'name']
+      });
+    }
+  }
+
+  // c) Add event listeners for modal's advanced, interests, and custom instructions buttons
+  const refineInterestsBtn = document.getElementById('refine-open-interests-modal');
+  const refineCustomInstructionsBtn = document.getElementById('refine-open-custom-instructions-link');
+  const refineAdvancedBtn = document.getElementById('refine-open-advanced-modal-link');
+  if (refineInterestsBtn) refineInterestsBtn.onclick = () => document.getElementById('interests-modal').style.display = 'flex';
+  if (refineCustomInstructionsBtn) refineCustomInstructionsBtn.onclick = (e) => { e.preventDefault(); document.getElementById('custom-instructions-modal').style.display = 'flex'; };
+  if (refineAdvancedBtn) refineAdvancedBtn.onclick = (e) => { e.preventDefault(); document.getElementById('advanced-modal').style.display = 'flex'; };
+
+  // d) Inline checkboxes for interests, advanced, and custom instructions in refine modal (optional: see HTML for full move)
+  // (If you want to move the content inline, update the HTML as well)
+});
+
+// Accordion logic for refine modal
+function setupRefineAccordion() {
+  const accordions = document.querySelectorAll('#refine-modal .accordion-section');
+  accordions.forEach(section => {
+    const toggle = section.querySelector('.accordion-toggle');
+    const content = section.querySelector('.accordion-content');
+    // Collapse all by default
+    section.classList.remove('expanded');
+    toggle.setAttribute('aria-expanded', 'false');
+    section.querySelector('.accordion-arrow').textContent = '▶';
+    content.style.display = 'none';
+    // Toggle logic
+    toggle.addEventListener('click', function() {
+      const expanded = section.classList.contains('expanded');
+      // Collapse all
+      accordions.forEach(s => {
+        s.classList.remove('expanded');
+        s.querySelector('.accordion-toggle').setAttribute('aria-expanded', 'false');
+        s.querySelector('.accordion-arrow').textContent = '▶';
+        s.querySelector('.accordion-content').style.display = 'none';
+      });
+      // Expand this one if it was not already expanded
+      if (!expanded) {
+        section.classList.add('expanded');
+        toggle.setAttribute('aria-expanded', 'true');
+        section.querySelector('.accordion-arrow').textContent = '▼';
+        content.style.display = '';
+      }
+    });
+  });
+}
+
+// Accordion logic for mobile search drawer (same as desktop)
+function setupMobileDrawerAccordion() {
+  const drawer = document.getElementById('mobile-search-drawer');
+  if (!drawer) return;
+  const accordions = drawer.querySelectorAll('.accordion-section');
+  accordions.forEach(section => {
+    const toggle = section.querySelector('.accordion-toggle');
+    const content = section.querySelector('.accordion-content');
+    // Collapse all by default
+    section.classList.remove('expanded');
+    toggle.setAttribute('aria-expanded', 'false');
+    section.querySelector('.accordion-arrow').textContent = '\u25b6';
+    content.style.display = 'none';
+    // Toggle logic
+    toggle.addEventListener('click', function() {
+      const expanded = section.classList.contains('expanded');
+      // Collapse all
+      accordions.forEach(s => {
+        s.classList.remove('expanded');
+        s.querySelector('.accordion-toggle').setAttribute('aria-expanded', 'false');
+        s.querySelector('.accordion-arrow').textContent = '\u25b6';
+        s.querySelector('.accordion-content').style.display = 'none';
+      });
+      // Expand this one if it was not already expanded
+      if (!expanded) {
+        section.classList.add('expanded');
+        toggle.setAttribute('aria-expanded', 'true');
+        section.querySelector('.accordion-arrow').textContent = '\u25bc';
+        content.style.display = '';
+      }
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  // ...existing code...
+  setupRefineAccordion();
+  setupMobileDrawerAccordion();
+  // ...existing code...
+});
+
+// --- Robust Google Maps Autocomplete for mobile drawer ---
+function attachMobileAutocomplete() {
+  const input = document.getElementById('compact-destination');
+  if (!input) return;
+  // Remove any previous autocomplete instance
+  if (input._autocompleteInstance && input._autocompleteInstance.unbindAll) {
+    input._autocompleteInstance.unbindAll();
+    input._autocompleteInstance = null;
+  }
+  if (window.google && window.google.maps && window.google.maps.places) {
+    input._autocompleteInstance = new google.maps.places.Autocomplete(input, {
+      types: ['(cities)'],
+      fields: ['address_components', 'geometry', 'name']
+    });
+    // Move .pac-container to body and position it above overlays
+    input.addEventListener('focus', function() {
+      setTimeout(() => {
+        const pac = document.querySelector('.pac-container');
+        if (pac && pac.parentNode !== document.body) {
+          document.body.appendChild(pac);
+        }
+        if (pac) {
+          pac.style.position = 'absolute';
+          pac.style.zIndex = '3000';
+          const rect = input.getBoundingClientRect();
+          pac.style.top = (window.scrollY + rect.bottom) + 'px';
+          pac.style.left = (window.scrollX + rect.left) + 'px';
+          pac.style.width = rect.width + 'px';
+        }
+      }, 200);
+    });
+  }
+}
+const openBtn2 = document.getElementById('open-search-drawer');
+if (openBtn2) {
+  openBtn2.addEventListener('click', function() {
+    setTimeout(attachMobileAutocomplete, 200);
   });
 }

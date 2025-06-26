@@ -31,31 +31,39 @@ function setupDatePickers() {
 function setupDestinationAutocomplete() {
     const input = document.getElementById('destination');
     if (!input) return;
-    
-    // Simple autocomplete - can be enhanced with Google Places API
-    const suggestions = [
-        'Tokyo, Japan', 'Paris, France', 'New York, USA', 'London, UK',
-        'Rome, Italy', 'Barcelona, Spain', 'Amsterdam, Netherlands',
-        'Bangkok, Thailand', 'Singapore', 'Dubai, UAE', 'Sydney, Australia'
-    ];
-    
-    input.addEventListener('input', function() {
-        const value = this.value.toLowerCase();
-        const suggestionsDiv = document.getElementById('destination-suggestions');
-        
-        if (value.length < 2) {
-            suggestionsDiv.innerHTML = '';
-            return;
-        }
-        
-        const filtered = suggestions.filter(city => 
-            city.toLowerCase().includes(value)
-        );
-        
-        suggestionsDiv.innerHTML = filtered.map(city => 
-            `<div class="suggestion-item" onclick="selectSuggestion('${city}')">${city}</div>`
-        ).join('');
-    });
+
+    if (window.google && window.google.maps && window.google.maps.places) {
+        // Use Google Maps Places Autocomplete
+        const autocomplete = new google.maps.places.Autocomplete(input, {
+            types: ['(cities)'],
+            fields: ['address_components', 'geometry', 'name']
+        });
+        autocomplete.addListener('place_changed', function() {
+            const place = autocomplete.getPlace();
+            // Optionally, handle place selection here
+        });
+    } else {
+        // Fallback: static suggestions
+        const suggestions = [
+            'Tokyo, Japan', 'Paris, France', 'New York, USA', 'London, UK',
+            'Rome, Italy', 'Barcelona, Spain', 'Amsterdam, Netherlands',
+            'Bangkok, Thailand', 'Singapore', 'Dubai, UAE', 'Sydney, Australia'
+        ];
+        input.addEventListener('input', function() {
+            const value = this.value.toLowerCase();
+            const suggestionsDiv = document.getElementById('destination-suggestions');
+            if (value.length < 2) {
+                suggestionsDiv.innerHTML = '';
+                return;
+            }
+            const filtered = suggestions.filter(city => 
+                city.toLowerCase().includes(value)
+            );
+            suggestionsDiv.innerHTML = filtered.map(city => 
+                `<div class="suggestion-item" onclick="selectSuggestion('${city}')">${city}</div>`
+            ).join('');
+        });
+    }
 }
 
 function selectSuggestion(city) {
@@ -92,6 +100,8 @@ function setupFormSubmission() {
         const destination = formData.get('destination');
         const departureDate = formData.get('departure-date');
         const arrivalDate = formData.get('arrival-date');
+        const tripStyle = formData.get('trip-style');
+        const interests = Array.from(formData.getAll('interests'));
         
         if (!destination || !departureDate || !arrivalDate) {
             alert('Please fill in all required fields.');
@@ -103,15 +113,21 @@ function setupFormSubmission() {
         const arrival = new Date(arrivalDate);
         const tripDuration = Math.ceil((arrival - departure) / (1000 * 60 * 60 * 24));
         
+        // Save fields individually for second-page.js compatibility
+        localStorage.setItem('tripDestination', destination);
+        localStorage.setItem('tripDepartureDate', departureDate);
+        localStorage.setItem('tripArrivalDate', arrivalDate);
+        localStorage.setItem('tripPreferences', JSON.stringify(interests));
+        localStorage.setItem('tripStyle', tripStyle);
+        // Optionally, keep the old tripData object for backward compatibility
         const tripData = {
             destination: destination,
             departureDate: departureDate,
             arrivalDate: arrivalDate,
             duration: tripDuration,
-            interests: Array.from(formData.getAll('interests')),
-            tripStyle: formData.get('trip-style'),
+            interests: interests,
+            tripStyle: tripStyle,
         };
-        
         localStorage.setItem('tripData', JSON.stringify(tripData));
         window.location.href = 'second-page.html';
     });
