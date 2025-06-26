@@ -236,10 +236,15 @@ function getTripDetailsFromStorage() {
             const tripStyle = localStorage.getItem('tripStyle') || 'balanced';
             itineraryData = JSON.parse(sharedItinerary);
             if (!destination || !departureDate || !arrivalDate) {
-                document.getElementById("error-message").textContent = "Trip details not found. Please start from the home page.";
-                document.getElementById("error-message").style.display = "block";
+                // Only show error if itineraryData is empty
+                if (!itineraryData || itineraryData.length === 0) {
+                    document.getElementById("error-message").textContent = "Trip details not found. Please start from the home page.";
+                    document.getElementById("error-message").style.display = "block";
+                }
                 return null;
             }
+            // Hide error if data is present
+            document.getElementById("error-message").style.display = "none";
             return { destination, departureDate, arrivalDate, preferences, tripStyle };
         } catch (e) {
             console.error('Error parsing shared itinerary:', e);
@@ -252,10 +257,15 @@ function getTripDetailsFromStorage() {
         const preferences = JSON.parse(localStorage.getItem('tripPreferences') || '[]');
         const tripStyle = localStorage.getItem('tripStyle') || 'balanced';
         if (!destination || !departureDate || !arrivalDate) {
-            document.getElementById("error-message").textContent = "Trip details not found. Please start from the home page.";
-            document.getElementById("error-message").style.display = "block";
+            // Only show error if itineraryData is empty
+            if (!itineraryData || itineraryData.length === 0) {
+                document.getElementById("error-message").textContent = "Trip details not found. Please start from the home page.";
+                document.getElementById("error-message").style.display = "block";
+            }
             return null;
         }
+        // Hide error if data is present
+        document.getElementById("error-message").style.display = "none";
         return { destination, departureDate, arrivalDate, preferences, tripStyle };
     } catch (e) {
         console.error('Error parsing localStorage:', e);
