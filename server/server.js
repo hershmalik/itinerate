@@ -870,7 +870,7 @@ app.get('/api/share/:id', async (req, res) => {
 });
 
 // --------- AI CHAT REFINEMENT ---------
-app.post('/api/chat-refine', express.json(), async (req, res) => {
+app.post('/api/chat-refine', async (req, res) => {
     try {
         const { message, itinerary, destination, tripStyle } = req.body;
 
@@ -1219,6 +1219,119 @@ app.post('/api/regenerate-activity', async (req, res) => {
         res.json(newActivity);
     } catch (error) {
         res.status(500).json({ error: 'Failed to regenerate activity', message: error.message });
+    }
+});
+
+// === SURPRISE DAY ENDPOINT ===
+app.post('/api/surprise-day', async (req, res) => {
+    try {
+        const { day, destination, preferences, itinerary, tripStyle, advancedPreferences } = req.body;
+        if (!day || !destination) return res.status(400).json({ error: 'Missing required fields' });
+
+        const existingActivities = (itinerary || []).filter(a => a.day === day).map(a => a.activity);
+        const styleConfig = { relaxed: '2-3', balanced: '4-5', packed: '5-6' }[tripStyle] || '4-5';
+
+        const prompt = `Create ${styleConfig} completely different and surprising activities for a trip to ${destination} on ${day}.
+Traveler preferences: ${(preferences || []).join(', ')}.
+Trip style: ${tripStyle || 'balanced'}.
+DO NOT suggest any of these (already in itinerary): ${existingActivities.join('; ')}.
+Focus on hidden gems, local experiences, unexpected finds — not tourist clichés.
+Respond ONLY as a JSON array of objects with fields: day, time, activity, location.`;
+
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
+            body: JSON.stringify({ model: 'gpt-3.5-turbo', messages: [
+                { role: 'system', content: 'You are a travel expert specializing in off-the-beaten-path experiences.' },
+                { role: 'user', content: prompt }
+            ], temperature: 1.0, max_tokens: 800 })
+        });
+        if (!response.ok) throw new Error('OpenAI error');
+        const data = await response.json();
+        let raw = data.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim();
+        let activities;
+        try { activities = JSON.parse(raw); } catch { const m = raw.match(/\[[\s\S]*\]/); activities = m ? JSON.parse(m[0]) : []; }
+        if (!Array.isArray(activities)) activities = [];
+        activities = activities.map(a => sanitizeActivityObject({ ...a, day }));
+        res.json({ activities });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// === PACKING LIST ENDPOINT ===
+app.post('/api/packing-list', async (req, res) => {
+    try {
+        const { destination, departureDate, arrivalDate, activities, tripStyle } = req.body;
+        const days = activities ? Math.max(...[...new Set(activities.map(a => a.day))].map((_, i) => i + 1), 1) : 7;
+        const activityTypes = [...new Set((activities || []).map(a => a.activity?.toLowerCase()))].slice(0, 20).join(', ');
+
+        const prompt = `Create a packing list for a ${days}-day ${tripStyle || 'balanced'} trip to ${destination}.
+Key activities: ${activityTypes || 'sightseeing, dining, exploring'}.
+Dates: ${departureDate || 'upcoming'} to ${arrivalDate || ''}.
+Return ONLY a JSON object with this structure:
+{
+  "categories": [
+    { "name": "Clothing", "emoji": "👕", "items": ["item1", "item2"] },
+    { "name": "Documents & Money", "emoji": "📄", "items": [...] },
+    { "name": "Electronics", "emoji": "💻", "items": [...] },
+    { "name": "Toiletries", "emoji": "🧴", "items": [...] },
+    { "name": "Health & Safety", "emoji": "💊", "items": [...] },
+    { "name": "Destination Essentials", "emoji": "🗺️", "items": [...] }
+  ]
+}`;
+
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
+            body: JSON.stringify({ model: 'gpt-3.5-turbo', messages: [
+                { role: 'system', content: 'You are a professional travel packing expert.' },
+                { role: 'user', content: prompt }
+            ], temperature: 0.7, max_tokens: 1000 })
+        });
+        if (!response.ok) throw new Error('OpenAI error');
+        const data = await response.json();
+        let raw = data.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim();
+        let result;
+        try { result = JSON.parse(raw); } catch { const m = raw.match(/\{[\s\S]*\}/); result = m ? JSON.parse(m[0]) : { categories: [] }; }
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// === NEIGHBORHOODS ENDPOINT ===
+app.post('/api/neighborhoods', async (req, res) => {
+    try {
+        const { destination, activities } = req.body;
+        const activityLocations = [...new Set((activities || []).map(a => a.location).filter(Boolean))].slice(0, 15).join(', ');
+
+        const prompt = `Recommend 3 great neighborhoods or areas to stay in ${destination} for a traveler with these planned activities and locations: ${activityLocations || 'general sightseeing'}.
+For each neighborhood, provide:
+- name: neighborhood name
+- vibe: 1 short sentence on the vibe/character
+- bestFor: what type of traveler or activity it suits
+- priceRange: budget / mid-range / upscale
+- tip: 1 practical insider tip
+
+Return ONLY a JSON array of 3 objects with fields: name, vibe, bestFor, priceRange, tip`;
+
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
+            body: JSON.stringify({ model: 'gpt-3.5-turbo', messages: [
+                { role: 'system', content: 'You are an expert local travel guide.' },
+                { role: 'user', content: prompt }
+            ], temperature: 0.7, max_tokens: 800 })
+        });
+        if (!response.ok) throw new Error('OpenAI error');
+        const data = await response.json();
+        let raw = data.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim();
+        let neighborhoods;
+        try { neighborhoods = JSON.parse(raw); } catch { const m = raw.match(/\[[\s\S]*\]/); neighborhoods = m ? JSON.parse(m[0]) : []; }
+        res.json({ neighborhoods: Array.isArray(neighborhoods) ? neighborhoods : [] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 

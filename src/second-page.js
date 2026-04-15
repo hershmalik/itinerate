@@ -501,6 +501,8 @@ async function generateItinerary() {
                     loadCurrencyRate(tripDetails.destination).then(() => updateBudgetPanel(itineraryData));
                     // Flights
                     loadFlightPrices();
+                    // Neighborhood recommendations
+                    loadNeighborhoods();
                     if (itineraryDisplayDiv) itineraryDisplayDiv.style.display = "block";
                     document.getElementById("loading-indicator").style.display = "none";
                     resolve();
@@ -534,6 +536,7 @@ async function generateItinerary() {
                     populateDaySelectors(itineraryData);
                     updateHeroStats(itineraryData);
                     updateBudgetPanel(itineraryData);
+                    loadNeighborhoods();
                     if (itineraryDisplayDiv) itineraryDisplayDiv.style.display = "block";
                     document.getElementById("loading-indicator").style.display = "none";
                     resolve();
@@ -598,8 +601,11 @@ function renderItineraryCards(itineraryItems) {
             <div class="itinerary-day-header-title">
                 <span>📅</span> ${displayDate}
             </div>
-            <div class="itinerary-day-header-weather">
-                <span>☀️ Partly Cloudy, ${weatherInfo.temp}</span>
+            <div class="itinerary-day-header-right">
+                <div class="itinerary-day-header-weather">
+                    <span>${weatherInfo.emoji || weatherInfo.icon || '🌤'} ${weatherInfo.condition || 'Clear'}, ${weatherInfo.temp}</span>
+                </div>
+                <button class="surprise-day-btn" data-day="${dayName}" title="Surprise me with completely different activities">🎲 Surprise me</button>
             </div>
         `;
         dayCard.appendChild(dayHeader);
@@ -656,6 +662,13 @@ function renderItineraryCards(itineraryItems) {
     });
     container.querySelectorAll('.regen-btn').forEach(btn => {
         btn.onclick = handleRegenerateActivity;
+    });
+
+    // Surprise me button
+    container.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.surprise-day-btn');
+        if (!btn) return;
+        await handleSurpriseDay(btn.getAttribute('data-day'));
     });
 }
 
@@ -861,6 +874,58 @@ function handleDeleteActivity(e) {
     populateItineraryTable(itineraryData);
     displayMapAndMarkers(itineraryData);
     populateDaySelectors(itineraryData);
+}
+
+// =====================================================================
+// SURPRISE DAY FEATURE
+// =====================================================================
+async function handleSurpriseDay(day) {
+    if (!day) return;
+    const tripDetails = getTripDetailsFromStorage();
+    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:10000' : window.location.origin;
+    const btn = document.querySelector(`.surprise-day-btn[data-day="${day}"]`);
+    const origText = btn?.textContent;
+    if (btn) { btn.textContent = '⏳ Generating...'; btn.disabled = true; }
+    try {
+        const resp = await fetch(`${baseUrl}/api/surprise-day`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                day,
+                destination: tripDetails?.destination,
+                preferences: tripDetails?.preferences || [],
+                tripStyle: tripDetails?.tripStyle || 'balanced',
+                itinerary: itineraryData
+            })
+        });
+        const data = await resp.json();
+        if (!data.activities?.length) throw new Error('No activities returned');
+        // Remove existing activities for this day, insert new ones
+        const dayActivities = data.activities.map(a => sanitizeActivityObj(a, day));
+        itineraryData = itineraryData.filter(a => a.day !== day);
+        itineraryData.push(...dayActivities);
+        normalizeDayLabels(itineraryData);
+        renderItineraryCards(itineraryData);
+        await displayMapAndMarkers(itineraryData);
+        populateDaySelectors(itineraryData);
+        updateBudgetPanel(itineraryData);
+        showNotification(`✨ Day "${day}" refreshed with new surprises!`);
+    } catch (err) {
+        showNotification('Could not generate surprises. Try again.');
+    } finally {
+        const newBtn = document.querySelector(`.surprise-day-btn[data-day="${day}"]`);
+        if (newBtn) { newBtn.textContent = origText || '🎲 Surprise me'; newBtn.disabled = false; }
+    }
+}
+
+function sanitizeActivityObj(a, day) {
+    return {
+        day: day,
+        time: (a.time && typeof a.time === 'string' && a.time.trim()) ? a.time : '10:00 AM',
+        activity: (a.activity && typeof a.activity === 'string' && a.activity.trim()) ? a.activity : 'Local experience',
+        location: (a.location && typeof a.location === 'string' && a.location.trim()) ? a.location : day
+    };
 }
 
 // Add flatpickr library and CSS for date pickers if not already present
@@ -1320,6 +1385,10 @@ async function displayMapAndMarkers(items) {
 
             for (const { fullLocation, activities, pos } of geocodeResults) {
                 if (!pos) { console.warn(`[Map] Could not geocode: ${fullLocation}`); continue; }
+                if (haversineDistance(centerPos, pos) > 1200) {
+                    console.warn(`[Map] Skipping out-of-range marker: ${fullLocation}`);
+                    continue;
+                }
                 pathCoords.push(pos);
                 bounds.extend(pos);
                 const marker = new google.maps.Marker({
@@ -1361,6 +1430,17 @@ async function displayMapAndMarkers(items) {
     } catch (err) {
         console.warn('[Map] displayMapAndMarkers error:', err);
     }
+}
+
+// Haversine distance helper — returns km between two google.maps.LatLng positions
+function haversineDistance(pos1, pos2) {
+    const R = 6371;
+    const lat1 = pos1.lat() * Math.PI / 180;
+    const lat2 = pos2.lat() * Math.PI / 180;
+    const dLat = lat2 - lat1;
+    const dLon = (pos2.lng() - pos1.lng()) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
 // Google Maps geocoding helper
@@ -2111,6 +2191,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Export buttons
     document.getElementById('export-pdf-btn')?.addEventListener('click', exportToPDF);
     document.getElementById('export-cal-btn')?.addEventListener('click', exportToCalendar);
+    // Packing list
+    document.getElementById('packing-list-btn')?.addEventListener('click', generatePackingList);
+    document.getElementById('packing-modal-close')?.addEventListener('click', () => { document.getElementById('packing-modal').style.display = 'none'; });
     // Saved trips
     document.getElementById('save-trip-btn')?.addEventListener('click', saveTrip);
     document.getElementById('my-trips-btn')?.addEventListener('click', openMyTrips);
@@ -2396,4 +2479,101 @@ async function deleteSavedTrip(id, btn) {
     const headers = await getAuthHeader();
     await fetch(`${baseUrl}/api/trips/${id}`, { method: 'DELETE', headers });
     btn.closest('.saved-trip-row').remove();
+}
+
+// =====================================================================
+// PACKING LIST FEATURE
+// =====================================================================
+async function generatePackingList() {
+    const tripDetails = getTripDetailsFromStorage();
+    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:10000' : window.location.origin;
+    const modal = document.getElementById('packing-modal');
+    const content = document.getElementById('packing-content');
+    if (!modal || !content) return;
+    modal.style.display = 'flex';
+    content.innerHTML = '<div class="packing-loading">🧳 Generating your packing list...</div>';
+    try {
+        const resp = await fetch(`${baseUrl}/api/packing-list`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                destination: tripDetails?.destination,
+                departureDate: tripDetails?.departureDate,
+                arrivalDate: tripDetails?.arrivalDate,
+                tripStyle: tripDetails?.tripStyle,
+                activities: itineraryData
+            })
+        });
+        const data = await resp.json();
+        if (!data.categories?.length) throw new Error('No packing list generated');
+        content.innerHTML = data.categories.map(cat => `
+            <div class="packing-category">
+                <h4 class="packing-cat-title">${cat.emoji} ${cat.name}</h4>
+                <ul class="packing-items">
+                    ${cat.items.map(item => `
+                        <li class="packing-item">
+                            <label><input type="checkbox"> <span>${item}</span></label>
+                        </li>`).join('')}
+                </ul>
+            </div>
+        `).join('');
+    } catch (err) {
+        content.innerHTML = `<p style="color:#d32323">Could not generate packing list. Please try again.</p>`;
+    }
+}
+
+// =====================================================================
+// NEIGHBORHOOD RECOMMENDATIONS FEATURE
+// =====================================================================
+async function loadNeighborhoods() {
+    const tripDetails = getTripDetailsFromStorage();
+    const panel = document.getElementById('neighborhoods-panel');
+    if (!panel || !tripDetails?.destination) return;
+    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:10000' : window.location.origin;
+    panel.innerHTML = '<div class="neighborhoods-loading">🏘️ Finding best neighborhoods for you...</div>';
+    panel.style.display = 'block';
+    try {
+        const resp = await fetch(`${baseUrl}/api/neighborhoods`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ destination: tripDetails.destination, activities: itineraryData })
+        });
+        const data = await resp.json();
+        if (!data.neighborhoods?.length) { panel.style.display = 'none'; return; }
+        const priceColors = { budget: '#2e7d32', 'mid-range': '#1565c0', upscale: '#6a1b9a' };
+        panel.innerHTML = `
+            <div class="neighborhoods-header">🏘️ Where to Stay</div>
+            <div class="neighborhoods-grid">
+                ${data.neighborhoods.map(n => `
+                    <div class="neighborhood-card">
+                        <div class="neighborhood-name">${n.name}
+                            <span class="neighborhood-price" style="color:${priceColors[n.priceRange?.toLowerCase()] || '#555'}">${n.priceRange || ''}</span>
+                        </div>
+                        <div class="neighborhood-vibe">${n.vibe}</div>
+                        <div class="neighborhood-best">Best for: ${n.bestFor}</div>
+                        <div class="neighborhood-tip">💡 ${n.tip}</div>
+                        <a href="https://www.google.com/travel/hotels?q=hotels+in+${encodeURIComponent(n.name+' '+tripDetails.destination)}" target="_blank" rel="noopener" class="neighborhood-hotels-link">Search hotels →</a>
+                    </div>
+                `).join('')}
+            </div>`;
+    } catch { panel.style.display = 'none'; }
+}
+
+// =====================================================================
+// NOTIFICATION TOAST
+// =====================================================================
+function showNotification(message) {
+    let toast = document.getElementById('_notification-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = '_notification-toast';
+        toast.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:0.75rem 1.5rem;border-radius:2rem;font-size:0.9rem;font-weight:500;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.3);transition:opacity 0.3s;opacity:0;pointer-events:none;';
+        document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.style.opacity = '1';
+    clearTimeout(toast._timeout);
+    toast._timeout = setTimeout(() => { toast.style.opacity = '0'; }, 3000);
 }

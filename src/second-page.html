@@ -1232,12 +1232,15 @@
                   <button id="share-btn" class="action-bar-btn" title="Share itinerary">🔗 Share</button>
                   <button id="export-pdf-btn" class="action-bar-btn" title="Export to PDF">🖨️ Print / PDF</button>
                   <button id="export-cal-btn" class="action-bar-btn" title="Export to calendar">📅 Add to Calendar</button>
+                  <button id="packing-list-btn" class="action-bar-btn" title="Generate packing list">🧳 Packing List</button>
                 </div>
 
                 <!-- Budget Panel -->
                 <div id="budget-panel" style="display:none; margin-bottom:1.5rem;"></div>
                 <!-- Flights Panel -->
                 <div id="flights-panel" style="display:none; margin-bottom:1.5rem;"></div>
+                <!-- Neighborhoods Panel -->
+                <div id="neighborhoods-panel" style="display:none; margin-bottom:1.5rem;"></div>
 
                 <div id="itinerary-chatbot">
                     <div class="trip-details">
@@ -1537,6 +1540,15 @@
           </div>
         </div>
 
+        <!-- Packing List Modal -->
+        <div id="packing-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:flex-start; padding:2rem; overflow-y:auto;">
+            <div style="background:#fff; border-radius:1rem; padding:2rem; max-width:700px; width:100%; position:relative; max-height:80vh; overflow-y:auto; margin:auto;">
+                <button id="packing-modal-close" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.5rem;cursor:pointer;">×</button>
+                <h3 style="margin-bottom:1.5rem;">🧳 Your Packing List</h3>
+                <div id="packing-content"></div>
+            </div>
+        </div>
+
         <!-- Share Modal -->
         <div id="share-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(34,34,34,0.4); z-index:2000; align-items:center; justify-content:center;">
           <div style="background:#fff; border-radius:1rem; padding:2rem; max-width:480px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18); position:relative;">
@@ -1605,6 +1617,32 @@
 
           /* Saved trips */
           .saved-trip-row { display:flex; justify-content:space-between; align-items:center; padding:0.75rem 0; border-bottom:1px solid #f0f0f0; gap:1rem; }
+
+          /* Surprise me button */
+          .itinerary-day-header-right { display:flex; align-items:center; gap:0.75rem; }
+          .surprise-day-btn { background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.4); color:#fff; border-radius:1rem; padding:0.25rem 0.7rem; font-size:0.78rem; cursor:pointer; font-weight:600; transition:background 0.15s; }
+          .surprise-day-btn:hover { background:rgba(255,255,255,0.35); }
+          .surprise-day-btn:disabled { opacity:0.6; cursor:wait; }
+          /* Packing list */
+          .packing-loading { color:#717171; padding:1rem 0; }
+          .packing-category { margin-bottom:1.25rem; }
+          .packing-cat-title { font-size:1rem; font-weight:700; margin-bottom:0.5rem; color:#222; }
+          .packing-items { list-style:none; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:0.25rem; }
+          .packing-item label { display:flex; align-items:center; gap:0.5rem; font-size:0.875rem; cursor:pointer; }
+          .packing-item input[type=checkbox] { accent-color:#2563eb; width:16px; height:16px; }
+          /* Neighborhoods */
+          .neighborhoods-header { font-weight:700; font-size:0.95rem; margin-bottom:0.75rem; color:#222; }
+          .neighborhoods-loading { color:#717171; padding:0.5rem 0; font-size:0.9rem; }
+          #neighborhoods-panel { background:#fff; border:1px solid var(--border-color,#e0e0e0); border-radius:0.75rem; padding:1rem 1.2rem; }
+          .neighborhoods-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:0.75rem; }
+          .neighborhood-card { background:#f8f9fa; border-radius:0.6rem; padding:0.85rem; border:1px solid #e0e0e0; }
+          .neighborhood-name { font-weight:700; font-size:0.9rem; color:#222; display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem; }
+          .neighborhood-price { font-size:0.72rem; font-weight:600; }
+          .neighborhood-vibe { font-size:0.82rem; color:#444; margin-bottom:0.3rem; }
+          .neighborhood-best { font-size:0.78rem; color:#717171; margin-bottom:0.3rem; }
+          .neighborhood-tip { font-size:0.78rem; color:#555; border-top:1px solid #e0e0e0; padding-top:0.3rem; margin-top:0.3rem; margin-bottom:0.4rem; }
+          .neighborhood-hotels-link { font-size:0.78rem; color:#2563eb; text-decoration:none; font-weight:600; }
+          .neighborhood-hotels-link:hover { text-decoration:underline; }
 
           /* Print styles - only show itinerary cards */
           @media print {
