@@ -2145,7 +2145,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // =====================================================================
-// FLIGHT PRICES (Amadeus)
+// FLIGHT PRICES (Google Flights deep link)
 // =====================================================================
 async function loadFlightPrices() {
     const tripDetails = getTripDetailsFromStorage();
@@ -2153,54 +2153,30 @@ async function loadFlightPrices() {
     const panel = document.getElementById('flights-panel');
     if (!panel || !tripDetails) return;
     if (!originCity) {
-        panel.innerHTML = `<div class="flights-note">Add your departure city on the home page to see flight prices.</div>`;
+        panel.innerHTML = `<div class="flights-note">Add your departure city on the home page to see flight options.</div>`;
         panel.style.display = 'block';
         return;
     }
 
-    panel.innerHTML = `<div class="flights-loading">✈️ Searching flights from ${originCity}...</div>`;
-    panel.style.display = 'block';
-
     const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
         ? 'http://localhost:10000' : window.location.origin;
 
-    const params = new URLSearchParams({
-        origin: originCity,
-        destination: tripDetails.destination,
-        departureDate: tripDetails.departureDate,
-        returnDate: tripDetails.arrivalDate
-    });
-
     try {
+        const params = new URLSearchParams({ origin: originCity, destination: tripDetails.destination });
         const resp = await fetch(`${baseUrl}/api/flights?${params}`);
         const data = await resp.json();
 
-        if (!data.available) {
-            if (data.reason === 'not_configured') {
-                panel.style.display = 'none';
-            } else {
-                panel.innerHTML = `<div class="flights-note">No flights found for this route. Try adjusting your dates.</div>`;
-            }
-            return;
-        }
+        if (!data.available) { panel.style.display = 'none'; return; }
 
-        const cheapest = data.flights[0];
         panel.innerHTML = `
             <div class="flights-header">
-                <span>✈️ Flights: ${data.originCode} → ${data.destCode}</span>
-                <span class="flights-from">from <strong>$${Math.round(cheapest.price)}</strong></span>
+                <span>✈️ ${data.origin} → ${data.destination}</span>
             </div>
-            <div class="flights-list">
-                ${data.flights.map(f => `
-                    <div class="flight-row">
-                        <span class="flight-airline">${f.airline}</span>
-                        <span class="flight-duration">${f.duration || ''}</span>
-                        <span class="flight-stops">${f.stops === 0 ? 'Nonstop' : f.stops + ' stop' + (f.stops > 1 ? 's' : '')}</span>
-                        <span class="flight-price">$${Math.round(f.price)}</span>
-                    </div>
-                `).join('')}
-            </div>
-            <p class="flights-note">Round-trip per person · Powered by Amadeus · Prices vary</p>`;
+            <a href="${data.googleFlightsUrl}" target="_blank" rel="noopener" class="google-flights-btn">
+                Search flights on Google ↗
+            </a>
+            <p class="flights-note">Opens Google Flights for live prices and booking</p>`;
+        panel.style.display = 'block';
     } catch {
         panel.style.display = 'none';
     }
@@ -2246,10 +2222,10 @@ async function loadYelpRatings(items) {
                 const locEl = card.querySelector('.itinerary-card-location');
                 if (locEl && !locEl.querySelector('.yelp-link')) {
                     const a = document.createElement('a');
-                    a.href = data.url; a.target = '_blank';
+                    a.href = data.url; a.target = '_blank'; a.rel = 'noopener';
                     a.className = 'yelp-link';
-                    a.textContent = ' · Yelp reviews';
-                    a.style.cssText = 'color:#d32323;font-size:0.78rem;text-decoration:none;margin-left:4px;';
+                    a.textContent = ' · Google reviews';
+                    a.style.cssText = 'color:#1a73e8;font-size:0.78rem;text-decoration:none;margin-left:4px;';
                     locEl.appendChild(a);
                 }
             }

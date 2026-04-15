@@ -51,22 +51,6 @@ async function requireAuth(req, res, next) {
     }
 }
 
-// ---- Amadeus token cache ----
-let amadeusToken = null;
-let amadeusTokenExpiry = 0;
-async function getAmadeusToken() {
-    if (amadeusToken && Date.now() < amadeusTokenExpiry) return amadeusToken;
-    const resp = await fetch('https://test.api.amadeus.com/v1/security/oauth2/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `grant_type=client_credentials&client_id=${process.env.AMADEUS_CLIENT_ID}&client_secret=${process.env.AMADEUS_CLIENT_SECRET}`
-    });
-    const data = await resp.json();
-    if (!data.access_token) throw new Error('Amadeus auth failed');
-    amadeusToken = data.access_token;
-    amadeusTokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
-    return amadeusToken;
-}
 
 if (!process.env.OPENAI_API_KEY) {
     console.error("OpenAI API key is missing. Please check your .env file.");
@@ -154,34 +138,38 @@ app.get('/api/weather', async (req, res) => {
 });
 
 app.get('/api/place-details', async (req, res) => {
+  const { name, location } = req.query;
+  if (!name || !location) return res.status(400).json({ error: 'Name and location parameters are required' });
+
+  const API_KEY = process.env.GOOGLE_PLACES_API_KEY;
+  if (!API_KEY) return res.status(500).json({ error: 'Google Places API key not configured' });
+
   try {
-    const { name, location } = req.query;
-    
-    if (!name || !location) {
-      return res.status(400).json({ error: 'Name and location parameters are required' });
-    }
-    
-    console.log(`Place details request for: ${name}, ${location}`);
-    
-    // Mock place details for now
-    const mockPlaceDetails = {
+    const query = `${name} ${location}`;
+    const searchResp = await fetch(
+      `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(query)}&inputtype=textquery&fields=place_id,name,formatted_address&key=${API_KEY}`
+    );
+    const searchData = await searchResp.json();
+    if (!searchData.candidates?.length) return res.json({ found: false });
+
+    const candidate = searchData.candidates[0];
+    const detailsResp = await fetch(
+      `https://maps.googleapis.com/maps/api/place/details/json?place_id=${candidate.place_id}&fields=rating,user_ratings_total,price_level,url&key=${API_KEY}`
+    );
+    const detailsData = await detailsResp.json();
+    const p = detailsData.result || {};
+    res.json({
       found: true,
-      name: name,
-      address: location,
-      rating: Math.random() * 2 + 3, // Random rating between 3-5
-      totalRatings: Math.floor(Math.random() * 1000) + 50,
-      priceLevel: Math.floor(Math.random() * 4),
-      url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + ' ' + location)}`
-    };
-    
-    res.json(mockPlaceDetails);
-    
+      name: candidate.name || name,
+      address: candidate.formatted_address || location,
+      rating: p.rating || null,
+      totalRatings: p.user_ratings_total || 0,
+      priceLevel: p.price_level != null ? p.price_level : null,
+      url: p.url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + ' ' + location)}`
+    });
   } catch (error) {
     console.error('Place Details API Error:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch place details', 
-      message: error.message || 'Unknown error'
-    });
+    res.status(500).json({ error: 'Failed to fetch place details', message: error.message });
   }
 });
 
@@ -698,86 +686,44 @@ function mapWeatherConditionToIcon(conditions, icon) {
     return icon || '01d'; // Default icon
 }
 
-// --------- AMADEUS FLIGHT PRICES ---------
-app.get('/api/flights', async (req, res) => {
-    const { origin, destination, departureDate, returnDate } = req.query;
-    if (!process.env.AMADEUS_CLIENT_ID || !process.env.AMADEUS_CLIENT_SECRET) {
-        return res.json({ available: false, reason: 'not_configured' });
-    }
-    try {
-        const token = await getAmadeusToken();
-
-        // Look up IATA codes for both cities
-        const [originResp, destResp] = await Promise.all([
-            fetch(`https://test.api.amadeus.com/v1/reference-data/locations?subType=AIRPORT,CITY&keyword=${encodeURIComponent(origin)}&page[limit]=1`,
-                { headers: { Authorization: `Bearer ${token}` } }),
-            fetch(`https://test.api.amadeus.com/v1/reference-data/locations?subType=AIRPORT,CITY&keyword=${encodeURIComponent(destination)}&page[limit]=1`,
-                { headers: { Authorization: `Bearer ${token}` } })
-        ]);
-        const [originData, destData] = await Promise.all([originResp.json(), destResp.json()]);
-
-        if (!originData.data?.length || !destData.data?.length) {
-            return res.json({ available: false, reason: 'location_not_found' });
-        }
-
-        const originCode = originData.data[0].iataCode;
-        const destCode = destData.data[0].iataCode;
-
-        const flightParams = new URLSearchParams({
-            originLocationCode: originCode,
-            destinationLocationCode: destCode,
-            departureDate,
-            adults: 1,
-            max: 3,
-            currencyCode: 'USD'
-        });
-        if (returnDate) flightParams.set('returnDate', returnDate);
-
-        const flightResp = await fetch(
-            `https://test.api.amadeus.com/v2/shopping/flight-offers?${flightParams}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
-        const flightData = await flightResp.json();
-
-        if (!flightData.data?.length) return res.json({ available: false, reason: 'no_flights_found' });
-
-        const flights = flightData.data.slice(0, 3).map(offer => ({
-            price: parseFloat(offer.price.grandTotal),
-            currency: offer.price.currency,
-            airline: offer.validatingAirlineCodes?.[0] || 'N/A',
-            duration: offer.itineraries[0]?.duration?.replace('PT', '').replace('H', 'h ').replace('M', 'm').trim(),
-            stops: (offer.itineraries[0]?.segments?.length || 1) - 1
-        }));
-
-        res.json({ available: true, originCode, destCode, flights });
-    } catch (err) {
-        console.error('Amadeus error:', err.message);
-        res.json({ available: false, reason: 'error' });
-    }
+// --------- GOOGLE FLIGHTS DEEP LINK ---------
+app.get('/api/flights', (req, res) => {
+    const { origin, destination } = req.query;
+    if (!origin || !destination) return res.json({ available: false });
+    const googleFlightsUrl = `https://www.google.com/travel/flights?q=${encodeURIComponent(`Flights from ${origin} to ${destination}`)}`;
+    res.json({ available: true, googleFlightsUrl, origin, destination });
 });
 
-// --------- YELP RATINGS PROXY ---------
+// --------- GOOGLE PLACES RATINGS (replaces Yelp) ---------
 app.get('/api/yelp', async (req, res) => {
     const { term, location } = req.query;
-    if (!process.env.YELP_API_KEY) return res.json({ available: false });
+    const API_KEY = process.env.GOOGLE_PLACES_API_KEY;
+    if (!API_KEY) return res.json({ available: false });
     try {
-        const resp = await fetch(
-            `https://api.yelp.com/v3/businesses/search?term=${encodeURIComponent(term)}&location=${encodeURIComponent(location)}&limit=1`,
-            { headers: { Authorization: `Bearer ${process.env.YELP_API_KEY}` } }
+        const query = `${term} ${location}`;
+        const searchResp = await fetch(
+            `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(query)}&inputtype=textquery&fields=place_id&key=${API_KEY}`
         );
-        const data = await resp.json();
-        if (!data.businesses?.length) return res.json({ available: false });
-        const b = data.businesses[0];
+        const searchData = await searchResp.json();
+        if (!searchData.candidates?.length) return res.json({ available: false });
+
+        const placeId = searchData.candidates[0].place_id;
+        const detailsResp = await fetch(
+            `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=rating,user_ratings_total,price_level,url&key=${API_KEY}`
+        );
+        const detailsData = await detailsResp.json();
+        const p = detailsData.result;
+        if (!p?.rating) return res.json({ available: false });
+
         res.json({
             available: true,
-            rating: b.rating,
-            reviewCount: b.review_count,
-            price: b.price || null,
-            url: b.url,
-            imageUrl: b.image_url,
-            categories: b.categories?.map(c => c.title).join(', ')
+            rating: p.rating,
+            reviewCount: p.user_ratings_total,
+            price: p.price_level != null ? '$'.repeat(p.price_level + 1) : null,
+            url: p.url
         });
     } catch (err) {
+        console.error('Places ratings error:', err.message);
         res.json({ available: false });
     }
 });
