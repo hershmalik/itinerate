@@ -505,8 +505,6 @@ async function generateItinerary() {
                     await displayMapAndMarkers(itineraryData);
                     populateDaySelectors(itineraryData);
                     updateHeroStats(itineraryData);
-                    // Budget with currency conversion
-                    loadCurrencyRate(tripDetails.destination).then(() => updateBudgetPanel(itineraryData));
                     // Flights
                     loadFlightPrices();
                     // Neighborhood recommendations
@@ -543,7 +541,6 @@ async function generateItinerary() {
                     await displayMapAndMarkers(itineraryData);
                     populateDaySelectors(itineraryData);
                     updateHeroStats(itineraryData);
-                    updateBudgetPanel(itineraryData);
                     loadNeighborhoods();
                     if (itineraryDisplayDiv) itineraryDisplayDiv.style.display = "block";
                     document.getElementById("loading-indicator").style.display = "none";
@@ -917,7 +914,6 @@ async function handleSurpriseDay(day) {
         renderItineraryCards(itineraryData);
         await displayMapAndMarkers(itineraryData);
         populateDaySelectors(itineraryData);
-        updateBudgetPanel(itineraryData);
         showNotification(`✨ Day "${day}" refreshed with new surprises!`);
     } catch (err) {
         showNotification('Could not generate surprises. Try again.');
@@ -1409,7 +1405,7 @@ async function displayMapAndMarkers(items) {
                     }
                 });
                 const infoWindow = new google.maps.InfoWindow({
-                    content: createInfoWindowContent(fullLocation, activities)
+                    content: createInfoWindowContent(activities[0].location || fullLocation, activities)
                 });
                 marker.addListener('click', () => { infoWindow.open(map, marker); });
                 currentMarkers.push(marker);
@@ -1973,64 +1969,6 @@ async function loadActivityPhotos(items, baseUrl) {
 }
 
 // =====================================================================
-// BUDGET TRACKER
-// =====================================================================
-const BUDGET_ESTIMATES = {
-    dining: { low: 15, mid: 40, high: 90 },
-    attraction: { low: 10, mid: 25, high: 60 },
-    outdoor: { low: 0, mid: 10, high: 30 },
-    activity: { low: 20, mid: 50, high: 100 }
-};
-
-function estimateCost(item, tripStyle) {
-    const a = (item.activity || '').toLowerCase();
-    let cat = 'activity';
-    if (a.includes('breakfast') || a.includes('lunch') || a.includes('dinner') || a.includes('brunch') ||
-        a.includes('restaurant') || a.includes('cafe') || a.includes('bar') || a.includes('dining')) cat = 'dining';
-    else if (a.includes('museum') || a.includes('tour') || a.includes('show') || a.includes('ticket') ||
-             a.includes('gallery') || a.includes('observatory') || a.includes('concert')) cat = 'attraction';
-    else if (a.includes('park') || a.includes('walk') || a.includes('hike') || a.includes('beach') ||
-             a.includes('stroll') || a.includes('explore')) cat = 'outdoor';
-    const tier = tripStyle === 'relaxed' ? 'low' : tripStyle === 'packed' ? 'high' : 'mid';
-    return BUDGET_ESTIMATES[cat][tier];
-}
-
-function updateBudgetPanel(items) {
-    const panel = document.getElementById('budget-panel');
-    if (!panel) return;
-
-    const tripDetails = getTripDetailsFromStorage();
-    const tripStyle = tripDetails?.tripStyle || 'balanced';
-    const tierLabel = tripStyle === 'relaxed' ? 'budget-friendly' : tripStyle === 'packed' ? 'premium' : 'mid-range';
-
-    const dayGroups = {};
-    items.forEach(item => {
-        if (!dayGroups[item.day]) dayGroups[item.day] = [];
-        dayGroups[item.day].push(item);
-    });
-
-    let totalEstimate = 0;
-    const dayRows = Object.entries(dayGroups).map(([day, acts]) => {
-        const dayTotal = acts.reduce((sum, a) => sum + estimateCost(a, tripStyle), 0);
-        totalEstimate += dayTotal;
-        const label = day.match(/Day \d+/)?.[0] || day.split(',')[0];
-        const localAmt = currencyRate !== 1 ? ` · ${currencySymbol}${Math.round(dayTotal * currencyRate).toLocaleString()}` : '';
-        return `<div class="budget-day-row"><span>${label}</span><span>~$${dayTotal}${localAmt}</span></div>`;
-    }).join('');
-
-    panel.innerHTML = `
-        <div class="budget-header">
-            <span>💰 Budget Estimate</span>
-            <button onclick="document.getElementById('budget-body').style.display=document.getElementById('budget-body').style.display==='none'?'block':'none'" class="budget-toggle-btn">▾</button>
-        </div>
-        <div id="budget-body">
-            <div class="budget-day-rows">${dayRows}</div>
-            <div class="budget-total-row"><strong>Total Estimate</strong><strong>~$${totalEstimate}${currencyRate !== 1 ? ` · ${currencySymbol}${Math.round(totalEstimate * currencyRate).toLocaleString()}` : ''}</strong></div>
-            <p class="budget-note">Per-activity ${tierLabel} estimates: dining ~$${BUDGET_ESTIMATES.dining[tripStyle === 'relaxed' ? 'low' : tripStyle === 'packed' ? 'high' : 'mid']}, attractions ~$${BUDGET_ESTIMATES.attraction[tripStyle === 'relaxed' ? 'low' : tripStyle === 'packed' ? 'high' : 'mid']}, outdoor ~$${BUDGET_ESTIMATES.outdoor[tripStyle === 'relaxed' ? 'low' : tripStyle === 'packed' ? 'high' : 'mid']}. Excludes accommodation & transport.</p>
-        </div>`;
-    panel.style.display = 'block';
-}
-
 // =====================================================================
 // PDF EXPORT
 // =====================================================================
@@ -2179,7 +2117,6 @@ async function sendChatMessage(message) {
             renderItineraryCards(itineraryData);
             populateItineraryTable(itineraryData);
             displayMapAndMarkers(itineraryData);
-            updateBudgetPanel(itineraryData);
             appendChatMessage('assistant', data.content || 'Itinerary updated!');
             showNotification('Itinerary updated by AI assistant');
         } else {
@@ -2207,6 +2144,36 @@ document.addEventListener('DOMContentLoaded', () => {
     // Packing list
     document.getElementById('packing-list-btn')?.addEventListener('click', generatePackingList);
     document.getElementById('packing-modal-close')?.addEventListener('click', () => { document.getElementById('packing-modal').style.display = 'none'; });
+    document.getElementById('packing-print-btn')?.addEventListener('click', () => {
+        const content = document.getElementById('packing-content');
+        if (!content) return;
+        const win = window.open('', '_blank', 'width=700,height=900');
+        win.document.write(`<!DOCTYPE html><html><head><title>Packing List</title><style>
+            body{font-family:system-ui,sans-serif;padding:2rem;max-width:600px;margin:auto}
+            h2{margin-bottom:1.5rem} h4{margin:1rem 0 0.5rem;font-size:1rem}
+            ul{padding-left:1.2rem;list-style:none} li{margin:0.25rem 0;font-size:0.9rem}
+            li::before{content:"☐ ";font-size:1rem}
+            @media print{body{padding:1rem}}
+        </style></head><body><h2>🧳 Packing List</h2>${content.innerHTML}</body></html>`);
+        win.document.close();
+        win.print();
+    });
+    document.getElementById('packing-copy-btn')?.addEventListener('click', async () => {
+        const content = document.getElementById('packing-content');
+        if (!content) return;
+        const btn = document.getElementById('packing-copy-btn');
+        // Build plain text version
+        const lines = [];
+        content.querySelectorAll('.packing-category').forEach(cat => {
+            lines.push('\n' + (cat.querySelector('.packing-cat-title')?.textContent || ''));
+            cat.querySelectorAll('.packing-item span').forEach(item => lines.push('  ☐ ' + item.textContent));
+        });
+        try {
+            await navigator.clipboard.writeText(lines.join('\n').trim());
+            btn.textContent = '✅ Copied!';
+            setTimeout(() => { btn.textContent = '📋 Copy'; }, 2000);
+        } catch { btn.textContent = '❌ Failed'; setTimeout(() => { btn.textContent = '📋 Copy'; }, 2000); }
+    });
     // Saved trips
     document.getElementById('save-trip-btn')?.addEventListener('click', saveTrip);
     document.getElementById('my-trips-btn')?.addEventListener('click', openMyTrips);
@@ -2230,41 +2197,41 @@ function loadFlightPrices() {
     const panel = document.getElementById('flights-panel');
     if (!panel || !tripDetails?.destination) return;
 
-    const dest = encodeURIComponent(tripDetails.destination);
-    const origin = encodeURIComponent(originCity || '');
-
-    // Google Flights — the q param works best with just the destination so
-    // Google auto-detects the user's location as origin
-    const flightsUrl = originCity
-        ? `https://www.google.com/travel/flights?q=${encodeURIComponent(`flights to ${tripDetails.destination}`)}`
-        : `https://www.google.com/travel/flights?q=${encodeURIComponent(`flights to ${tripDetails.destination}`)}`;
-
-    // Google Hotels for the destination
-    const hotelsUrl = `https://www.google.com/travel/hotels?q=${dest}`;
-
-    // Kayak uses city names directly in its URL
-    const kayakDest = tripDetails.destination.split(',')[0].trim().replace(/\s+/g, '-').toLowerCase();
-    const kayakOrigin = originCity ? originCity.split(',')[0].trim().replace(/\s+/g, '-').toLowerCase() : '';
+    const dest = tripDetails.destination;
     const departure = tripDetails.departureDate || '';
     const arrival = tripDetails.arrivalDate || '';
-    const kayakUrl = kayakOrigin && departure && arrival
-        ? `https://www.kayak.com/flights/${kayakOrigin}-${kayakDest}/${departure}/${arrival}`
-        : `https://www.kayak.com/flights/anywhere-${kayakDest}`;
+
+    // Google Flights — uses natural language query, reliably fills both cities + dates
+    const gFlightsQuery = originCity
+        ? `flights from ${originCity} to ${dest}${departure ? ` ${departure}` : ''}`
+        : `flights to ${dest}`;
+    const flightsUrl = `https://www.google.com/travel/flights?q=${encodeURIComponent(gFlightsQuery)}`;
+
+    // Google Hotels with dates when available
+    const hotelsQuery = departure && arrival
+        ? `hotels in ${dest} ${departure} ${arrival}`
+        : `hotels in ${dest}`;
+    const hotelsUrl = `https://www.google.com/travel/hotels?q=${encodeURIComponent(hotelsQuery)}`;
+
+    // Skyscanner supports city names (not IATA codes) and date ranges
+    const skyOrigin = (originCity || 'anywhere').split(',')[0].trim();
+    const skyDest = dest.split(',')[0].trim();
+    const skyUrl = `https://www.skyscanner.com/transport/flights/${encodeURIComponent(skyOrigin)}/${encodeURIComponent(skyDest)}/${departure.replace(/-/g, '')}/${arrival.replace(/-/g, '')}`;
 
     panel.innerHTML = `
         <div class="travel-links-header">✈️ Plan the rest of your trip</div>
         <div class="travel-links-grid">
-            <a href="${kayakUrl}" target="_blank" rel="noopener" class="travel-link-btn">
-                <span class="tl-icon">✈️</span>
-                <span class="tl-label">Search flights<br><small>on Kayak</small></span>
-            </a>
             <a href="${flightsUrl}" target="_blank" rel="noopener" class="travel-link-btn">
                 <span class="tl-icon">🔍</span>
-                <span class="tl-label">Compare flights<br><small>on Google</small></span>
+                <span class="tl-label">Search flights<br><small>on Google Flights</small></span>
+            </a>
+            <a href="${skyUrl}" target="_blank" rel="noopener" class="travel-link-btn">
+                <span class="tl-icon">✈️</span>
+                <span class="tl-label">Compare prices<br><small>on Skyscanner</small></span>
             </a>
             <a href="${hotelsUrl}" target="_blank" rel="noopener" class="travel-link-btn">
                 <span class="tl-icon">🏨</span>
-                <span class="tl-label">Find hotels<br><small>on Google</small></span>
+                <span class="tl-label">Find hotels<br><small>on Google Hotels</small></span>
             </a>
         </div>`;
     panel.style.display = 'block';
@@ -2322,44 +2289,6 @@ async function loadYelpRatings(items) {
 }
 
 // =====================================================================
-// CURRENCY DISPLAY
-// =====================================================================
-let currencyRate = 1;
-let currencySymbol = 'USD';
-
-async function loadCurrencyRate(destination) {
-    try {
-        // Detect currency from destination country name
-        const countryToCurrency = {
-            japan: 'JPY', france: 'EUR', germany: 'EUR', italy: 'EUR', spain: 'EUR',
-            portugal: 'EUR', greece: 'EUR', netherlands: 'EUR', uk: 'GBP', britain: 'GBP',
-            england: 'GBP', australia: 'AUD', canada: 'CAD', mexico: 'MXN',
-            brazil: 'BRL', india: 'INR', thailand: 'THB', singapore: 'SGD',
-            indonesia: 'IDR', bali: 'IDR', vietnam: 'VND', morocco: 'MAD',
-            turkey: 'TRY', egypt: 'EGP', south_africa: 'ZAR', 'south africa': 'ZAR',
-            argentina: 'ARS', colombia: 'COP', peru: 'PEN', chile: 'CLP',
-            switzerland: 'CHF', sweden: 'SEK', norway: 'NOK', denmark: 'DKK',
-            iceland: 'ISK', new_zealand: 'NZD', 'new zealand': 'NZD', dubai: 'AED',
-            uae: 'AED', israel: 'ILS', china: 'CNY', korea: 'KRW', taiwan: 'TWD'
-        };
-        const destLower = (destination || '').toLowerCase();
-        let currency = 'USD';
-        for (const [key, code] of Object.entries(countryToCurrency)) {
-            if (destLower.includes(key)) { currency = code; break; }
-        }
-        if (currency === 'USD') return; // no conversion needed
-
-        const resp = await fetch(`https://open.er-api.com/v6/latest/USD`);
-        const data = await resp.json();
-        if (data.rates?.[currency]) {
-            currencyRate = data.rates[currency];
-            currencySymbol = currency;
-            console.log(`[Currency] 1 USD = ${currencyRate} ${currencySymbol}`);
-        }
-    } catch { /* silently skip */ }
-}
-
-// =====================================================================
 // SORTABLEJS DRAG-AND-DROP
 // =====================================================================
 function initDragAndDrop() {
@@ -2380,7 +2309,6 @@ function initDragAndDrop() {
                     .map(card => dayItems.find(i => i.activity === card.getAttribute('data-activity') && i.time === card.getAttribute('data-time')))
                     .filter(Boolean);
                 itineraryData = [...otherItems, ...newOrder];
-                updateBudgetPanel(itineraryData);
             }
         });
     });
@@ -2482,7 +2410,6 @@ async function loadSavedTrip(id) {
     renderItineraryCards(itineraryData);
     populateItineraryTable(itineraryData);
     displayMapAndMarkers(itineraryData);
-    updateBudgetPanel(itineraryData);
     showNotification(`Loaded: ${trip.name || trip.destination}`);
 }
 

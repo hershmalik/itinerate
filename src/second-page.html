@@ -1236,8 +1236,6 @@
                   <button id="packing-list-btn" class="action-bar-btn" title="Generate packing list">🧳 Packing List</button>
                 </div>
 
-                <!-- Budget Panel -->
-                <div id="budget-panel" style="display:none; margin-bottom:1.5rem;"></div>
                 <!-- Flights Panel -->
                 <div id="flights-panel" style="display:none; margin-bottom:1.5rem;"></div>
                 <!-- Neighborhoods Panel -->
@@ -1545,7 +1543,13 @@
         <div id="packing-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:flex-start; padding:2rem; overflow-y:auto;">
             <div style="background:#fff; border-radius:1rem; padding:2rem; max-width:700px; width:100%; position:relative; max-height:80vh; overflow-y:auto; margin:auto;">
                 <button id="packing-modal-close" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.5rem;cursor:pointer;">×</button>
-                <h3 style="margin-bottom:1.5rem;">🧳 Your Packing List</h3>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:0.5rem;">
+                    <h3 style="margin:0;">🧳 Your Packing List</h3>
+                    <div style="display:flex;gap:0.5rem;">
+                        <button id="packing-print-btn" style="padding:0.4rem 0.9rem;border:1px solid #e0e0e0;border-radius:1.5rem;background:#fff;font-size:0.82rem;cursor:pointer;font-weight:600;">🖨️ Print</button>
+                        <button id="packing-copy-btn" style="padding:0.4rem 0.9rem;border:1px solid #e0e0e0;border-radius:1.5rem;background:#fff;font-size:0.82rem;cursor:pointer;font-weight:600;">📋 Copy</button>
+                    </div>
+                </div>
                 <div id="packing-content"></div>
             </div>
         </div>

@@ -1239,20 +1239,22 @@ app.post('/api/surprise-day', async (req, res) => {
         const existingActivities = (itinerary || []).filter(a => a.day === day).map(a => a.activity);
         const styleConfig = { relaxed: '2-3', balanced: '4-5', packed: '5-6' }[tripStyle] || '4-5';
 
-        const prompt = `Create ${styleConfig} completely different and surprising activities for a trip to ${destination} on ${day}.
+        const prompt = `Create ${styleConfig} completely different and surprising activities for ${day} of a trip to ${destination}.
+CRITICAL: Every single activity and location MUST be physically in ${destination}. Do not suggest anything outside ${destination}.
+All "location" values must be real streets, neighborhoods, or venues in ${destination}.
 Traveler preferences: ${(preferences || []).join(', ')}.
 Trip style: ${tripStyle || 'balanced'}.
-DO NOT suggest any of these (already in itinerary): ${existingActivities.join('; ')}.
-Focus on hidden gems, local experiences, unexpected finds — not tourist clichés.
-Respond ONLY as a JSON array of objects with fields: day, time, activity, location.`;
+DO NOT suggest any of these (already in the itinerary): ${existingActivities.join('; ')}.
+Focus on hidden gems, local favorites, and unexpected experiences.
+Respond ONLY as a JSON array (no explanation, no markdown), each object with: day, time, activity, location.`;
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
             body: JSON.stringify({ model: 'gpt-3.5-turbo', messages: [
-                { role: 'system', content: 'You are a travel expert specializing in off-the-beaten-path experiences.' },
+                { role: 'system', content: `You are a local travel expert for ${destination}. You only suggest activities in ${destination}. Never suggest activities in other cities.` },
                 { role: 'user', content: prompt }
-            ], temperature: 1.0, max_tokens: 800 })
+            ], temperature: 0.9, max_tokens: 800 })
         });
         if (!response.ok) throw new Error('OpenAI error');
         const data = await response.json();
