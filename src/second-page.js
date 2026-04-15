@@ -425,7 +425,7 @@ async function regenerateItineraryWithUpdatedPreferences() {
     }
 }
 
-// Enhanced generateItinerary function with better loading
+// generateItinerary: uses SSE streaming so cards appear as each chunk completes
 async function generateItinerary() {
     console.log('[DEBUG] generateItinerary called');
     const errorMessageDiv = document.getElementById("error-message");
@@ -434,11 +434,11 @@ async function generateItinerary() {
     if (errorMessageDiv) errorMessageDiv.style.display = "none";
     if (itineraryDisplayDiv) itineraryDisplayDiv.style.display = "none";
 
-    // --- Wait for trip details to be available (poll for up to 1s) ---
+    // Wait up to 1s for localStorage to be populated
     let tripDetails = getTripDetailsFromStorage();
     let waited = 0;
     while (!tripDetails && waited < 1000) {
-        await new Promise(res => setTimeout(res, 100));
+        await new Promise(r => setTimeout(r, 100));
         waited += 100;
         tripDetails = getTripDetailsFromStorage();
     }
@@ -447,71 +447,107 @@ async function generateItinerary() {
             errorMessageDiv.textContent = "Trip details not found. Please return to the previous page.";
             errorMessageDiv.style.display = "block";
         }
-        const loadingIndicator = document.getElementById("loading-indicator");
-        if (loadingIndicator) loadingIndicator.style.display = "none";
+        document.getElementById("loading-indicator").style.display = "none";
         return;
     }
+
+    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:10000' : window.location.origin;
+
+    const params = new URLSearchParams({
+        destination: tripDetails.destination,
+        departureDate: tripDetails.departureDate,
+        arrivalDate: tripDetails.arrivalDate,
+        preferences: JSON.stringify(tripDetails.preferences || []),
+        advancedPreferences: JSON.stringify([]),
+        tripStyle: tripDetails.tripStyle || 'balanced'
+    });
+
+    return new Promise((resolve, reject) => {
+        let accumulatedActivities = [];
+        let firstChunkReceived = false;
+
+        const evtSource = new EventSource(`${baseUrl}/generate-itinerary-stream?${params}`);
+
+        evtSource.onmessage = async (event) => {
+            try {
+                const data = JSON.parse(event.data);
+
+                if (data.type === 'chunk') {
+                    accumulatedActivities.push(...data.activities);
+                    // Show cards as each chunk arrives
+                    itineraryData = enhanceAndFixItinerary([...accumulatedActivities], tripDetails);
+                    renderItineraryCards(itineraryData);
+                    if (!firstChunkReceived) {
+                        firstChunkReceived = true;
+                        if (itineraryDisplayDiv) itineraryDisplayDiv.style.display = "block";
+                        document.getElementById("loading-indicator").style.display = "none";
+                    }
+                } else if (data.type === 'complete') {
+                    evtSource.close();
+                    itineraryData = enhanceAndFixItinerary(data.itinerary, tripDetails);
+                    renderItineraryCards(itineraryData);
+                    loadActivityPhotos(itineraryData, baseUrl);
+                    await populateItineraryTable(itineraryData);
+                    await displayMapAndMarkers(itineraryData);
+                    populateDaySelectors(itineraryData);
+                    updateHeroStats(itineraryData);
+                    updateBudgetPanel(itineraryData);
+                    if (itineraryDisplayDiv) itineraryDisplayDiv.style.display = "block";
+                    document.getElementById("loading-indicator").style.display = "none";
+                    resolve();
+                } else if (data.type === 'error') {
+                    evtSource.close();
+                    throw new Error(data.message);
+                }
+            } catch (err) {
+                evtSource.close();
+                if (errorMessageDiv) {
+                    errorMessageDiv.textContent = `Error: ${err.message}`;
+                    errorMessageDiv.style.display = "block";
+                }
+                document.getElementById("loading-indicator").style.display = "none";
+                reject(err);
+            }
+        };
+
+        evtSource.onerror = () => {
+            evtSource.close();
+            // Fall back to regular endpoint if SSE fails
+            const fallbackUrl = `${baseUrl}/generate-itinerary?${params}`;
+            fetch(fallbackUrl)
+                .then(r => r.json())
+                .then(async data => {
+                    itineraryData = enhanceAndFixItinerary(data.itinerary, tripDetails);
+                    renderItineraryCards(itineraryData);
+                    loadActivityPhotos(itineraryData, baseUrl);
+                    await populateItineraryTable(itineraryData);
+                    await displayMapAndMarkers(itineraryData);
+                    populateDaySelectors(itineraryData);
+                    updateHeroStats(itineraryData);
+                    updateBudgetPanel(itineraryData);
+                    if (itineraryDisplayDiv) itineraryDisplayDiv.style.display = "block";
+                    document.getElementById("loading-indicator").style.display = "none";
+                    resolve();
+                })
+                .catch(err => {
+                    if (errorMessageDiv) {
+                        errorMessageDiv.textContent = `Error: ${err.message}`;
+                        errorMessageDiv.style.display = "block";
+                    }
+                    document.getElementById("loading-indicator").style.display = "none";
+                    reject(err);
+                });
+        };
+    });
+}
+
+function updateHeroStats(data) {
     try {
-        let baseUrl;
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            baseUrl = 'http://localhost:10000';
-        } else {
-            baseUrl = window.location.origin;
-        }
-        console.log('[DEBUG] Using API base URL:', baseUrl);
-        const params = new URLSearchParams({
-            destination: tripDetails.destination,
-            departureDate: tripDetails.departureDate,
-            arrivalDate: tripDetails.arrivalDate,
-            preferences: JSON.stringify(tripDetails.preferences || []),
-            advancedPreferences: JSON.stringify([]),
-            tripStyle: tripDetails.tripStyle || 'balanced'
-        });
-        const requestUrl = `${baseUrl}/generate-itinerary?${params.toString()}`;
-        console.log('[DEBUG] Request URL:', requestUrl);
-        const response = await fetch(requestUrl);
-        console.log('[DEBUG] API response status:', response.status);
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('[DEBUG] Server response:', errorText);
-            throw new Error(`Server error: ${response.status} - ${errorText}`);
-        }
-        const data = await response.json();
-        let rawItinerary = data.itinerary;
-        console.log('[DEBUG] Raw itinerary from API:', rawItinerary);
-        itineraryData = enhanceAndFixItinerary(rawItinerary, tripDetails);
-        console.log('[DEBUG] Enhanced itineraryData:', itineraryData);
-        renderItineraryCards(itineraryData);
-        await populateItineraryTable(itineraryData);
-        await displayMapAndMarkers(itineraryData);
-        populateDaySelectors(itineraryData);
-        console.log('[DEBUG] Finished rendering itinerary and map');
-        // Update hero stats
-        try {
-            const activitiesCount = itineraryData.length;
-            const uniqueLocations = new Set(itineraryData.map(item => item.location)).size;
-            const uniqueDays = new Set(itineraryData.map(item => item.day)).size;
-            document.getElementById('activities-count').textContent = activitiesCount;
-            document.getElementById('trip-duration').textContent = uniqueDays + (uniqueDays === 1 ? ' day' : ' days');
-            document.getElementById('destinations-count').textContent = uniqueLocations;
-        } catch (e) {
-            // If elements not found, do nothing
-        }
-        if (itineraryDisplayDiv) itineraryDisplayDiv.style.display = "block";
-    } catch (error) {
-        console.error('[DEBUG] Error generating itinerary:', error);
-        if (errorMessageDiv) {
-            errorMessageDiv.textContent = `Error: ${error.message}`;
-            errorMessageDiv.style.display = "block";
-        }
-    } finally {
-        const loadingIndicator = document.getElementById("loading-indicator");
-        if (loadingIndicator) {
-            setTimeout(() => {
-                loadingIndicator.style.display = "none";
-            }, 500);
-        }
-    }
+        document.getElementById('activities-count').textContent = data.length;
+        document.getElementById('trip-duration').textContent = new Set(data.map(i => i.day)).size + ' days';
+        document.getElementById('destinations-count').textContent = new Set(data.map(i => i.location)).size;
+    } catch (e) { /* elements may not exist */ }
 }
 
 // Render itinerary as VRBO-inspired cards
@@ -570,6 +606,7 @@ function renderItineraryCards(itineraryItems) {
             card.setAttribute('data-day', dayName);
             card.setAttribute('data-time', item.time);
             card.setAttribute('data-activity', item.activity);
+            card.setAttribute('data-location', item.location || '');
             // Modern icon buttons only, horizontally aligned with time
             card.innerHTML = `
                 <div class="itinerary-card-header-row">
@@ -1257,30 +1294,36 @@ async function displayMapAndMarkers(items) {
                     locationCounts[fullLocation].push({ ...item, _fullLocation: fullLocation });
                 }
             });
-            for (const [fullLocation, activities] of Object.entries(locationCounts)) {
-                try {
-                    const locationPos = await geocodeLocation(fullLocation);
-                    pathCoords.push(locationPos);
-                    bounds.extend(locationPos);
-                    const marker = new google.maps.Marker({
-                        position: locationPos,
-                        map: map,
-                        title: fullLocation,
-                        icon: {
-                            url: getMarkerIcon(activities[0]),
-                            scaledSize: new google.maps.Size(30, 30)
-                        }
-                    });
-                    const infoWindow = new google.maps.InfoWindow({
-                        content: createInfoWindowContent(fullLocation, activities)
-                    });
-                    marker.addListener('click', () => {
-                        infoWindow.open(map, marker);
-                    });
-                    currentMarkers.push(marker);
-                } catch (err) {
-                    console.warn(`[Map] Could not geocode location: ${fullLocation}`);
-                }
+            // Geocode all locations in parallel instead of one-by-one
+            const geocodeResults = await Promise.all(
+                Object.entries(locationCounts).map(async ([fullLocation, activities]) => {
+                    try {
+                        const pos = await geocodeLocation(fullLocation);
+                        return { fullLocation, activities, pos };
+                    } catch {
+                        return { fullLocation, activities, pos: null };
+                    }
+                })
+            );
+
+            for (const { fullLocation, activities, pos } of geocodeResults) {
+                if (!pos) { console.warn(`[Map] Could not geocode: ${fullLocation}`); continue; }
+                pathCoords.push(pos);
+                bounds.extend(pos);
+                const marker = new google.maps.Marker({
+                    position: pos,
+                    map: map,
+                    title: fullLocation,
+                    icon: {
+                        url: getMarkerIcon(activities[0]),
+                        scaledSize: new google.maps.Size(30, 30)
+                    }
+                });
+                const infoWindow = new google.maps.InfoWindow({
+                    content: createInfoWindowContent(fullLocation, activities)
+                });
+                marker.addListener('click', () => { infoWindow.open(map, marker); });
+                currentMarkers.push(marker);
             }
             // Fit map to show all pins if there are any, else center on centerPos
             if (pathCoords.length > 0) {
@@ -1740,3 +1783,320 @@ if (openBtn2) {
     setTimeout(attachMobileAutocomplete, 200);
   });
 }
+
+// =====================================================================
+// SHARE FEATURE
+// =====================================================================
+async function shareItinerary() {
+    if (!itineraryData || itineraryData.length === 0) return;
+    const tripDetails = getTripDetailsFromStorage();
+    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:10000' : window.location.origin;
+    try {
+        const resp = await fetch(`${baseUrl}/api/share`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                itinerary: itineraryData,
+                destination: tripDetails?.destination,
+                departureDate: tripDetails?.departureDate,
+                arrivalDate: tripDetails?.arrivalDate,
+                preferences: tripDetails?.preferences,
+                tripStyle: tripDetails?.tripStyle
+            })
+        });
+        const { shareUrl } = await resp.json();
+        const modal = document.getElementById('share-modal');
+        const input = document.getElementById('share-url-input');
+        if (modal && input) {
+            input.value = shareUrl;
+            modal.style.display = 'flex';
+        }
+    } catch (err) {
+        alert('Could not generate share link: ' + err.message);
+    }
+}
+
+function copyShareLink() {
+    const input = document.getElementById('share-url-input');
+    if (!input) return;
+    input.select();
+    document.execCommand('copy');
+    const btn = document.getElementById('copy-link-btn');
+    if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy'; }, 2000); }
+}
+
+// On load: check for ?share=ID in URL and pre-load that itinerary
+(async function checkSharedItinerary() {
+    const shareId = new URLSearchParams(window.location.search).get('share');
+    if (!shareId) return;
+    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:10000' : window.location.origin;
+    try {
+        const resp = await fetch(`${baseUrl}/api/share/${shareId}`);
+        if (!resp.ok) return;
+        const data = await resp.json();
+        localStorage.setItem('tripDestination', data.destination || '');
+        localStorage.setItem('tripDepartureDate', data.departureDate || '');
+        localStorage.setItem('tripArrivalDate', data.arrivalDate || '');
+        localStorage.setItem('tripPreferences', JSON.stringify(data.preferences || []));
+        localStorage.setItem('tripStyle', data.tripStyle || 'balanced');
+        localStorage.setItem('sharedItinerary', JSON.stringify(data.itinerary));
+    } catch (err) {
+        console.warn('Could not load shared itinerary:', err);
+    }
+})();
+
+// =====================================================================
+// REAL ACTIVITY PHOTOS (lazy-loaded in parallel)
+// =====================================================================
+async function loadActivityPhotos(items, baseUrl) {
+    if (!baseUrl) baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:10000' : window.location.origin;
+
+    const cards = document.querySelectorAll('.itinerary-card');
+    const photoPromises = Array.from(cards).map(async (card) => {
+        const activity = card.getAttribute('data-activity') || '';
+        const location = card.getAttribute('data-location') || '';
+        if (!activity) return;
+        const query = `${activity} ${location}`.trim();
+        try {
+            const resp = await fetch(`${baseUrl}/api/activity-image?query=${encodeURIComponent(query)}`);
+            const data = await resp.json();
+            if (data.imageUrl) {
+                const img = document.createElement('img');
+                img.src = data.imageUrl;
+                img.className = 'activity-card-photo';
+                img.alt = activity;
+                img.onerror = () => img.remove();
+                card.insertBefore(img, card.firstChild);
+            }
+        } catch { /* silently skip */ }
+    });
+    await Promise.all(photoPromises);
+}
+
+// =====================================================================
+// BUDGET TRACKER
+// =====================================================================
+const BUDGET_ESTIMATES = {
+    dining: { low: 15, mid: 40, high: 90 },
+    attraction: { low: 10, mid: 25, high: 60 },
+    outdoor: { low: 0, mid: 10, high: 30 },
+    activity: { low: 20, mid: 50, high: 100 }
+};
+
+function estimateCost(item) {
+    const a = (item.activity || '').toLowerCase();
+    let cat = 'activity';
+    if (a.includes('breakfast') || a.includes('lunch') || a.includes('dinner') || a.includes('restaurant') || a.includes('cafe') || a.includes('bar')) cat = 'dining';
+    else if (a.includes('museum') || a.includes('tour') || a.includes('show') || a.includes('ticket')) cat = 'attraction';
+    else if (a.includes('park') || a.includes('walk') || a.includes('hike') || a.includes('beach')) cat = 'outdoor';
+    return BUDGET_ESTIMATES[cat].mid;
+}
+
+function updateBudgetPanel(items) {
+    const panel = document.getElementById('budget-panel');
+    if (!panel) return;
+
+    const dayGroups = {};
+    items.forEach(item => {
+        if (!dayGroups[item.day]) dayGroups[item.day] = [];
+        dayGroups[item.day].push(item);
+    });
+
+    let totalEstimate = 0;
+    const dayRows = Object.entries(dayGroups).map(([day, acts]) => {
+        const dayTotal = acts.reduce((sum, a) => sum + estimateCost(a), 0);
+        totalEstimate += dayTotal;
+        const label = day.match(/Day (\d+):/)?.[0] || day.split(',')[0];
+        return `<div class="budget-day-row"><span>${label}</span><span>~$${dayTotal}</span></div>`;
+    }).join('');
+
+    panel.innerHTML = `
+        <div class="budget-header">
+            <span>💰 Budget Estimate</span>
+            <button onclick="document.getElementById('budget-body').style.display=document.getElementById('budget-body').style.display==='none'?'block':'none'" class="budget-toggle-btn">▾</button>
+        </div>
+        <div id="budget-body">
+            <div class="budget-day-rows">${dayRows}</div>
+            <div class="budget-total-row"><strong>Total Estimate</strong><strong>~$${totalEstimate}</strong></div>
+            <p class="budget-note">Estimates based on typical mid-range spending. Actual costs vary.</p>
+        </div>`;
+    panel.style.display = 'block';
+}
+
+// =====================================================================
+// PDF EXPORT
+// =====================================================================
+function exportToPDF() {
+    window.print();
+}
+
+// =====================================================================
+// CALENDAR EXPORT (downloads .ics file)
+// =====================================================================
+function exportToCalendar() {
+    const tripDetails = getTripDetailsFromStorage();
+    if (!itineraryData || !tripDetails) return;
+
+    const pad = n => String(n).padStart(2, '0');
+    const toICSDate = (dateStr, timeStr) => {
+        try {
+            const d = new Date(dateStr);
+            const timeParts = timeStr?.match(/(\d+):(\d+)\s*(AM|PM)/i);
+            let h = 9, m = 0;
+            if (timeParts) {
+                h = parseInt(timeParts[1]);
+                m = parseInt(timeParts[2]);
+                if (timeParts[3].toUpperCase() === 'PM' && h !== 12) h += 12;
+                if (timeParts[3].toUpperCase() === 'AM' && h === 12) h = 0;
+            }
+            return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(h)}${pad(m)}00`;
+        } catch { return null; }
+    };
+
+    // Map day labels to actual ISO dates
+    const startDate = new Date(tripDetails.departureDate);
+    const dayLabelToDate = {};
+    itineraryData.forEach(item => {
+        if (!dayLabelToDate[item.day]) {
+            // Try to parse date from day label
+            const match = item.day.match(/([A-Za-z]+,?\s+[A-Za-z]+\s+\d{1,2})/);
+            if (match) {
+                const parsed = new Date(match[1] + ', ' + startDate.getFullYear());
+                if (!isNaN(parsed)) dayLabelToDate[item.day] = parsed.toISOString().split('T')[0];
+            }
+            if (!dayLabelToDate[item.day]) dayLabelToDate[item.day] = tripDetails.departureDate;
+        }
+    });
+
+    let ics = `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//AItinerate//EN\r\nCALSCALE:GREGORIAN\r\n`;
+
+    itineraryData.forEach((item, i) => {
+        const dateStr = dayLabelToDate[item.day] || tripDetails.departureDate;
+        const dtStart = toICSDate(dateStr, item.time);
+        const dtEnd = toICSDate(dateStr, item.time); // same time, 1hr duration assumed
+        if (!dtStart) return;
+
+        // Bump end by 1 hour
+        const endHour = parseInt(dtEnd.substring(9, 11)) + 1;
+        const dtEndAdjusted = dtEnd.substring(0, 9) + pad(endHour % 24) + dtEnd.substring(11);
+
+        ics += `BEGIN:VEVENT\r\n`;
+        ics += `UID:aitinerate-${i}-${Date.now()}@aitinerate\r\n`;
+        ics += `DTSTART:${dtStart}\r\n`;
+        ics += `DTEND:${dtEndAdjusted}\r\n`;
+        ics += `SUMMARY:${item.activity?.replace(/[,;\\]/g, ' ')}\r\n`;
+        ics += `LOCATION:${item.location?.replace(/[,;\\]/g, ' ')}\r\n`;
+        ics += `END:VEVENT\r\n`;
+    });
+
+    ics += `END:VCALENDAR`;
+
+    const blob = new Blob([ics], { type: 'text/calendar' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${tripDetails.destination || 'itinerary'}.ics`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+// =====================================================================
+// AI CHAT PANEL
+// =====================================================================
+let chatHistory = [];
+
+function initChatPanel() {
+    const btn = document.getElementById('chat-fab');
+    const panel = document.getElementById('chat-panel');
+    const closeBtn = document.getElementById('chat-close');
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('chat-input');
+
+    if (!btn || !panel) return;
+
+    btn.addEventListener('click', () => {
+        panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+        if (panel.style.display === 'flex' && input) input.focus();
+    });
+    if (closeBtn) closeBtn.addEventListener('click', () => { panel.style.display = 'none'; });
+
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = input?.value?.trim();
+            if (!message) return;
+            input.value = '';
+            await sendChatMessage(message);
+        });
+    }
+}
+
+function appendChatMessage(role, text) {
+    const messages = document.getElementById('chat-messages');
+    if (!messages) return;
+    const div = document.createElement('div');
+    div.className = `chat-msg chat-msg-${role}`;
+    div.textContent = text;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+}
+
+async function sendChatMessage(message) {
+    appendChatMessage('user', message);
+    appendChatMessage('assistant', '...');
+
+    const tripDetails = getTripDetailsFromStorage();
+    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:10000' : window.location.origin;
+
+    try {
+        const resp = await fetch(`${baseUrl}/api/chat-refine`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message,
+                itinerary: itineraryData,
+                destination: tripDetails?.destination,
+                tripStyle: tripDetails?.tripStyle
+            })
+        });
+        const data = await resp.json();
+
+        // Remove the "..." placeholder
+        const messages = document.getElementById('chat-messages');
+        if (messages) messages.lastChild?.remove();
+
+        if (data.type === 'update' && Array.isArray(data.itinerary)) {
+            itineraryData = enhanceAndFixItinerary(data.itinerary, tripDetails);
+            renderItineraryCards(itineraryData);
+            populateItineraryTable(itineraryData);
+            displayMapAndMarkers(itineraryData);
+            updateBudgetPanel(itineraryData);
+            appendChatMessage('assistant', data.content || 'Itinerary updated!');
+            showNotification('Itinerary updated by AI assistant');
+        } else {
+            appendChatMessage('assistant', data.content || 'Done!');
+        }
+    } catch (err) {
+        const messages = document.getElementById('chat-messages');
+        if (messages) messages.lastChild?.remove();
+        appendChatMessage('assistant', 'Sorry, something went wrong. Please try again.');
+    }
+}
+
+// Initialize chat panel when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    initChatPanel();
+    // Share button
+    document.getElementById('share-btn')?.addEventListener('click', shareItinerary);
+    document.getElementById('copy-link-btn')?.addEventListener('click', copyShareLink);
+    document.getElementById('share-modal-close')?.addEventListener('click', () => {
+        document.getElementById('share-modal').style.display = 'none';
+    });
+    // Export buttons
+    document.getElementById('export-pdf-btn')?.addEventListener('click', exportToPDF);
+    document.getElementById('export-cal-btn')?.addEventListener('click', exportToCalendar);
+});

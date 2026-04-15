@@ -199,71 +199,63 @@ app.get('/generate-itinerary', async (req, res) => {
     }
 });
 
-// Update the generateFullItinerary function signature:
+// generateFullItinerary: all chunks run in parallel - no sequential delays
 async function generateFullItinerary(destination, preferences, startDate, endDate, advancedPreferences = [], customInstructions = "", tripStyle = "balanced", multiCity = false, additionalCities = []) {
-  // Calculate the total number of days (fix the missing day issue)
   const timeDiff = endDate.getTime() - startDate.getTime();
-  const numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // This was correct, the issue is elsewhere
-  
-  console.log(`Generating itinerary for ${destination} from ${startDate.toISOString()} to ${endDate.toISOString()}`);
-  console.log(`Total days calculated: ${numberOfDays}, preferences: ${preferences.join(', ')}, trip style: ${tripStyle}`);
-  
-  let completeItinerary = [];
-  
-  // Process the itinerary in manageable chunks
+  const numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+
+  console.log(`Generating itinerary for ${destination}: ${numberOfDays} days, style: ${tripStyle}`);
+
+  const styleConfig = {
+    relaxed: { min: 2, max: 3 },
+    balanced: { min: 4, max: 6 },
+    packed: { min: 6, max: 8 }
+  }[tripStyle] || { min: 4, max: 6 };
+
+  // Build chunk params
+  const chunkParams = [];
   for (let chunkStart = 0; chunkStart < numberOfDays; chunkStart += MAX_DAYS_PER_CHUNK) {
-    // Calculate days for this chunk
     const daysInThisChunk = Math.min(MAX_DAYS_PER_CHUNK, numberOfDays - chunkStart);
-    
-    // Calculate date range for this chunk
     const chunkStartDate = new Date(startDate);
     chunkStartDate.setDate(startDate.getDate() + chunkStart);
-    
     const chunkEndDate = new Date(chunkStartDate);
     chunkEndDate.setDate(chunkStartDate.getDate() + daysInThisChunk - 1);
-    
-    console.log(`Processing chunk ${Math.floor(chunkStart / MAX_DAYS_PER_CHUNK) + 1} of ${Math.ceil(numberOfDays / MAX_DAYS_PER_CHUNK)}: ${daysInThisChunk} days`);
-    
-    try {
-      // Generate itinerary for this chunk
-      const chunkItinerary = await generateItineraryChunk(
-        destination, 
-        preferences, 
-        chunkStartDate, 
-        chunkEndDate,
-        chunkStart,
-        numberOfDays,
-        advancedPreferences,
-        customInstructions,
-        tripStyle, // Add this parameter
-        multiCity,
-        additionalCities
-      );
-      
-      // Add this chunk to the complete itinerary
-      completeItinerary = [...completeItinerary, ...chunkItinerary];
-    } catch (error) {
-      console.error(`Error processing chunk ${Math.floor(chunkStart / MAX_DAYS_PER_CHUNK) + 1}:`, error);
-    }
-    
-    // Brief delay between chunks to avoid rate limiting
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    chunkParams.push({ chunkStart, chunkStartDate, chunkEndDate });
   }
-  
-  // Final verification
-  const daysInCompleteItinerary = new Set(completeItinerary.map(item => item.day.split(',')[1].trim())).size;
-  console.log(`Generated itinerary with ${completeItinerary.length} activities covering ${daysInCompleteItinerary} days`);
-  
-  // If we're missing days in the itinerary, try to fill them in
+
+  console.log(`Processing ${chunkParams.length} chunk(s) in parallel`);
+
+  // All chunks fire simultaneously
+  const chunkResults = await Promise.all(
+    chunkParams.map(({ chunkStart, chunkStartDate, chunkEndDate }) =>
+      generateItineraryChunk(
+        destination, preferences, chunkStartDate, chunkEndDate,
+        chunkStart, numberOfDays, advancedPreferences, customInstructions,
+        tripStyle, multiCity, additionalCities
+      ).catch(err => {
+        console.error(`Chunk starting day ${chunkStart} failed:`, err);
+        return generateFallbackItinerary(chunkStartDate, chunkEndDate, destination, styleConfig);
+      })
+    )
+  );
+
+  let completeItinerary = chunkResults.flat();
+
+  const daysInCompleteItinerary = new Set(
+    completeItinerary.map(item => {
+      const parts = item.day?.split(',');
+      return parts && parts.length > 1 ? parts[1].trim() : item.day;
+    })
+  ).size;
+
+  console.log(`Generated ${completeItinerary.length} activities covering ${daysInCompleteItinerary} days`);
+
   if (daysInCompleteItinerary < numberOfDays) {
-    console.log(`Missing ${numberOfDays - daysInCompleteItinerary} days in the itinerary. Attempting to fill gaps...`);
+    console.log(`Filling ${numberOfDays - daysInCompleteItinerary} missing day(s)...`);
     completeItinerary = await fillMissingDays(completeItinerary, destination, preferences, startDate, endDate, tripStyle);
   }
 
-  // Remove duplicate activities across days
-  completeItinerary = removeDuplicateActivities(completeItinerary);
-
-  return completeItinerary;
+  return removeDuplicateActivities(completeItinerary);
 }
 
 // Update generateItineraryChunk function:
@@ -639,6 +631,132 @@ function mapWeatherConditionToIcon(conditions, icon) {
     }
     return icon || '01d'; // Default icon
 }
+
+// --------- IN-MEMORY SHARE STORE ---------
+const sharedItineraries = new Map();
+
+// --------- SSE STREAMING ENDPOINT ---------
+// Sends each 5-day chunk to the client as soon as it's ready
+app.get('/generate-itinerary-stream', async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    const send = (type, data) => {
+        res.write(`data: ${JSON.stringify({ type, ...data })}\n\n`);
+    };
+
+    try {
+        const destination = req.query.destination || 'Unknown';
+        const preferences = req.query.preferences ? JSON.parse(req.query.preferences) : [];
+        const advancedPreferences = req.query.advancedPreferences ? JSON.parse(req.query.advancedPreferences) : [];
+        const customInstructions = req.query.customInstructions || '';
+        const tripStyle = req.query.tripStyle || 'balanced';
+        const multiCity = req.query.multiCity === 'true';
+        const additionalCities = req.query.additionalCities ? JSON.parse(req.query.additionalCities) : [];
+        const startDate = new Date(req.query.departureDate);
+        const endDate = new Date(req.query.arrivalDate);
+        const numberOfDays = Math.ceil((endDate - startDate) / (1000 * 3600 * 24)) + 1;
+
+        const styleConfig = {
+            relaxed: { min: 2, max: 3 },
+            balanced: { min: 4, max: 6 },
+            packed: { min: 6, max: 8 }
+        }[tripStyle] || { min: 4, max: 6 };
+
+        const chunkParams = [];
+        for (let chunkStart = 0; chunkStart < numberOfDays; chunkStart += MAX_DAYS_PER_CHUNK) {
+            const daysInThisChunk = Math.min(MAX_DAYS_PER_CHUNK, numberOfDays - chunkStart);
+            const chunkStartDate = new Date(startDate);
+            chunkStartDate.setDate(startDate.getDate() + chunkStart);
+            const chunkEndDate = new Date(chunkStartDate);
+            chunkEndDate.setDate(chunkStartDate.getDate() + daysInThisChunk - 1);
+            chunkParams.push({ chunkStart, chunkStartDate, chunkEndDate });
+        }
+
+        send('status', { message: 'Building your itinerary...', totalChunks: chunkParams.length });
+
+        const allActivities = [];
+
+        // Each chunk streams to client as soon as it completes
+        await Promise.all(
+            chunkParams.map(async ({ chunkStart, chunkStartDate, chunkEndDate }, idx) => {
+                try {
+                    const chunk = await generateItineraryChunk(
+                        destination, preferences, chunkStartDate, chunkEndDate,
+                        chunkStart, numberOfDays, advancedPreferences, customInstructions,
+                        tripStyle, multiCity, additionalCities
+                    );
+                    allActivities.push(...chunk);
+                    send('chunk', { activities: chunk, chunkIndex: idx, totalChunks: chunkParams.length });
+                } catch (err) {
+                    const fallback = generateFallbackItinerary(chunkStartDate, chunkEndDate, destination, styleConfig);
+                    allActivities.push(...fallback);
+                    send('chunk', { activities: fallback, chunkIndex: idx, totalChunks: chunkParams.length });
+                }
+            })
+        );
+
+        const finalItinerary = removeDuplicateActivities(allActivities);
+        send('complete', { destination, itinerary: finalItinerary, preferences, tripStyle });
+    } catch (err) {
+        send('error', { message: err.message });
+    }
+    res.end();
+});
+
+// --------- SHARE ENDPOINTS ---------
+app.post('/api/share', express.json(), (req, res) => {
+    const { itinerary, destination, departureDate, arrivalDate, preferences, tripStyle } = req.body;
+    const shareId = Math.random().toString(36).substring(2, 10);
+    sharedItineraries.set(shareId, { itinerary, destination, departureDate, arrivalDate, preferences, tripStyle });
+    const shareUrl = `${req.protocol}://${req.get('host')}/second-page.html?share=${shareId}`;
+    res.json({ shareId, shareUrl });
+});
+
+app.get('/api/share/:id', (req, res) => {
+    const data = sharedItineraries.get(req.params.id);
+    if (!data) return res.status(404).json({ error: 'Shared itinerary not found or expired' });
+    res.json(data);
+});
+
+// --------- AI CHAT REFINEMENT ---------
+app.post('/api/chat-refine', express.json(), async (req, res) => {
+    try {
+        const { message, itinerary, destination, tripStyle } = req.body;
+
+        const systemPrompt = `You are a travel assistant refining an itinerary for ${destination} (${tripStyle} style).
+When the user asks to change something, respond with ONLY valid JSON — no markdown, no explanation outside JSON:
+- To update: {"type":"update","content":"Brief summary of changes","itinerary":[...full updated array...]}
+- To answer a question: {"type":"message","content":"Your answer"}
+Each itinerary item must have: day, time, activity, location.`;
+
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
+            body: JSON.stringify({
+                model: 'gpt-3.5-turbo',
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: `Current itinerary: ${JSON.stringify(itinerary)}\n\nRequest: ${message}` }
+                ],
+                temperature: 0.7,
+                max_tokens: 2000
+            })
+        });
+
+        const responseData = await response.json();
+        const raw = responseData.choices[0].message.content.replace(/```json/g, '').replace(/```/g, '').trim();
+        try {
+            res.json(JSON.parse(raw));
+        } catch {
+            res.json({ type: 'message', content: raw });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
 // Start the server
 app.listen(PORT, () => {
