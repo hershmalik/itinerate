@@ -30,10 +30,11 @@ function setupDatePickers() {
 // Setup destination autocomplete
 function setupDestinationAutocomplete() {
     const input = document.getElementById('destination');
+    const originInput = document.getElementById('origin-city');
     if (!input) return;
 
     if (window.google && window.google.maps && window.google.maps.places) {
-        // Use Google Maps Places Autocomplete
+        // Use Google Maps Places Autocomplete for destination
         const autocomplete = new google.maps.places.Autocomplete(input, {
             types: ['(cities)'],
             fields: ['address_components', 'geometry', 'name']
@@ -42,6 +43,13 @@ function setupDestinationAutocomplete() {
             const place = autocomplete.getPlace();
             // Optionally, handle place selection here
         });
+        // Also wire up the origin/flying-from field
+        if (originInput) {
+            new google.maps.places.Autocomplete(originInput, {
+                types: ['(cities)'],
+                fields: ['name']
+            });
+        }
     } else {
         // Fallback: static suggestions
         const suggestions = [

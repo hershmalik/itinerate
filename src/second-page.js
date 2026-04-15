@@ -2248,10 +2248,10 @@ async function loadCurrencyRate(destination) {
             england: 'GBP', australia: 'AUD', canada: 'CAD', mexico: 'MXN',
             brazil: 'BRL', india: 'INR', thailand: 'THB', singapore: 'SGD',
             indonesia: 'IDR', bali: 'IDR', vietnam: 'VND', morocco: 'MAD',
-            turkey: 'TRY', egypt: 'EGP', south_africa: 'ZAR', south africa: 'ZAR',
+            turkey: 'TRY', egypt: 'EGP', south_africa: 'ZAR', 'south africa': 'ZAR',
             argentina: 'ARS', colombia: 'COP', peru: 'PEN', chile: 'CLP',
             switzerland: 'CHF', sweden: 'SEK', norway: 'NOK', denmark: 'DKK',
-            iceland: 'ISK', new_zealand: 'NZD', new zealand: 'NZD', dubai: 'AED',
+            iceland: 'ISK', new_zealand: 'NZD', 'new zealand': 'NZD', dubai: 'AED',
             uae: 'AED', israel: 'ILS', china: 'CNY', korea: 'KRW', taiwan: 'TWD'
         };
         const destLower = (destination || '').toLowerCase();
