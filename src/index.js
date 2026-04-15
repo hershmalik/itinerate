@@ -275,13 +275,19 @@ function selectDestination(destination, recommendedDuration) {
     });
 }
 
-// Google Maps initialization callback function
+// Google Maps initialization callback — directly attaches Places Autocomplete
+// to both city inputs as soon as the API is ready
 function initMap() {
-    console.log('Google Maps API loaded for destination autocomplete');
-    setupDestinationAutocomplete();
-}
+    const opts = {
+        types: ['(cities)'],
+        fields: ['address_components', 'geometry', 'name']
+    };
+    const dest = document.getElementById('destination');
+    if (dest) new google.maps.places.Autocomplete(dest, opts);
 
-// Make initMap globally available for Google Maps callback
+    const origin = document.getElementById('origin-city');
+    if (origin) new google.maps.places.Autocomplete(origin, opts);
+}
 window.initMap = initMap;
 
 // Register service worker for PWA
