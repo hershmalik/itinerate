@@ -286,7 +286,7 @@ async function initMapAndItinerary() {
         if (mapsReady && !map) {
             try {
                 map = new google.maps.Map(document.getElementById("map"), {
-                    zoom: 12, center: { lat: 40.7128, lng: -74.0060 }, mapId: "ITINERARY_MAP"
+                    zoom: 12, center: { lat: 40.7128, lng: -74.0060 }
                 });
                 geocoder = new google.maps.Geocoder();
             } catch {}
@@ -300,7 +300,7 @@ async function initMapAndItinerary() {
     if (mapsReady) {
         try {
             map = new google.maps.Map(document.getElementById("map"), {
-                zoom: 12, center: { lat: 40.7128, lng: -74.0060 }, mapId: "ITINERARY_MAP"
+                zoom: 12, center: { lat: 40.7128, lng: -74.0060 }
             });
             geocoder = new google.maps.Geocoder();
         } catch {}
@@ -318,19 +318,28 @@ async function initMapAndItinerary() {
 
 // Display preferences
 function displayPreferences() {
+    const section = document.getElementById("preferences-summary");
     const preferencesList = document.getElementById("preferences-list");
     if (!preferencesList) return;
-    
+
     const tripDetails = getTripDetailsFromStorage();
     const preferences = tripDetails ? tripDetails.preferences || [] : [];
-    
-    preferencesList.innerHTML = "";
-    
+
+    // Always show destination + style meta row
+    const meta = document.getElementById('vision-meta');
+    if (meta && tripDetails) {
+        const styleLabel = { relaxed: '🛋️ Relaxed', balanced: '⚖️ Balanced', packed: '🏃 Packed' }[tripDetails.tripStyle] || '⚖️ Balanced';
+        const dep = tripDetails.departureDate ? new Date(tripDetails.departureDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+        const arr = tripDetails.arrivalDate ? new Date(tripDetails.arrivalDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+        meta.textContent = `📍 ${tripDetails.destination || ''}${dep ? `  ·  ${dep}–${arr}` : ''}  ·  ${styleLabel}`;
+    }
+
+    preferencesList.innerHTML = '';
     if (preferences.length === 0) {
-        const li = document.createElement("li");
-        li.textContent = "No preferences selected";
-        preferencesList.appendChild(li);
+        // Hide the chips list when nothing was selected
+        preferencesList.style.display = 'none';
     } else {
+        preferencesList.style.display = '';
         preferences.forEach(pref => {
             const li = document.createElement("li");
             li.textContent = pref.charAt(0).toUpperCase() + pref.slice(1);
@@ -1973,18 +1982,26 @@ const BUDGET_ESTIMATES = {
     activity: { low: 20, mid: 50, high: 100 }
 };
 
-function estimateCost(item) {
+function estimateCost(item, tripStyle) {
     const a = (item.activity || '').toLowerCase();
     let cat = 'activity';
-    if (a.includes('breakfast') || a.includes('lunch') || a.includes('dinner') || a.includes('restaurant') || a.includes('cafe') || a.includes('bar')) cat = 'dining';
-    else if (a.includes('museum') || a.includes('tour') || a.includes('show') || a.includes('ticket')) cat = 'attraction';
-    else if (a.includes('park') || a.includes('walk') || a.includes('hike') || a.includes('beach')) cat = 'outdoor';
-    return BUDGET_ESTIMATES[cat].mid;
+    if (a.includes('breakfast') || a.includes('lunch') || a.includes('dinner') || a.includes('brunch') ||
+        a.includes('restaurant') || a.includes('cafe') || a.includes('bar') || a.includes('dining')) cat = 'dining';
+    else if (a.includes('museum') || a.includes('tour') || a.includes('show') || a.includes('ticket') ||
+             a.includes('gallery') || a.includes('observatory') || a.includes('concert')) cat = 'attraction';
+    else if (a.includes('park') || a.includes('walk') || a.includes('hike') || a.includes('beach') ||
+             a.includes('stroll') || a.includes('explore')) cat = 'outdoor';
+    const tier = tripStyle === 'relaxed' ? 'low' : tripStyle === 'packed' ? 'high' : 'mid';
+    return BUDGET_ESTIMATES[cat][tier];
 }
 
 function updateBudgetPanel(items) {
     const panel = document.getElementById('budget-panel');
     if (!panel) return;
+
+    const tripDetails = getTripDetailsFromStorage();
+    const tripStyle = tripDetails?.tripStyle || 'balanced';
+    const tierLabel = tripStyle === 'relaxed' ? 'budget-friendly' : tripStyle === 'packed' ? 'premium' : 'mid-range';
 
     const dayGroups = {};
     items.forEach(item => {
@@ -1994,10 +2011,10 @@ function updateBudgetPanel(items) {
 
     let totalEstimate = 0;
     const dayRows = Object.entries(dayGroups).map(([day, acts]) => {
-        const dayTotal = acts.reduce((sum, a) => sum + estimateCost(a), 0);
+        const dayTotal = acts.reduce((sum, a) => sum + estimateCost(a, tripStyle), 0);
         totalEstimate += dayTotal;
-        const label = day.match(/Day (\d+):/)?.[0] || day.split(',')[0];
-        const localAmt = currencyRate !== 1 ? ` (${currencySymbol} ${Math.round(dayTotal * currencyRate).toLocaleString()})` : '';
+        const label = day.match(/Day \d+/)?.[0] || day.split(',')[0];
+        const localAmt = currencyRate !== 1 ? ` · ${currencySymbol}${Math.round(dayTotal * currencyRate).toLocaleString()}` : '';
         return `<div class="budget-day-row"><span>${label}</span><span>~$${dayTotal}${localAmt}</span></div>`;
     }).join('');
 
@@ -2008,8 +2025,8 @@ function updateBudgetPanel(items) {
         </div>
         <div id="budget-body">
             <div class="budget-day-rows">${dayRows}</div>
-            <div class="budget-total-row"><strong>Total Estimate</strong><strong>~$${totalEstimate}${currencyRate !== 1 ? ` · ${currencySymbol} ${Math.round(totalEstimate * currencyRate).toLocaleString()}` : ''}</strong></div>
-            <p class="budget-note">Estimates based on typical mid-range spending. Actual costs vary.</p>
+            <div class="budget-total-row"><strong>Total Estimate</strong><strong>~$${totalEstimate}${currencyRate !== 1 ? ` · ${currencySymbol}${Math.round(totalEstimate * currencyRate).toLocaleString()}` : ''}</strong></div>
+            <p class="budget-note">Per-activity ${tierLabel} estimates: dining ~$${BUDGET_ESTIMATES.dining[tripStyle === 'relaxed' ? 'low' : tripStyle === 'packed' ? 'high' : 'mid']}, attractions ~$${BUDGET_ESTIMATES.attraction[tripStyle === 'relaxed' ? 'low' : tripStyle === 'packed' ? 'high' : 'mid']}, outdoor ~$${BUDGET_ESTIMATES.outdoor[tripStyle === 'relaxed' ? 'low' : tripStyle === 'packed' ? 'high' : 'mid']}. Excludes accommodation & transport.</p>
         </div>`;
     panel.style.display = 'block';
 }
@@ -2538,17 +2555,19 @@ async function loadNeighborhoods() {
         });
         const data = await resp.json();
         if (!data.neighborhoods?.length) { panel.style.display = 'none'; return; }
-        const priceColors = { budget: '#2e7d32', 'mid-range': '#1565c0', upscale: '#6a1b9a' };
+        const priceClass = p => {
+            const k = (p || '').toLowerCase().replace('-', '').replace(' ', '');
+            return k === 'budget' ? 'nbadge-budget' : k === 'midrange' ? 'nbadge-mid' : k === 'upscale' ? 'nbadge-upscale' : 'nbadge-mid';
+        };
         panel.innerHTML = `
             <div class="neighborhoods-header">🏘️ Where to Stay</div>
             <div class="neighborhoods-grid">
                 ${data.neighborhoods.map(n => `
                     <div class="neighborhood-card">
-                        <div class="neighborhood-name">${n.name}
-                            <span class="neighborhood-price" style="color:${priceColors[n.priceRange?.toLowerCase()] || '#555'}">${n.priceRange || ''}</span>
-                        </div>
+                        <div class="neighborhood-name">${n.name}</div>
+                        ${n.priceRange ? `<span class="neighborhood-badge ${priceClass(n.priceRange)}">${n.priceRange}</span>` : ''}
                         <div class="neighborhood-vibe">${n.vibe}</div>
-                        <div class="neighborhood-best">Best for: ${n.bestFor}</div>
+                        <div class="neighborhood-best">✔ ${n.bestFor}</div>
                         <div class="neighborhood-tip">💡 ${n.tip}</div>
                         <a href="https://www.google.com/travel/hotels?q=hotels+in+${encodeURIComponent(n.name+' '+tripDetails.destination)}" target="_blank" rel="noopener" class="neighborhood-hotels-link">Search hotels →</a>
                     </div>

@@ -1,4 +1,4 @@
-const CACHE = 'aitinerate-v3';
+const CACHE = 'aitinerate-v4';
 const STATIC = [
   '/',
   '/second-page.html',
