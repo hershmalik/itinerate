@@ -51,7 +51,7 @@ async function requireAuth(req, res, next) {
     }
 }
 
-// ---- Amadeus token cache ----
+// ---- Amadeus OAuth2 token cache (client-credentials flow) ----
 let amadeusToken = null;
 let amadeusTokenExpiry = 0;
 async function getAmadeusToken() {
@@ -59,10 +59,17 @@ async function getAmadeusToken() {
     const resp = await fetch('https://test.api.amadeus.com/v1/security/oauth2/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `grant_type=client_credentials&client_id=${process.env.AMADEUS_CLIENT_ID}&client_secret=${process.env.AMADEUS_CLIENT_SECRET}`
+        body: new URLSearchParams({
+            grant_type: 'client_credentials',
+            client_id: process.env.AMADEUS_CLIENT_ID,
+            client_secret: process.env.AMADEUS_CLIENT_SECRET,
+        }),
     });
+    if (!resp.ok) {
+        throw new Error(`Amadeus token request failed: ${resp.status} ${resp.statusText}`);
+    }
     const data = await resp.json();
-    if (!data.access_token) throw new Error('Amadeus auth failed');
+    if (!data.access_token) throw new Error(`Amadeus auth failed: ${data.error_description || data.error || 'unknown error'}`);
     amadeusToken = data.access_token;
     amadeusTokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
     return amadeusToken;
