@@ -29,24 +29,25 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Never cache API calls or map tiles
+  // Never cache API calls or external CDNs
   if (url.pathname.startsWith('/api/') ||
       url.pathname.startsWith('/generate-itinerary') ||
       url.hostname.includes('googleapis') ||
       url.hostname.includes('openai') ||
-      url.hostname.includes('amadeus') ||
-      url.hostname.includes('yelp')) {
+      url.hostname.includes('clerk') ||
+      url.hostname.includes('jsdelivr') ||
+      url.hostname !== self.location.hostname) {
     return;
   }
 
   // Cache-first for static assets, network-first for HTML
   if (e.request.destination === 'document') {
     e.respondWith(
-      fetch(e.request).catch(() => caches.match(e.request))
+      fetch(e.request).catch(() => caches.match(e.request) || new Response('Offline', { status: 503 }))
     );
   } else {
     e.respondWith(
-      caches.match(e.request).then(cached => cached || fetch(e.request))
+      caches.match(e.request).then(cached => cached || fetch(e.request).catch(() => new Response('', { status: 503 })))
     );
   }
 });

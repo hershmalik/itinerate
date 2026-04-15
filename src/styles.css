@@ -212,7 +212,7 @@ header {
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.2);
   padding: 2.5rem;
-  max-width: 800px;
+  max-width: 1000px;
   margin: 0 auto;
   position: relative;
   z-index: 10;
@@ -222,11 +222,11 @@ header {
   position: relative;
 }
 
-/* Form Row */
+/* Form Row — 4 equal-ish columns, like Google Flights / Kayak */
 .form-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
-  gap: 1.5rem;
+  grid-template-columns: 1.3fr 1.3fr 1fr 1fr;
+  gap: 1rem;
   margin-bottom: 2rem;
 }
 
@@ -1660,20 +1660,21 @@ header {
   align-items: flex-end;
   gap: 24px;
 }
-.form-group {
+/* scoped — only applies when .modern-search-bar is used */
+.modern-search-bar .form-group {
   display: flex;
   flex-direction: column;
   min-width: 160px;
   flex: 1 1 0;
 }
-.form-group label {
+.modern-search-bar .form-group label {
   font-size: 15px;
   font-weight: 500;
   margin-bottom: 7px;
   color: #222;
 }
-.form-group input,
-.form-group select {
+.modern-search-bar .form-group input,
+.modern-search-bar .form-group select {
   height: 44px;
   border: 1.5px solid #d1d5db;
   border-radius: 12px;
@@ -1682,8 +1683,8 @@ header {
   background: #fff;
   transition: border 0.2s;
 }
-.form-group input:focus,
-.form-group select:focus {
+.modern-search-bar .form-group input:focus,
+.modern-search-bar .form-group select:focus {
   border-color: #1a2aff;
   outline: none;
 }
