@@ -454,6 +454,9 @@ async function generateItinerary() {
     const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
         ? 'http://localhost:10000' : window.location.origin;
 
+    // Kick off weather fetch in parallel — don't await, cards use cache when ready
+    fetchRealWeather(tripDetails.destination, baseUrl);
+
     const params = new URLSearchParams({
         destination: tripDetails.destination,
         departureDate: tripDetails.departureDate,
@@ -487,12 +490,17 @@ async function generateItinerary() {
                     evtSource.close();
                     itineraryData = enhanceAndFixItinerary(data.itinerary, tripDetails);
                     renderItineraryCards(itineraryData);
+                    initDragAndDrop();
                     loadActivityPhotos(itineraryData, baseUrl);
+                    loadYelpRatings(itineraryData);
                     await populateItineraryTable(itineraryData);
                     await displayMapAndMarkers(itineraryData);
                     populateDaySelectors(itineraryData);
                     updateHeroStats(itineraryData);
-                    updateBudgetPanel(itineraryData);
+                    // Budget with currency conversion
+                    loadCurrencyRate(tripDetails.destination).then(() => updateBudgetPanel(itineraryData));
+                    // Flights
+                    loadFlightPrices();
                     if (itineraryDisplayDiv) itineraryDisplayDiv.style.display = "block";
                     document.getElementById("loading-indicator").style.display = "none";
                     resolve();
@@ -1118,16 +1126,38 @@ async function populateItineraryTable(itineraryItems) {
     });
 }
 
-// Helper function to generate weather data for each day
+// Real weather cache — populated on load from OWM
+let weatherForecastCache = [];
+
+async function fetchRealWeather(destination, baseUrl) {
+    try {
+        const resp = await fetch(`${baseUrl}/api/weather?location=${encodeURIComponent(destination)}`);
+        const data = await resp.json();
+        weatherForecastCache = data.forecast || [];
+        console.log(`[Weather] Loaded ${weatherForecastCache.length} days (source: ${data.source})`);
+    } catch (e) {
+        console.warn('[Weather] Could not fetch weather:', e.message);
+    }
+}
+
+const OWM_ICON_MAP = {
+    '01': '☀️', '02': '🌤️', '03': '⛅', '04': '☁️',
+    '09': '🌧️', '10': '🌦️', '11': '⛈️', '13': '❄️', '50': '🌫️'
+};
+
 function generateWeatherForDay(dayIndex) {
-    const weatherOptions = [
-        { icon: "☀️", temp: "72°/56°F" },
-        { icon: "🌤️", temp: "68°/52°F" },
-        { icon: "⛅", temp: "65°/48°F" },
-        { icon: "🌦️", temp: "62°/45°F" },
-        { icon: "☁️", temp: "70°/54°F" }
+    if (weatherForecastCache.length > dayIndex) {
+        const fc = weatherForecastCache[dayIndex];
+        const iconKey = (fc.icon || '01d').substring(0, 2);
+        const emoji = OWM_ICON_MAP[iconKey] || '🌤️';
+        return { icon: emoji, temp: `${Math.round(fc.high)}°/${Math.round(fc.low)}°F` };
+    }
+    // Fallback for days beyond forecast range
+    const fallbacks = [
+        { icon: '☀️', temp: '72°/56°F' }, { icon: '🌤️', temp: '68°/52°F' },
+        { icon: '⛅', temp: '65°/48°F' }, { icon: '🌦️', temp: '62°/45°F' }
     ];
-    return weatherOptions[dayIndex % weatherOptions.length];
+    return fallbacks[dayIndex % fallbacks.length];
 }
 
 // Helper function to enhance activity data with ratings, prices, categories
@@ -1910,7 +1940,8 @@ function updateBudgetPanel(items) {
         const dayTotal = acts.reduce((sum, a) => sum + estimateCost(a), 0);
         totalEstimate += dayTotal;
         const label = day.match(/Day (\d+):/)?.[0] || day.split(',')[0];
-        return `<div class="budget-day-row"><span>${label}</span><span>~$${dayTotal}</span></div>`;
+        const localAmt = currencyRate !== 1 ? ` (${currencySymbol} ${Math.round(dayTotal * currencyRate).toLocaleString()})` : '';
+        return `<div class="budget-day-row"><span>${label}</span><span>~$${dayTotal}${localAmt}</span></div>`;
     }).join('');
 
     panel.innerHTML = `
@@ -1920,7 +1951,7 @@ function updateBudgetPanel(items) {
         </div>
         <div id="budget-body">
             <div class="budget-day-rows">${dayRows}</div>
-            <div class="budget-total-row"><strong>Total Estimate</strong><strong>~$${totalEstimate}</strong></div>
+            <div class="budget-total-row"><strong>Total Estimate</strong><strong>~$${totalEstimate}${currencyRate !== 1 ? ` · ${currencySymbol} ${Math.round(totalEstimate * currencyRate).toLocaleString()}` : ''}</strong></div>
             <p class="budget-note">Estimates based on typical mid-range spending. Actual costs vary.</p>
         </div>`;
     panel.style.display = 'block';
@@ -2099,4 +2130,302 @@ document.addEventListener('DOMContentLoaded', () => {
     // Export buttons
     document.getElementById('export-pdf-btn')?.addEventListener('click', exportToPDF);
     document.getElementById('export-cal-btn')?.addEventListener('click', exportToCalendar);
+    // Saved trips
+    document.getElementById('save-trip-btn')?.addEventListener('click', saveTrip);
+    document.getElementById('my-trips-btn')?.addEventListener('click', openMyTrips);
+    document.getElementById('my-trips-close')?.addEventListener('click', () => {
+        document.getElementById('my-trips-modal').style.display = 'none';
+    });
+    // Init Clerk
+    initClerk();
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+    }
 });
+
+// =====================================================================
+// FLIGHT PRICES (Amadeus)
+// =====================================================================
+async function loadFlightPrices() {
+    const tripDetails = getTripDetailsFromStorage();
+    const originCity = localStorage.getItem('tripOriginCity');
+    const panel = document.getElementById('flights-panel');
+    if (!panel || !tripDetails) return;
+    if (!originCity) {
+        panel.innerHTML = `<div class="flights-note">Add your departure city on the home page to see flight prices.</div>`;
+        panel.style.display = 'block';
+        return;
+    }
+
+    panel.innerHTML = `<div class="flights-loading">✈️ Searching flights from ${originCity}...</div>`;
+    panel.style.display = 'block';
+
+    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:10000' : window.location.origin;
+
+    const params = new URLSearchParams({
+        origin: originCity,
+        destination: tripDetails.destination,
+        departureDate: tripDetails.departureDate,
+        returnDate: tripDetails.arrivalDate
+    });
+
+    try {
+        const resp = await fetch(`${baseUrl}/api/flights?${params}`);
+        const data = await resp.json();
+
+        if (!data.available) {
+            if (data.reason === 'not_configured') {
+                panel.style.display = 'none';
+            } else {
+                panel.innerHTML = `<div class="flights-note">No flights found for this route. Try adjusting your dates.</div>`;
+            }
+            return;
+        }
+
+        const cheapest = data.flights[0];
+        panel.innerHTML = `
+            <div class="flights-header">
+                <span>✈️ Flights: ${data.originCode} → ${data.destCode}</span>
+                <span class="flights-from">from <strong>$${Math.round(cheapest.price)}</strong></span>
+            </div>
+            <div class="flights-list">
+                ${data.flights.map(f => `
+                    <div class="flight-row">
+                        <span class="flight-airline">${f.airline}</span>
+                        <span class="flight-duration">${f.duration || ''}</span>
+                        <span class="flight-stops">${f.stops === 0 ? 'Nonstop' : f.stops + ' stop' + (f.stops > 1 ? 's' : '')}</span>
+                        <span class="flight-price">$${Math.round(f.price)}</span>
+                    </div>
+                `).join('')}
+            </div>
+            <p class="flights-note">Round-trip per person · Powered by Amadeus · Prices vary</p>`;
+    } catch {
+        panel.style.display = 'none';
+    }
+}
+
+// =====================================================================
+// YELP RATINGS (enriches cards after render)
+// =====================================================================
+async function loadYelpRatings(items) {
+    const tripDetails = getTripDetailsFromStorage();
+    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:10000' : window.location.origin;
+
+    // Only enrich dining and attraction cards — batch with small concurrency
+    const cards = Array.from(document.querySelectorAll('.itinerary-card'));
+    const enrichQueue = cards.filter(c => {
+        const a = (c.getAttribute('data-activity') || '').toLowerCase();
+        return a.includes('restaurant') || a.includes('lunch') || a.includes('dinner') ||
+               a.includes('breakfast') || a.includes('cafe') || a.includes('museum') ||
+               a.includes('bar') || a.includes('attraction');
+    }).slice(0, 10); // cap at 10 to avoid hammering API
+
+    await Promise.all(enrichQueue.map(async (card) => {
+        const activity = card.getAttribute('data-activity') || '';
+        const location = card.getAttribute('data-location') || tripDetails?.destination || '';
+        try {
+            const resp = await fetch(`${baseUrl}/api/yelp?term=${encodeURIComponent(activity)}&location=${encodeURIComponent(location)}`);
+            const data = await resp.json();
+            if (!data.available) return;
+
+            // Update rating on card
+            const ratingEl = card.querySelector('.itinerary-card-rating');
+            if (ratingEl) {
+                ratingEl.innerHTML = `<span class="icon">⭐</span> ${data.rating} <span style="color:#999;font-size:0.75rem;">(${data.reviewCount?.toLocaleString()})</span>`;
+            }
+            // Update price on card
+            if (data.price) {
+                const priceEl = card.querySelector('.itinerary-card-price');
+                if (priceEl) priceEl.innerHTML = `<span class="icon">💰</span> ${data.price}`;
+            }
+            // Add Yelp link
+            if (data.url) {
+                const locEl = card.querySelector('.itinerary-card-location');
+                if (locEl && !locEl.querySelector('.yelp-link')) {
+                    const a = document.createElement('a');
+                    a.href = data.url; a.target = '_blank';
+                    a.className = 'yelp-link';
+                    a.textContent = ' · Yelp reviews';
+                    a.style.cssText = 'color:#d32323;font-size:0.78rem;text-decoration:none;margin-left:4px;';
+                    locEl.appendChild(a);
+                }
+            }
+        } catch { /* silently skip */ }
+    }));
+}
+
+// =====================================================================
+// CURRENCY DISPLAY
+// =====================================================================
+let currencyRate = 1;
+let currencySymbol = 'USD';
+
+async function loadCurrencyRate(destination) {
+    try {
+        // Detect currency from destination country name
+        const countryToCurrency = {
+            japan: 'JPY', france: 'EUR', germany: 'EUR', italy: 'EUR', spain: 'EUR',
+            portugal: 'EUR', greece: 'EUR', netherlands: 'EUR', uk: 'GBP', britain: 'GBP',
+            england: 'GBP', australia: 'AUD', canada: 'CAD', mexico: 'MXN',
+            brazil: 'BRL', india: 'INR', thailand: 'THB', singapore: 'SGD',
+            indonesia: 'IDR', bali: 'IDR', vietnam: 'VND', morocco: 'MAD',
+            turkey: 'TRY', egypt: 'EGP', south_africa: 'ZAR', south africa: 'ZAR',
+            argentina: 'ARS', colombia: 'COP', peru: 'PEN', chile: 'CLP',
+            switzerland: 'CHF', sweden: 'SEK', norway: 'NOK', denmark: 'DKK',
+            iceland: 'ISK', new_zealand: 'NZD', new zealand: 'NZD', dubai: 'AED',
+            uae: 'AED', israel: 'ILS', china: 'CNY', korea: 'KRW', taiwan: 'TWD'
+        };
+        const destLower = (destination || '').toLowerCase();
+        let currency = 'USD';
+        for (const [key, code] of Object.entries(countryToCurrency)) {
+            if (destLower.includes(key)) { currency = code; break; }
+        }
+        if (currency === 'USD') return; // no conversion needed
+
+        const resp = await fetch(`https://open.er-api.com/v6/latest/USD`);
+        const data = await resp.json();
+        if (data.rates?.[currency]) {
+            currencyRate = data.rates[currency];
+            currencySymbol = currency;
+            console.log(`[Currency] 1 USD = ${currencyRate} ${currencySymbol}`);
+        }
+    } catch { /* silently skip */ }
+}
+
+// =====================================================================
+// SORTABLEJS DRAG-AND-DROP
+// =====================================================================
+function initDragAndDrop() {
+    // SortableJS loaded from CDN — init each day's card wrapper
+    if (typeof Sortable === 'undefined') return;
+    document.querySelectorAll('.itinerary-day-cards-wrapper').forEach(wrapper => {
+        Sortable.create(wrapper, {
+            animation: 150,
+            handle: '.itinerary-card-time',
+            ghostClass: 'drag-ghost',
+            onEnd(evt) {
+                // Sync the reorder back to itineraryData
+                const dayName = evt.item.getAttribute('data-day');
+                const dayItems = itineraryData.filter(i => i.day === dayName);
+                const otherItems = itineraryData.filter(i => i.day !== dayName);
+                // Re-order based on new DOM order
+                const newOrder = Array.from(wrapper.querySelectorAll('.itinerary-card'))
+                    .map(card => dayItems.find(i => i.activity === card.getAttribute('data-activity') && i.time === card.getAttribute('data-time')))
+                    .filter(Boolean);
+                itineraryData = [...otherItems, ...newOrder];
+                updateBudgetPanel(itineraryData);
+            }
+        });
+    });
+}
+
+// =====================================================================
+// CLERK AUTH + SAVED TRIPS
+// =====================================================================
+let clerkInstance = null;
+let clerkSessionToken = null;
+
+async function initClerk() {
+    const publishableKey = window.__CLERK_PUBLISHABLE_KEY__;
+    if (!publishableKey || typeof Clerk === 'undefined') return;
+    try {
+        clerkInstance = window.Clerk;
+        await clerkInstance.load({ publishableKey });
+
+        const userBtn = document.getElementById('clerk-user-btn');
+        if (userBtn && clerkInstance.user) {
+            clerkInstance.mountUserButton(userBtn);
+            clerkSessionToken = await clerkInstance.session?.getToken();
+            document.getElementById('save-trip-btn')?.removeAttribute('hidden');
+            document.getElementById('my-trips-btn')?.removeAttribute('hidden');
+        } else if (userBtn) {
+            clerkInstance.mountSignInButton(userBtn, { mode: 'modal' });
+        }
+    } catch (e) {
+        console.warn('[Clerk] Init error:', e.message);
+    }
+}
+
+async function getAuthHeader() {
+    if (!clerkInstance?.session) return {};
+    const token = await clerkInstance.session.getToken();
+    return { Authorization: `Bearer ${token}` };
+}
+
+async function saveTrip() {
+    const tripDetails = getTripDetailsFromStorage();
+    if (!itineraryData?.length || !tripDetails) return;
+    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:10000' : window.location.origin;
+    try {
+        const headers = { 'Content-Type': 'application/json', ...await getAuthHeader() };
+        const resp = await fetch(`${baseUrl}/api/trips`, {
+            method: 'POST', headers,
+            body: JSON.stringify({ ...tripDetails, itinerary: itineraryData, name: tripDetails.destination })
+        });
+        if (!resp.ok) throw new Error('Save failed');
+        showNotification('Trip saved to your account!');
+    } catch (e) {
+        alert('Could not save trip: ' + e.message);
+    }
+}
+
+async function openMyTrips() {
+    const modal = document.getElementById('my-trips-modal');
+    const list = document.getElementById('my-trips-list');
+    if (!modal || !list) return;
+    modal.style.display = 'flex';
+    list.innerHTML = '<p style="color:#999;">Loading...</p>';
+
+    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:10000' : window.location.origin;
+    try {
+        const headers = await getAuthHeader();
+        const resp = await fetch(`${baseUrl}/api/trips`, { headers });
+        const trips = await resp.json();
+        if (!trips.length) { list.innerHTML = '<p style="color:#999;">No saved trips yet.</p>'; return; }
+        list.innerHTML = trips.map(t => `
+            <div class="saved-trip-row" data-id="${t.id}">
+                <div>
+                    <strong>${t.name || t.destination}</strong>
+                    <div style="font-size:0.82rem;color:#717171;">${t.departure_date} → ${t.arrival_date} · ${t.trip_style}</div>
+                </div>
+                <div style="display:flex;gap:0.5rem;">
+                    <button onclick="loadSavedTrip('${t.id}')" style="padding:0.3rem 0.8rem;background:#2563eb;color:#fff;border:none;border-radius:0.4rem;cursor:pointer;font-size:0.82rem;">Load</button>
+                    <button onclick="deleteSavedTrip('${t.id}',this)" style="padding:0.3rem 0.8rem;background:#fff;color:#e53e3e;border:1px solid #e53e3e;border-radius:0.4rem;cursor:pointer;font-size:0.82rem;">Delete</button>
+                </div>
+            </div>`).join('');
+    } catch { list.innerHTML = '<p style="color:#e53e3e;">Could not load trips.</p>'; }
+}
+
+async function loadSavedTrip(id) {
+    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:10000' : window.location.origin;
+    const headers = await getAuthHeader();
+    const resp = await fetch(`${baseUrl}/api/trips/${id}`, { headers });
+    const trip = await resp.json();
+    localStorage.setItem('tripDestination', trip.destination);
+    localStorage.setItem('tripDepartureDate', trip.departure_date);
+    localStorage.setItem('tripArrivalDate', trip.arrival_date);
+    localStorage.setItem('tripPreferences', JSON.stringify(trip.preferences || []));
+    localStorage.setItem('tripStyle', trip.trip_style || 'balanced');
+    document.getElementById('my-trips-modal').style.display = 'none';
+    itineraryData = trip.itinerary;
+    const tripDetails = getTripDetailsFromStorage();
+    renderItineraryCards(itineraryData);
+    populateItineraryTable(itineraryData);
+    displayMapAndMarkers(itineraryData);
+    updateBudgetPanel(itineraryData);
+    showNotification(`Loaded: ${trip.name || trip.destination}`);
+}
+
+async function deleteSavedTrip(id, btn) {
+    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:10000' : window.location.origin;
+    const headers = await getAuthHeader();
+    await fetch(`${baseUrl}/api/trips/${id}`, { method: 'DELETE', headers });
+    btn.closest('.saved-trip-row').remove();
+}

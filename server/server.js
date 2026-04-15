@@ -5,6 +5,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
+import { createClient } from '@supabase/supabase-js';
+import { createClerkClient } from '@clerk/backend';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,6 +15,58 @@ dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 console.log("Loaded OpenAI API Key:", process.env.OPENAI_API_KEY ? "Exists" : "Missing");
 console.log("Loaded Google Maps API Key:", process.env.GOOGLE_MAPS_API_KEY ? "Exists" : "Missing");
+
+// ---- Supabase (optional — features degrade gracefully without it) ----
+const supabase = (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY)
+    ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
+    : null;
+
+// ---- Clerk (optional — auth features degrade gracefully without it) ----
+const clerkClient = process.env.CLERK_SECRET_KEY
+    ? createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY })
+    : null;
+
+// Clerk auth middleware — attaches req.userId if token valid; continues either way
+async function attachUser(req, res, next) {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (token && clerkClient) {
+        try {
+            const payload = await clerkClient.verifyToken(token);
+            req.userId = payload.sub;
+        } catch { /* invalid token — anonymous request */ }
+    }
+    next();
+}
+
+// Clerk auth middleware — requires a valid token
+async function requireAuth(req, res, next) {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token || !clerkClient) return res.status(401).json({ error: 'Authentication required' });
+    try {
+        const payload = await clerkClient.verifyToken(token);
+        req.userId = payload.sub;
+        next();
+    } catch {
+        res.status(401).json({ error: 'Invalid or expired token' });
+    }
+}
+
+// ---- Amadeus token cache ----
+let amadeusToken = null;
+let amadeusTokenExpiry = 0;
+async function getAmadeusToken() {
+    if (amadeusToken && Date.now() < amadeusTokenExpiry) return amadeusToken;
+    const resp = await fetch('https://test.api.amadeus.com/v1/security/oauth2/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `grant_type=client_credentials&client_id=${process.env.AMADEUS_CLIENT_ID}&client_secret=${process.env.AMADEUS_CLIENT_SECRET}`
+    });
+    const data = await resp.json();
+    if (!data.access_token) throw new Error('Amadeus auth failed');
+    amadeusToken = data.access_token;
+    amadeusTokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
+    return amadeusToken;
+}
 
 if (!process.env.OPENAI_API_KEY) {
     console.error("OpenAI API key is missing. Please check your .env file.");
@@ -49,41 +103,53 @@ app.use('/api/*', (req, res, next) => {
 });
 
 app.get('/api/weather', async (req, res) => {
+  const { location } = req.query;
+  if (!location) return res.status(400).json({ error: 'Location required' });
+
+  const fallback = {
+    current: { temp: 72, description: 'partly cloudy', icon: '02d', humidity: 65, windSpeed: 8 },
+    forecast: [
+      { date: new Date().toISOString().split('T')[0], high: 75, low: 58, description: 'sunny', icon: '01d' },
+      { date: new Date(Date.now()+86400000).toISOString().split('T')[0], high: 73, low: 60, description: 'cloudy', icon: '03d' },
+      { date: new Date(Date.now()+172800000).toISOString().split('T')[0], high: 71, low: 55, description: 'light rain', icon: '10d' },
+      { date: new Date(Date.now()+259200000).toISOString().split('T')[0], high: 74, low: 59, description: 'sunny', icon: '01d' },
+      { date: new Date(Date.now()+345600000).toISOString().split('T')[0], high: 76, low: 61, description: 'partly cloudy', icon: '02d' }
+    ]
+  };
+
+  const API_KEY = process.env.WEATHER_API_KEY;
+  if (!API_KEY) return res.json({ ...fallback, source: 'mock' });
+
   try {
-    const { location } = req.query;
-    
-    if (!location) {
-      return res.status(400).json({ error: 'Location parameter is required' });
-    }
-    
-    console.log(`Weather request received for location: ${location}`);
-    
-    // Mock weather data for now to prevent API failures
-    const mockWeatherData = {
+    // Geocode first (OWM Geocoding API)
+    const geoResp = await fetch(
+      `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(location)}&limit=1&appid=${API_KEY}`
+    );
+    const geoData = await geoResp.json();
+    if (!geoData.length) return res.json({ ...fallback, source: 'mock' });
+
+    const { lat, lon } = geoData[0];
+    const fcResp = await fetch(
+      `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=imperial&cnt=40`
+    );
+    const fcData = await fcResp.json();
+    if (fcData.cod !== '200') return res.json({ ...fallback, source: 'mock' });
+
+    const daily = processDailyForecasts(fcData.list);
+    res.json({
+      source: 'live',
       current: {
-        temp: 72,
-        description: 'partly cloudy',
-        icon: '02d',
-        humidity: 65,
-        windSpeed: 8
+        temp: Math.round(daily[0]?.high || 72),
+        description: daily[0]?.description || 'clear sky',
+        icon: daily[0]?.icon || '01d',
+        humidity: fcData.list[0]?.main?.humidity || 65,
+        windSpeed: Math.round((fcData.list[0]?.wind?.speed || 8) * 10) / 10
       },
-      forecast: [
-        { date: '2025-06-17', high: 75, low: 58, description: 'sunny', icon: '01d' },
-        { date: '2025-06-18', high: 73, low: 60, description: 'cloudy', icon: '03d' },
-        { date: '2025-06-19', high: 71, low: 55, description: 'light rain', icon: '10d' },
-        { date: '2025-06-20', high: 74, low: 59, description: 'sunny', icon: '01d' },
-        { date: '2025-06-21', high: 76, low: 61, description: 'partly cloudy', icon: '02d' }
-      ]
-    };
-    
-    res.json(mockWeatherData);
-    
-  } catch (error) {
-    console.error('Weather API Error:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch weather data', 
-      message: error.message || 'Unknown error'
+      forecast: daily
     });
+  } catch (err) {
+    console.error('Weather API error:', err.message);
+    res.json({ ...fallback, source: 'mock' });
   }
 });
 
@@ -632,6 +698,130 @@ function mapWeatherConditionToIcon(conditions, icon) {
     return icon || '01d'; // Default icon
 }
 
+// --------- AMADEUS FLIGHT PRICES ---------
+app.get('/api/flights', async (req, res) => {
+    const { origin, destination, departureDate, returnDate } = req.query;
+    if (!process.env.AMADEUS_CLIENT_ID || !process.env.AMADEUS_CLIENT_SECRET) {
+        return res.json({ available: false, reason: 'not_configured' });
+    }
+    try {
+        const token = await getAmadeusToken();
+
+        // Look up IATA codes for both cities
+        const [originResp, destResp] = await Promise.all([
+            fetch(`https://test.api.amadeus.com/v1/reference-data/locations?subType=AIRPORT,CITY&keyword=${encodeURIComponent(origin)}&page[limit]=1`,
+                { headers: { Authorization: `Bearer ${token}` } }),
+            fetch(`https://test.api.amadeus.com/v1/reference-data/locations?subType=AIRPORT,CITY&keyword=${encodeURIComponent(destination)}&page[limit]=1`,
+                { headers: { Authorization: `Bearer ${token}` } })
+        ]);
+        const [originData, destData] = await Promise.all([originResp.json(), destResp.json()]);
+
+        if (!originData.data?.length || !destData.data?.length) {
+            return res.json({ available: false, reason: 'location_not_found' });
+        }
+
+        const originCode = originData.data[0].iataCode;
+        const destCode = destData.data[0].iataCode;
+
+        const flightParams = new URLSearchParams({
+            originLocationCode: originCode,
+            destinationLocationCode: destCode,
+            departureDate,
+            adults: 1,
+            max: 3,
+            currencyCode: 'USD'
+        });
+        if (returnDate) flightParams.set('returnDate', returnDate);
+
+        const flightResp = await fetch(
+            `https://test.api.amadeus.com/v2/shopping/flight-offers?${flightParams}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const flightData = await flightResp.json();
+
+        if (!flightData.data?.length) return res.json({ available: false, reason: 'no_flights_found' });
+
+        const flights = flightData.data.slice(0, 3).map(offer => ({
+            price: parseFloat(offer.price.grandTotal),
+            currency: offer.price.currency,
+            airline: offer.validatingAirlineCodes?.[0] || 'N/A',
+            duration: offer.itineraries[0]?.duration?.replace('PT', '').replace('H', 'h ').replace('M', 'm').trim(),
+            stops: (offer.itineraries[0]?.segments?.length || 1) - 1
+        }));
+
+        res.json({ available: true, originCode, destCode, flights });
+    } catch (err) {
+        console.error('Amadeus error:', err.message);
+        res.json({ available: false, reason: 'error' });
+    }
+});
+
+// --------- YELP RATINGS PROXY ---------
+app.get('/api/yelp', async (req, res) => {
+    const { term, location } = req.query;
+    if (!process.env.YELP_API_KEY) return res.json({ available: false });
+    try {
+        const resp = await fetch(
+            `https://api.yelp.com/v3/businesses/search?term=${encodeURIComponent(term)}&location=${encodeURIComponent(location)}&limit=1`,
+            { headers: { Authorization: `Bearer ${process.env.YELP_API_KEY}` } }
+        );
+        const data = await resp.json();
+        if (!data.businesses?.length) return res.json({ available: false });
+        const b = data.businesses[0];
+        res.json({
+            available: true,
+            rating: b.rating,
+            reviewCount: b.review_count,
+            price: b.price || null,
+            url: b.url,
+            imageUrl: b.image_url,
+            categories: b.categories?.map(c => c.title).join(', ')
+        });
+    } catch (err) {
+        res.json({ available: false });
+    }
+});
+
+// --------- SAVED TRIPS (Supabase + Clerk) ---------
+app.post('/api/trips', requireAuth, express.json(), async (req, res) => {
+    if (!supabase) return res.status(503).json({ error: 'Database not configured' });
+    const { itinerary, destination, departureDate, arrivalDate, preferences, tripStyle, name } = req.body;
+    const { data, error } = await supabase.from('trips').insert({
+        user_id: req.userId,
+        name: name || destination,
+        destination, departure_date: departureDate, arrival_date: arrivalDate,
+        preferences, trip_style: tripStyle, itinerary
+    }).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+app.get('/api/trips', requireAuth, async (req, res) => {
+    if (!supabase) return res.status(503).json({ error: 'Database not configured' });
+    const { data, error } = await supabase.from('trips')
+        .select('id, name, destination, departure_date, arrival_date, trip_style, created_at')
+        .eq('user_id', req.userId)
+        .order('created_at', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+app.get('/api/trips/:id', requireAuth, async (req, res) => {
+    if (!supabase) return res.status(503).json({ error: 'Database not configured' });
+    const { data, error } = await supabase.from('trips')
+        .select('*').eq('id', req.params.id).eq('user_id', req.userId).single();
+    if (error) return res.status(404).json({ error: 'Trip not found' });
+    res.json(data);
+});
+
+app.delete('/api/trips/:id', requireAuth, async (req, res) => {
+    if (!supabase) return res.status(503).json({ error: 'Database not configured' });
+    const { error } = await supabase.from('trips')
+        .delete().eq('id', req.params.id).eq('user_id', req.userId);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
+});
+
 // --------- IN-MEMORY SHARE STORE ---------
 const sharedItineraries = new Map();
 
@@ -706,16 +896,28 @@ app.get('/generate-itinerary-stream', async (req, res) => {
     res.end();
 });
 
-// --------- SHARE ENDPOINTS ---------
-app.post('/api/share', express.json(), (req, res) => {
+// --------- SHARE ENDPOINTS (Supabase-backed when available, in-memory fallback) ---------
+app.post('/api/share', express.json(), async (req, res) => {
     const { itinerary, destination, departureDate, arrivalDate, preferences, tripStyle } = req.body;
     const shareId = Math.random().toString(36).substring(2, 10);
-    sharedItineraries.set(shareId, { itinerary, destination, departureDate, arrivalDate, preferences, tripStyle });
+    const payload = { itinerary, destination, departureDate, arrivalDate, preferences, tripStyle };
+
+    if (supabase) {
+        await supabase.from('shared_itineraries').insert({ share_id: shareId, ...payload }).catch(() => {});
+    }
+    sharedItineraries.set(shareId, payload); // always keep in-memory as fallback
+
     const shareUrl = `${req.protocol}://${req.get('host')}/second-page.html?share=${shareId}`;
     res.json({ shareId, shareUrl });
 });
 
-app.get('/api/share/:id', (req, res) => {
+app.get('/api/share/:id', async (req, res) => {
+    // Try Supabase first (survives server restarts), fall back to in-memory
+    if (supabase) {
+        const { data } = await supabase.from('shared_itineraries')
+            .select('*').eq('share_id', req.params.id).single().catch(() => ({ data: null }));
+        if (data) return res.json(data);
+    }
     const data = sharedItineraries.get(req.params.id);
     if (!data) return res.status(404).json({ error: 'Shared itinerary not found or expired' });
     res.json(data);
@@ -817,8 +1019,19 @@ app.get('/api/activity-image', async (req, res) => {
 // Replace the placeholder with actual API key for the frontend
 app.use('/second-page', (req, res) => {
     let html = fs.readFileSync(path.join(__dirname, '../src/second-page.html'), 'utf8');
-    html = html.replace('__GOOGLE_MAPS_API_KEY__', process.env.GOOGLE_MAPS_API_KEY || '');
+    html = html.replace(/__GOOGLE_MAPS_API_KEY__/g, process.env.GOOGLE_MAPS_API_KEY || '');
+    html = html.replace(/__CLERK_PUBLISHABLE_KEY__/g, process.env.CLERK_PUBLISHABLE_KEY || '');
     res.send(html);
+});
+
+// PWA files
+app.get('/manifest.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/manifest+json');
+    res.sendFile(path.join(__dirname, '../src/manifest.json'));
+});
+app.get('/service-worker.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.sendFile(path.join(__dirname, '../src/service-worker.js'));
 });
 
 // Serve the main page
@@ -831,7 +1044,8 @@ app.get('/', (req, res) => {
 // Handle second-page.html specifically
 app.get('/second-page.html', (req, res) => {
     let html = fs.readFileSync(path.join(__dirname, '../src/second-page.html'), 'utf8');
-    html = html.replace('__GOOGLE_MAPS_API_KEY__', process.env.GOOGLE_MAPS_API_KEY || '');
+    html = html.replace(/__GOOGLE_MAPS_API_KEY__/g, process.env.GOOGLE_MAPS_API_KEY || '');
+    html = html.replace(/__CLERK_PUBLISHABLE_KEY__/g, process.env.CLERK_PUBLISHABLE_KEY || '');
     res.send(html);
 });
 

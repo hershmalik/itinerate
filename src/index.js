@@ -113,12 +113,14 @@ function setupFormSubmission() {
         const arrival = new Date(arrivalDate);
         const tripDuration = Math.ceil((arrival - departure) / (1000 * 60 * 60 * 24));
         
+        const originCity = formData.get('origin-city') || '';
         // Save fields individually for second-page.js compatibility
         localStorage.setItem('tripDestination', destination);
         localStorage.setItem('tripDepartureDate', departureDate);
         localStorage.setItem('tripArrivalDate', arrivalDate);
         localStorage.setItem('tripPreferences', JSON.stringify(interests));
         localStorage.setItem('tripStyle', tripStyle);
+        localStorage.setItem('tripOriginCity', originCity);
         // Optionally, keep the old tripData object for backward compatibility
         const tripData = {
             destination: destination,
@@ -273,3 +275,10 @@ function initMap() {
 
 // Make initMap globally available for Google Maps callback
 window.initMap = initMap;
+
+// Register service worker for PWA
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+    });
+}
