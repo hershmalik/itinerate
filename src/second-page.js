@@ -9,6 +9,7 @@ console.log("All localStorage keys/values at script start:", {...localStorage});
 let map, geocoder, itineraryData = [], currentMarkers = [], dayPaths = [], dayGroups = {};
 const markerData = new WeakMap();
 let weatherForecasts = [];
+let _itineraryInitStarted = false;
 
 const API_BASE_URL = "http://localhost:10000";
 
@@ -277,43 +278,41 @@ function getTripDetailsFromStorage() {
 
 // Initialize map and generate itinerary
 async function initMapAndItinerary() {
-    console.log('[DEBUG] initMapAndItinerary called');
-    console.log("Google Maps API loaded, initializing...");
-    
-    // Check if Google Maps is loaded
-    if (typeof google === 'undefined' || !google.maps) {
-        console.error('[DEBUG] Google Maps API not loaded');
-        document.getElementById("error-message").textContent = "Map service unavailable. Other features will work normally.";
-        document.getElementById("error-message").style.display = "block";
-        // Continue without map
-        displayPreferences();
-        initializePreferenceToggles();
-        await generateItinerary();
+    const mapsReady = typeof google !== 'undefined' && google.maps;
+
+    // Second call: Maps just loaded after itinerary was already generated without it.
+    // Just init the map and display existing markers — don't regenerate.
+    if (_itineraryInitStarted) {
+        if (mapsReady && !map) {
+            try {
+                map = new google.maps.Map(document.getElementById("map"), {
+                    zoom: 12, center: { lat: 40.7128, lng: -74.0060 }, mapId: "ITINERARY_MAP"
+                });
+                geocoder = new google.maps.Geocoder();
+            } catch {}
+            if (itineraryData?.length > 0) await displayMapAndMarkers(itineraryData);
+        }
         return;
     }
-    
-    try {
-        map = new google.maps.Map(document.getElementById("map"), {
-            zoom: 12,
-            center: { lat: 40.7128, lng: -74.0060 },
-            mapId: "ITINERARY_MAP"
-        });
-        geocoder = new google.maps.Geocoder();
-        console.log('[DEBUG] Map initialized successfully');
-    } catch (error) {
-        console.error('[DEBUG] Error initializing map:', error);
-        // Continue without map
+    _itineraryInitStarted = true;
+
+    // Init map if Maps is already loaded
+    if (mapsReady) {
+        try {
+            map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 12, center: { lat: 40.7128, lng: -74.0060 }, mapId: "ITINERARY_MAP"
+            });
+            geocoder = new google.maps.Geocoder();
+        } catch {}
     }
-    
+
     try {
         displayPreferences();
         initializePreferenceToggles();
         await generateItinerary();
-        console.log('[DEBUG] Itinerary generation complete');
     } catch (error) {
-        console.error('[DEBUG] Error initializing:', error);
-        document.getElementById("error-message").textContent = error.message;
-        document.getElementById("error-message").style.display = "block";
+        const el = document.getElementById("error-message");
+        if (el) { el.textContent = error.message; el.style.display = "block"; }
     }
 }
 
@@ -1641,13 +1640,10 @@ if (compactTripForm) {
   });
 }
 
-// Ensure itinerary generation always runs
-document.addEventListener('DOMContentLoaded', function() {
-    // Ensure itinerary generation always runs
-    if (typeof window.initMapAndItinerary === 'function') {
-        window.initMapAndItinerary();
-    }
-});
+// Fallback: if Maps API doesn't load within 3s (blocked/slow), start without map
+setTimeout(() => {
+    if (!_itineraryInitStarted) initMapAndItinerary();
+}, 3000);
 
 // --- Mobile drawer logic ---
 function isMobileDrawerEnabled() {

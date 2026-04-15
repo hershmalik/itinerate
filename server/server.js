@@ -849,7 +849,7 @@ app.post('/api/share', async (req, res) => {
     const payload = { itinerary, destination, departureDate, arrivalDate, preferences, tripStyle };
 
     if (supabase) {
-        await supabase.from('shared_itineraries').insert({ share_id: shareId, ...payload }).catch(() => {});
+        try { await supabase.from('shared_itineraries').insert({ share_id: shareId, ...payload }); } catch {}
     }
     sharedItineraries.set(shareId, payload); // always keep in-memory as fallback
 
@@ -860,8 +860,11 @@ app.post('/api/share', async (req, res) => {
 app.get('/api/share/:id', async (req, res) => {
     // Try Supabase first (survives server restarts), fall back to in-memory
     if (supabase) {
-        const { data } = await supabase.from('shared_itineraries')
-            .select('*').eq('share_id', req.params.id).single().catch(() => ({ data: null }));
+        let data = null;
+        try {
+            const result = await supabase.from('shared_itineraries').select('*').eq('share_id', req.params.id).single();
+            data = result?.data || null;
+        } catch {}
         if (data) return res.json(data);
     }
     const data = sharedItineraries.get(req.params.id);
@@ -875,10 +878,11 @@ app.post('/api/chat-refine', async (req, res) => {
         const { message, itinerary, destination, tripStyle } = req.body;
 
         const systemPrompt = `You are a travel assistant refining an itinerary for ${destination} (${tripStyle} style).
-When the user asks to change something, respond with ONLY valid JSON — no markdown, no explanation outside JSON:
-- To update: {"type":"update","content":"Brief summary of changes","itinerary":[...full updated array...]}
-- To answer a question: {"type":"message","content":"Your answer"}
-Each itinerary item must have: day, time, activity, location.`;
+CRITICAL: Every single activity in your response MUST be physically located in ${destination}. Never suggest activities in any other city or region.
+When the user asks to change something, respond with ONLY valid JSON — no markdown, no preamble, no explanation outside the JSON object:
+- To update the itinerary: {"type":"update","content":"Brief summary of changes","itinerary":[...full updated array...]}
+- To answer a question without changing the itinerary: {"type":"message","content":"Your answer"}
+Each itinerary item must have: day, time, activity, location. The location field must be a real address or neighborhood in ${destination}.`;
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
@@ -896,11 +900,15 @@ Each itinerary item must have: day, time, activity, location.`;
 
         const responseData = await response.json();
         const raw = responseData.choices[0].message.content.replace(/```json/g, '').replace(/```/g, '').trim();
+        let parsed = null;
         try {
-            res.json(JSON.parse(raw));
+            parsed = JSON.parse(raw);
         } catch {
-            res.json({ type: 'message', content: raw });
+            // Try to extract JSON object from response that may have surrounding text
+            const m = raw.match(/(\{[\s\S]*\})/);
+            if (m) { try { parsed = JSON.parse(m[0]); } catch {} }
         }
+        res.json(parsed || { type: 'message', content: raw });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
