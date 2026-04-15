@@ -70,7 +70,7 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Simple request logger
@@ -843,7 +843,7 @@ app.get('/generate-itinerary-stream', async (req, res) => {
 });
 
 // --------- SHARE ENDPOINTS (Supabase-backed when available, in-memory fallback) ---------
-app.post('/api/share', express.json(), async (req, res) => {
+app.post('/api/share', async (req, res) => {
     const { itinerary, destination, departureDate, arrivalDate, preferences, tripStyle } = req.body;
     const shareId = Math.random().toString(36).substring(2, 10);
     const payload = { itinerary, destination, departureDate, arrivalDate, preferences, tripStyle };

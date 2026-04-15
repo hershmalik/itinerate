@@ -1273,42 +1273,24 @@ function generateActivityDescription(activity) {
 async function displayMapAndMarkers(items) {
     if (!map || !geocoder) return;
     const tripDetails = getTripDetailsFromStorage();
-    if (tripDetails?.destination) {
-        console.log('[Map] Geocoding destination:', tripDetails.destination);
-        try {
-            // Center on the first valid location if available, else on destination
-            let centerPos = null;
-            for (const item of items) {
-                if (item.location && item.location !== tripDetails.destination) {
-                    try {
-                        centerPos = await geocodeLocation(item.location);
-                        break;
-                    } catch (err) {
-                        console.warn('[Map] Could not geocode activity location:', item.location, err);
-                    }
-                }
-            }
-            if (!centerPos) {
-                try {
-                    centerPos = await geocodeLocation(tripDetails.destination);
-                } catch (err) {
-                    console.error('[Map] Geocoding destination failed:', tripDetails.destination, err);
-                }
-            }
-            if (!centerPos) {
-                document.getElementById("error-message").textContent = `Could not geocode destination: ${tripDetails.destination}`;
-                document.getElementById("error-message").style.display = "block";
-                return;
-            }
-            map.setCenter(centerPos);
-            map.setZoom(15); // Zoom in more for better detail
-            // Clear existing markers
-            currentMarkers.forEach(marker => marker.setMap(null));
-            currentMarkers = [];
-            // Calculate bounds to fit all pins
-            const bounds = new google.maps.LatLngBounds();
-            let pathCoords = [];
-            // Add markers for each location
+    if (!tripDetails?.destination) return;
+    try {
+        // Always center on the trip destination — never use activity locations
+        // as center since they can geocode anywhere (they're used for markers only)
+        const centerPos = await geocodeLocation(tripDetails.destination).catch(() => null);
+        if (!centerPos) {
+            console.error('[Map] Could not geocode destination:', tripDetails.destination);
+            return;
+        }
+        map.setCenter(centerPos);
+        map.setZoom(12);
+        // Clear existing markers
+        currentMarkers.forEach(marker => marker.setMap(null));
+        currentMarkers = [];
+        // Calculate bounds to fit all pins
+        const bounds = new google.maps.LatLngBounds();
+        let pathCoords = [];
+        // Add markers for each location
             const locationCounts = {};
             items.forEach(item => {
                 if (item.location && item.location !== tripDetails.destination) {
@@ -1376,9 +1358,8 @@ async function displayMapAndMarkers(items) {
                 });
                 window.currentPolyline.setMap(map);
             }
-        } catch (err) {
-            console.warn("Could not geocode destination");
-        }
+    } catch (err) {
+        console.warn('[Map] displayMapAndMarkers error:', err);
     }
 }
 
@@ -2145,41 +2126,52 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // =====================================================================
-// FLIGHT PRICES (Google Flights deep link)
+// TRAVEL LINKS PANEL (flights + hotels quick-search)
 // =====================================================================
-async function loadFlightPrices() {
+function loadFlightPrices() {
     const tripDetails = getTripDetailsFromStorage();
     const originCity = localStorage.getItem('tripOriginCity');
     const panel = document.getElementById('flights-panel');
-    if (!panel || !tripDetails) return;
-    if (!originCity) {
-        panel.innerHTML = `<div class="flights-note">Add your departure city on the home page to see flight options.</div>`;
-        panel.style.display = 'block';
-        return;
-    }
+    if (!panel || !tripDetails?.destination) return;
 
-    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-        ? 'http://localhost:10000' : window.location.origin;
+    const dest = encodeURIComponent(tripDetails.destination);
+    const origin = encodeURIComponent(originCity || '');
 
-    try {
-        const params = new URLSearchParams({ origin: originCity, destination: tripDetails.destination });
-        const resp = await fetch(`${baseUrl}/api/flights?${params}`);
-        const data = await resp.json();
+    // Google Flights — the q param works best with just the destination so
+    // Google auto-detects the user's location as origin
+    const flightsUrl = originCity
+        ? `https://www.google.com/travel/flights?q=${encodeURIComponent(`flights to ${tripDetails.destination}`)}`
+        : `https://www.google.com/travel/flights?q=${encodeURIComponent(`flights to ${tripDetails.destination}`)}`;
 
-        if (!data.available) { panel.style.display = 'none'; return; }
+    // Google Hotels for the destination
+    const hotelsUrl = `https://www.google.com/travel/hotels?q=${dest}`;
 
-        panel.innerHTML = `
-            <div class="flights-header">
-                <span>✈️ ${data.origin} → ${data.destination}</span>
-            </div>
-            <a href="${data.googleFlightsUrl}" target="_blank" rel="noopener" class="google-flights-btn">
-                Search flights on Google ↗
+    // Kayak uses city names directly in its URL
+    const kayakDest = tripDetails.destination.split(',')[0].trim().replace(/\s+/g, '-').toLowerCase();
+    const kayakOrigin = originCity ? originCity.split(',')[0].trim().replace(/\s+/g, '-').toLowerCase() : '';
+    const departure = tripDetails.departureDate || '';
+    const arrival = tripDetails.arrivalDate || '';
+    const kayakUrl = kayakOrigin && departure && arrival
+        ? `https://www.kayak.com/flights/${kayakOrigin}-${kayakDest}/${departure}/${arrival}`
+        : `https://www.kayak.com/flights/anywhere-${kayakDest}`;
+
+    panel.innerHTML = `
+        <div class="travel-links-header">✈️ Plan the rest of your trip</div>
+        <div class="travel-links-grid">
+            <a href="${kayakUrl}" target="_blank" rel="noopener" class="travel-link-btn">
+                <span class="tl-icon">✈️</span>
+                <span class="tl-label">Search flights<br><small>on Kayak</small></span>
             </a>
-            <p class="flights-note">Opens Google Flights for live prices and booking</p>`;
-        panel.style.display = 'block';
-    } catch {
-        panel.style.display = 'none';
-    }
+            <a href="${flightsUrl}" target="_blank" rel="noopener" class="travel-link-btn">
+                <span class="tl-icon">🔍</span>
+                <span class="tl-label">Compare flights<br><small>on Google</small></span>
+            </a>
+            <a href="${hotelsUrl}" target="_blank" rel="noopener" class="travel-link-btn">
+                <span class="tl-icon">🏨</span>
+                <span class="tl-label">Find hotels<br><small>on Google</small></span>
+            </a>
+        </div>`;
+    panel.style.display = 'block';
 }
 
 // =====================================================================

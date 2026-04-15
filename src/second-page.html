@@ -1594,18 +1594,14 @@
           .itinerary-card-time { cursor: grab; }
           .itinerary-card-time:active { cursor: grabbing; }
 
-          /* Flights panel */
+          /* Travel links panel */
           #flights-panel { background:#fff; border:1px solid var(--border-color,#e0e0e0); border-radius:0.75rem; padding:1rem 1.2rem; }
-          .flights-header { display:flex; justify-content:space-between; align-items:center; font-weight:700; margin-bottom:0.6rem; }
-          .flights-from strong { color:#2563eb; font-size:1.05rem; }
-          .flight-row { display:grid; grid-template-columns:3rem 1fr 5rem 4rem; gap:0.5rem; align-items:center; padding:0.4rem 0; border-bottom:1px solid #f0f0f0; font-size:0.875rem; }
-          .flight-airline { font-weight:700; color:#222; }
-          .flight-price { font-weight:700; color:#2563eb; text-align:right; }
-          .flight-stops { color:#717171; font-size:0.8rem; }
-          .flights-note { font-size:0.75rem; color:#999; margin:0.5rem 0 0; }
-          .flights-loading { color:#717171; font-size:0.9rem; padding:0.25rem 0; }
-          .google-flights-btn { display:inline-block; background:#1a73e8; color:#fff; font-weight:600; padding:0.5rem 1.1rem; border-radius:0.5rem; text-decoration:none; font-size:0.9rem; margin:0.4rem 0; transition:background 0.15s; }
-          .google-flights-btn:hover { background:#1558b0; }
+          .travel-links-header { font-weight:700; font-size:0.95rem; margin-bottom:0.75rem; color:#222; }
+          .travel-links-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:0.6rem; }
+          .travel-link-btn { display:flex; align-items:center; gap:0.5rem; background:#f8f9fa; border:1px solid #e0e0e0; border-radius:0.6rem; padding:0.65rem 0.75rem; text-decoration:none; color:#222; font-size:0.82rem; font-weight:600; transition:background 0.15s,border-color 0.15s; }
+          .travel-link-btn:hover { background:#eef2ff; border-color:#2563eb; color:#2563eb; }
+          .tl-icon { font-size:1.2rem; flex-shrink:0; }
+          .tl-label small { font-weight:400; color:#717171; display:block; margin-top:1px; }
 
           /* Saved trips */
           .saved-trip-row { display:flex; justify-content:space-between; align-items:center; padding:0.75rem 0; border-bottom:1px solid #f0f0f0; gap:1rem; }
