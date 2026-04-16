@@ -924,6 +924,7 @@ app.use('/second-page', (req, res) => {
     html = html.replace(/__GOOGLE_MAPS_API_KEY__/g, process.env.GOOGLE_MAPS_API_KEY || '');
     html = html.replace(/__SUPABASE_URL__/g, process.env.SUPABASE_URL || '');
     html = html.replace(/__SUPABASE_ANON_KEY__/g, process.env.SUPABASE_ANON_KEY || '');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.send(html);
 });
 
@@ -943,6 +944,7 @@ app.get('/', (req, res) => {
     html = html.replace(/__GOOGLE_MAPS_API_KEY__/g, process.env.GOOGLE_MAPS_API_KEY || '');
     html = html.replace(/__SUPABASE_URL__/g, process.env.SUPABASE_URL || '');
     html = html.replace(/__SUPABASE_ANON_KEY__/g, process.env.SUPABASE_ANON_KEY || '');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.send(html);
 });
 
@@ -952,6 +954,7 @@ app.get('/second-page.html', (req, res) => {
     html = html.replace(/__GOOGLE_MAPS_API_KEY__/g, process.env.GOOGLE_MAPS_API_KEY || '');
     html = html.replace(/__SUPABASE_URL__/g, process.env.SUPABASE_URL || '');
     html = html.replace(/__SUPABASE_ANON_KEY__/g, process.env.SUPABASE_ANON_KEY || '');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.send(html);
 });
 
@@ -978,6 +981,7 @@ app.get('*', (req, res) => {
         html = html.replace(/__GOOGLE_MAPS_API_KEY__/g, process.env.GOOGLE_MAPS_API_KEY || '');
         html = html.replace(/__SUPABASE_URL__/g, process.env.SUPABASE_URL || '');
         html = html.replace(/__SUPABASE_ANON_KEY__/g, process.env.SUPABASE_ANON_KEY || '');
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
         res.send(html);
     } else {
         // For file requests that aren't handled by static middleware, return 404
