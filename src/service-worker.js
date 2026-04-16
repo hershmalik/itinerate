@@ -1,10 +1,7 @@
-const CACHE = 'aitinerate-v6';
+const CACHE = 'aitinerate-v7';
 const STATIC = [
   '/',
-  '/second-page.html',
   '/styles.css',
-  '/index.js',
-  '/second-page.js',
   'https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css',
   'https://cdn.jsdelivr.net/npm/flatpickr',
   'https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js'
