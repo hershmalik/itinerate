@@ -407,90 +407,120 @@ const inspirationData = {
     ]
 };
 
+// Map badge labels to itinerary preference values
+function badgesToPreferences(badges) {
+    const map = {
+        'Culture': 'culture', 'History': 'culture', 'Art': 'culture', 'Architecture': 'culture', 'Education': 'culture',
+        'Food': 'food', 'Food & Wine': 'food', 'Dining': 'food',
+        'Nature': 'nature', 'Wildlife': 'nature', 'Wilderness': 'nature', 'Photography': 'nature',
+        'Adventure': 'adventure', 'Hiking': 'adventure', 'Road Trip': 'adventure',
+        'Romance': 'relaxation', 'Wellness': 'relaxation', 'Relaxation': 'relaxation', 'Spa': 'relaxation',
+        'Beach': 'relaxation', 'Beaches': 'relaxation',
+        'Nightlife': 'nightlife', 'Entertainment': 'nightlife', 'Music': 'nightlife',
+    };
+    const prefs = new Set();
+    (badges || []).forEach(b => { if (map[b]) prefs.add(map[b]); });
+    return [...prefs];
+}
+
+// Category → default trip duration in days
+const CATEGORY_DAYS = { featured: 6, weekend: 3, adventure: 8, romantic: 6, family: 6, group: 4 };
+
+// Category → trip style
+const CATEGORY_STYLE = { featured: 'balanced', weekend: 'relaxed', adventure: 'packed', romantic: 'relaxed', family: 'balanced', group: 'packed' };
+
+function selectAndNavigate(destination) {
+    const today = new Date();
+    const departure = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
+    const days = destination._days || 6;
+    const arrival = new Date(departure.getTime() + days * 24 * 60 * 60 * 1000);
+    const fmt = d => d.toISOString().split('T')[0];
+
+    localStorage.setItem('tripDestination', destination.title);
+    localStorage.setItem('tripDepartureDate', fmt(departure));
+    localStorage.setItem('tripArrivalDate', fmt(arrival));
+    localStorage.setItem('tripPreferences', JSON.stringify(destination._prefs || []));
+    localStorage.setItem('tripStyle', destination._style || 'balanced');
+    localStorage.removeItem('sampleItinerary');
+
+    window.location.href = '/second-page';
+}
+
 // Function to create inspiration cards
 function createInspirationCard(destination, cardClass = 'inspiration-card') {
-    // Only show the city name (title) on the card
-    // On mobile, zoom out the background image
     const isMobile = window.innerWidth <= 768;
     const bgSize = isMobile ? '120%' : 'cover';
+    // Escape title for attribute safety
+    const safeIdx = _cardRegistry.length;
+    _cardRegistry.push(destination);
     return `
-        <a href="#" class="${cardClass}" style="background-image: url('${destination.image}'); background-size: ${bgSize}; background-position: center;">
+        <a href="#" class="${cardClass}" data-card-idx="${safeIdx}" style="background-image: url('${destination.image}'); background-size: ${bgSize}; background-position: center;">
             <div class="card-overlay"></div>
             <div class="card-info">
                 <h4 class="card-title">${destination.title}</h4>
+                <p class="card-subtitle">${destination.description || ''}</p>
             </div>
+            <div class="card-cta">Plan this trip →</div>
         </a>
     `;
 }
 
+// Registry so we can look up destination objects from click events
+const _cardRegistry = [];
+
+// Annotate destinations with computed _days, _prefs, _style before rendering
+function annotateDestinations() {
+    Object.entries(inspirationData).forEach(([category, items]) => {
+        items.forEach(dest => {
+            dest._days = CATEGORY_DAYS[category] || 6;
+            dest._style = CATEGORY_STYLE[category] || 'balanced';
+            dest._prefs = badgesToPreferences(dest.badges);
+        });
+    });
+}
+
 // Populate inspiration sections
 function populateInspirations() {
+    annotateDestinations();
     const isMobile = window.innerWidth <= 768;
-    // Featured destinations
-    const featuredGrid = document.getElementById('featured-grid');
-    if (featuredGrid) {
-        featuredGrid.innerHTML = inspirationData.featured
-            .map(dest => createInspirationCard(dest, 'featured-card'))
-            .join('');
-    }
-    // Weekend getaways
-    const weekendGrid = document.getElementById('weekend-grid');
-    if (weekendGrid) {
-        // Remove duplicates by full image URL and ensure valid data
-        let uniqueWeekend = [];
-        let seen = new Set();
-        for (const dest of inspirationData.weekend) {
-            if (!dest.image || !dest.title) continue;
-            const url = dest.image.trim();
-            if (!seen.has(url)) {
-                seen.add(url);
-                uniqueWeekend.push(dest);
-            }
+
+    const sections = [
+        { id: 'featured-grid', key: 'featured', cls: 'featured-card' },
+        { id: 'weekend-grid',  key: 'weekend',  cls: 'weekend-card' },
+        { id: 'adventure-grid',key: 'adventure',cls: 'adventure-card' },
+        { id: 'romantic-grid', key: 'romantic', cls: 'romantic-card' },
+        { id: 'family-grid',   key: 'family',   cls: 'family-card' },
+        { id: 'group-grid',    key: 'group',    cls: 'group-card' },
+    ];
+
+    sections.forEach(({ id, key, cls }) => {
+        const grid = document.getElementById(id);
+        if (!grid) return;
+        let items = inspirationData[key] || [];
+        // Deduplicate by image URL
+        const seen = new Set();
+        items = items.filter(d => {
+            if (!d.image || !d.title || seen.has(d.image.trim())) return false;
+            seen.add(d.image.trim());
+            return true;
+        });
+        if (isMobile && key !== 'featured' && key !== 'weekend') {
+            grid.closest('section, div[class$="-section"]')?.style && (grid.closest('[class$="-section"]').style.display = 'none');
+            return;
         }
-        if (isMobile) {
-            uniqueWeekend = uniqueWeekend.slice(0, 3); // Only show first 3 unique cards on mobile
-        }
-        weekendGrid.innerHTML = uniqueWeekend
-            .map(dest => createInspirationCard(dest, 'weekend-card'))
-            .join('');
-    }
-    if (!isMobile) {
-        // Desktop: show all sections
-        const adventureGrid = document.getElementById('adventure-grid');
-        if (adventureGrid) {
-            adventureGrid.innerHTML = inspirationData.adventure
-                .map(dest => createInspirationCard(dest, 'adventure-card'))
-                .join('');
-        }
-        const romanticGrid = document.getElementById('romantic-grid');
-        if (romanticGrid) {
-            romanticGrid.innerHTML = inspirationData.romantic
-                .map(dest => createInspirationCard(dest, 'romantic-card'))
-                .join('');
-        }
-        const familyGrid = document.getElementById('family-grid');
-        if (familyGrid) {
-            familyGrid.innerHTML = inspirationData.family
-                .map(dest => createInspirationCard(dest, 'family-card'))
-                .join('');
-        }
-        const groupGrid = document.getElementById('group-grid');
-        if (groupGrid) {
-            groupGrid.innerHTML = inspirationData.group
-                .map(dest => createInspirationCard(dest, 'group-card'))
-                .join('');
-        }
-    } else {
-        // Mobile: hide last 3 sections
-        const adventureSection = document.querySelector('.adventure-section');
-        if (adventureSection) adventureSection.style.display = 'none';
-        const romanticSection = document.querySelector('.romantic-section');
-        if (romanticSection) romanticSection.style.display = 'none';
-        const familySection = document.querySelector('.family-section');
-        if (familySection) familySection.style.display = 'none';
-        const groupSection = document.querySelector('.group-section');
-        if (groupSection) groupSection.style.display = 'none';
-    }
+        if (isMobile) items = items.slice(0, 3);
+        grid.innerHTML = items.map(dest => createInspirationCard(dest, cls)).join('');
+    });
+
+    // Single delegated click handler for all inspiration cards
+    document.querySelector('.inspirations-section')?.addEventListener('click', e => {
+        const card = e.target.closest('[data-card-idx]');
+        if (!card) return;
+        e.preventDefault();
+        const idx = parseInt(card.getAttribute('data-card-idx'), 10);
+        const dest = _cardRegistry[idx];
+        if (dest) selectAndNavigate(dest);
+    });
 }
 
 // Main initialization
