@@ -424,10 +424,10 @@
     (function() {
         function getSB() {
             const url = window.__SUPABASE_URL__, key = window.__SUPABASE_ANON_KEY__;
-            if (!url || url.startsWith('__') || !key) return null;
+            if (!url || url.startsWith('__') || !key || url === '') return null;
             return window.supabase.createClient(url, key);
         }
-        const sb = getSB();
+        let sb = getSB();
         let session = null;
 
         function renderNav(user) {
@@ -519,13 +519,25 @@
                 if (dd && dd.style.display !== 'none' && !dd.contains(e.target) && !e.target.closest('#auth-nav-btn')) dd.style.display = 'none';
             });
 
-            // Init session
-            if (sb) {
-                sb.auth.getSession().then(({ data: { session: s } }) => { session = s; renderNav(s?.user || null); });
+            // Init session — always show Sign in immediately, update once auth resolves
+            renderNav(null);
+
+            async function initSB() {
+                if (!sb) {
+                    try {
+                        const r = await fetch('/api/config');
+                        const cfg = await r.json();
+                        if (cfg.supabaseUrl && cfg.supabaseAnonKey) {
+                            sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+                        }
+                    } catch (e) { /* ignore */ }
+                }
+                if (!sb) return;
+                const { data: { session: s } } = await sb.auth.getSession();
+                session = s; renderNav(s?.user || null);
                 sb.auth.onAuthStateChange((_, s) => { session = s; renderNav(s?.user || null); if (s) modal.style.display = 'none'; });
-            } else {
-                renderNav(null);
             }
+            initSB();
         });
     })();
     </script>

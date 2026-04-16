@@ -2175,13 +2175,26 @@ function getSupabaseClient() {
     if (_supabase) return _supabase;
     const url = window.__SUPABASE_URL__;
     const key = window.__SUPABASE_ANON_KEY__;
-    if (!url || !key || url.startsWith('__')) return null;
+    if (!url || !key || url.startsWith('__') || url === '') return null;
     _supabase = window.supabase.createClient(url, key);
     return _supabase;
 }
 
 async function initAuth() {
-    const sb = getSupabaseClient();
+    // Try inline config first; fall back to /api/config (bypasses any caching issues)
+    let sb = getSupabaseClient();
+    if (!sb) {
+        try {
+            const r = await fetch('/api/config');
+            const cfg = await r.json();
+            if (cfg.supabaseUrl && cfg.supabaseAnonKey) {
+                window.__SUPABASE_URL__ = cfg.supabaseUrl;
+                window.__SUPABASE_ANON_KEY__ = cfg.supabaseAnonKey;
+                _supabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+                sb = _supabase;
+            }
+        } catch (e) { /* ignore */ }
+    }
     if (!sb) {
         renderAuthNav(null);
         return;

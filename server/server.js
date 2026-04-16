@@ -75,6 +75,14 @@ app.use('/api/*', (req, res, next) => {
   next();
 });
 
+// Public config endpoint — returns non-secret client-side keys
+app.get('/api/config', (req, res) => {
+    res.json({
+        supabaseUrl: process.env.SUPABASE_URL || '',
+        supabaseAnonKey: process.env.SUPABASE_ANON_KEY || '',
+    });
+});
+
 app.get('/api/weather', async (req, res) => {
   const { location } = req.query;
   if (!location) return res.status(400).json({ error: 'Location required' });
