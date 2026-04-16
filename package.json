@@ -9,7 +9,6 @@
     "dev": "nodemon server/server.js"
   },
   "dependencies": {
-    "@clerk/backend": "^3.2.11",
     "@google/generative-ai": "^0.24.0",
     "@supabase/supabase-js": "^2.103.2",
     "axios": "^1.8.4",

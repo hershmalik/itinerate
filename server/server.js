@@ -6,7 +6,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
 import { createClient } from '@supabase/supabase-js';
-import { createClerkClient } from '@clerk/backend';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,35 +15,25 @@ dotenv.config({ path: path.join(__dirname, '..', '.env') });
 console.log("Loaded OpenAI API Key:", process.env.OPENAI_API_KEY ? "Exists" : "Missing");
 console.log("Loaded Google Maps API Key:", process.env.GOOGLE_MAPS_API_KEY ? "Exists" : "Missing");
 
-// ---- Supabase (optional — features degrade gracefully without it) ----
+// ---- Supabase service client (admin operations) ----
 const supabase = (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY)
     ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
     : null;
 
-// ---- Clerk (optional — auth features degrade gracefully without it) ----
-const clerkClient = process.env.CLERK_SECRET_KEY
-    ? createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY })
+// ---- Supabase anon client (JWT verification) ----
+const supabaseAnon = (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY)
+    ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY)
     : null;
 
-// Clerk auth middleware — attaches req.userId if token valid; continues either way
-async function attachUser(req, res, next) {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    if (token && clerkClient) {
-        try {
-            const payload = await clerkClient.verifyToken(token);
-            req.userId = payload.sub;
-        } catch { /* invalid token — anonymous request */ }
-    }
-    next();
-}
-
-// Clerk auth middleware — requires a valid token
+// Auth middleware — verifies Supabase JWT, attaches req.userId
 async function requireAuth(req, res, next) {
     const token = req.headers.authorization?.replace('Bearer ', '');
-    if (!token || !clerkClient) return res.status(401).json({ error: 'Authentication required' });
+    if (!token) return res.status(401).json({ error: 'Authentication required' });
+    if (!supabaseAnon) return res.status(503).json({ error: 'Auth not configured' });
     try {
-        const payload = await clerkClient.verifyToken(token);
-        req.userId = payload.sub;
+        const { data, error } = await supabaseAnon.auth.getUser(token);
+        if (error || !data?.user) return res.status(401).json({ error: 'Invalid or expired token' });
+        req.userId = data.user.id;
         next();
     } catch {
         res.status(401).json({ error: 'Invalid or expired token' });
@@ -728,7 +717,7 @@ app.get('/api/yelp', async (req, res) => {
     }
 });
 
-// --------- SAVED TRIPS (Supabase + Clerk) ---------
+// --------- SAVED TRIPS ---------
 app.post('/api/trips', requireAuth, express.json(), async (req, res) => {
     if (!supabase) return res.status(503).json({ error: 'Database not configured' });
     const { itinerary, destination, departureDate, arrivalDate, preferences, tripStyle, name } = req.body;
@@ -872,47 +861,6 @@ app.get('/api/share/:id', async (req, res) => {
     res.json(data);
 });
 
-// --------- AI CHAT REFINEMENT ---------
-app.post('/api/chat-refine', async (req, res) => {
-    try {
-        const { message, itinerary, destination, tripStyle } = req.body;
-
-        const systemPrompt = `You are a travel assistant refining an itinerary for ${destination} (${tripStyle} style).
-CRITICAL: Every single activity in your response MUST be physically located in ${destination}. Never suggest activities in any other city or region.
-When the user asks to change something, respond with ONLY valid JSON — no markdown, no preamble, no explanation outside the JSON object:
-- To update the itinerary: {"type":"update","content":"Brief summary of changes","itinerary":[...full updated array...]}
-- To answer a question without changing the itinerary: {"type":"message","content":"Your answer"}
-Each itinerary item must have: day, time, activity, location. The location field must be a real address or neighborhood in ${destination}.`;
-
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
-            body: JSON.stringify({
-                model: 'gpt-3.5-turbo',
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: `Current itinerary: ${JSON.stringify(itinerary)}\n\nRequest: ${message}` }
-                ],
-                temperature: 0.7,
-                max_tokens: 2000
-            })
-        });
-
-        const responseData = await response.json();
-        const raw = responseData.choices[0].message.content.replace(/```json/g, '').replace(/```/g, '').trim();
-        let parsed = null;
-        try {
-            parsed = JSON.parse(raw);
-        } catch {
-            // Try to extract JSON object from response that may have surrounding text
-            const m = raw.match(/(\{[\s\S]*\})/);
-            if (m) { try { parsed = JSON.parse(m[0]); } catch {} }
-        }
-        res.json(parsed || { type: 'message', content: raw });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
 
 // Start the server
 app.listen(PORT, () => {
@@ -974,7 +922,8 @@ app.get('/api/activity-image', async (req, res) => {
 app.use('/second-page', (req, res) => {
     let html = fs.readFileSync(path.join(__dirname, '../src/second-page.html'), 'utf8');
     html = html.replace(/__GOOGLE_MAPS_API_KEY__/g, process.env.GOOGLE_MAPS_API_KEY || '');
-    html = html.replace(/__CLERK_PUBLISHABLE_KEY__/g, process.env.CLERK_PUBLISHABLE_KEY || '');
+    html = html.replace(/__SUPABASE_URL__/g, process.env.SUPABASE_URL || '');
+    html = html.replace(/__SUPABASE_ANON_KEY__/g, process.env.SUPABASE_ANON_KEY || '');
     res.send(html);
 });
 
@@ -999,7 +948,8 @@ app.get('/', (req, res) => {
 app.get('/second-page.html', (req, res) => {
     let html = fs.readFileSync(path.join(__dirname, '../src/second-page.html'), 'utf8');
     html = html.replace(/__GOOGLE_MAPS_API_KEY__/g, process.env.GOOGLE_MAPS_API_KEY || '');
-    html = html.replace(/__CLERK_PUBLISHABLE_KEY__/g, process.env.CLERK_PUBLISHABLE_KEY || '');
+    html = html.replace(/__SUPABASE_URL__/g, process.env.SUPABASE_URL || '');
+    html = html.replace(/__SUPABASE_ANON_KEY__/g, process.env.SUPABASE_ANON_KEY || '');
     res.send(html);
 });
 
@@ -1230,44 +1180,6 @@ app.post('/api/regenerate-activity', async (req, res) => {
     }
 });
 
-// === SURPRISE DAY ENDPOINT ===
-app.post('/api/surprise-day', async (req, res) => {
-    try {
-        const { day, destination, preferences, itinerary, tripStyle, advancedPreferences } = req.body;
-        if (!day || !destination) return res.status(400).json({ error: 'Missing required fields' });
-
-        const existingActivities = (itinerary || []).filter(a => a.day === day).map(a => a.activity);
-        const styleConfig = { relaxed: '2-3', balanced: '4-5', packed: '5-6' }[tripStyle] || '4-5';
-
-        const prompt = `Create ${styleConfig} completely different and surprising activities for ${day} of a trip to ${destination}.
-CRITICAL: Every single activity and location MUST be physically in ${destination}. Do not suggest anything outside ${destination}.
-All "location" values must be real streets, neighborhoods, or venues in ${destination}.
-Traveler preferences: ${(preferences || []).join(', ')}.
-Trip style: ${tripStyle || 'balanced'}.
-DO NOT suggest any of these (already in the itinerary): ${existingActivities.join('; ')}.
-Focus on hidden gems, local favorites, and unexpected experiences.
-Respond ONLY as a JSON array (no explanation, no markdown), each object with: day, time, activity, location.`;
-
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
-            body: JSON.stringify({ model: 'gpt-3.5-turbo', messages: [
-                { role: 'system', content: `You are a local travel expert for ${destination}. You only suggest activities in ${destination}. Never suggest activities in other cities.` },
-                { role: 'user', content: prompt }
-            ], temperature: 0.9, max_tokens: 800 })
-        });
-        if (!response.ok) throw new Error('OpenAI error');
-        const data = await response.json();
-        let raw = data.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim();
-        let activities;
-        try { activities = JSON.parse(raw); } catch { const m = raw.match(/\[[\s\S]*\]/); activities = m ? JSON.parse(m[0]) : []; }
-        if (!Array.isArray(activities)) activities = [];
-        activities = activities.map(a => sanitizeActivityObject({ ...a, day }));
-        res.json({ activities });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
 
 // === PACKING LIST ENDPOINT ===
 app.post('/api/packing-list', async (req, res) => {

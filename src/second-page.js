@@ -610,7 +610,6 @@ function renderItineraryCards(itineraryItems) {
                 <div class="itinerary-day-header-weather">
                     <span>${weatherInfo.emoji || weatherInfo.icon || '🌤'} ${weatherInfo.condition || 'Clear'}, ${weatherInfo.temp}</span>
                 </div>
-                <button class="surprise-day-btn" data-day="${dayName}" title="Surprise me with completely different activities">🎲 Surprise me</button>
             </div>
         `;
         dayCard.appendChild(dayHeader);
@@ -669,12 +668,6 @@ function renderItineraryCards(itineraryItems) {
         btn.onclick = handleRegenerateActivity;
     });
 
-    // Surprise me button
-    container.addEventListener('click', async (e) => {
-        const btn = e.target.closest('.surprise-day-btn');
-        if (!btn) return;
-        await handleSurpriseDay(btn.getAttribute('data-day'));
-    });
 }
 
 // Helper: normalize all day labels to match the first occurrence for each date
@@ -881,56 +874,6 @@ function handleDeleteActivity(e) {
     populateDaySelectors(itineraryData);
 }
 
-// =====================================================================
-// SURPRISE DAY FEATURE
-// =====================================================================
-async function handleSurpriseDay(day) {
-    if (!day) return;
-    const tripDetails = getTripDetailsFromStorage();
-    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-        ? 'http://localhost:10000' : window.location.origin;
-    const btn = document.querySelector(`.surprise-day-btn[data-day="${day}"]`);
-    const origText = btn?.textContent;
-    if (btn) { btn.textContent = '⏳ Generating...'; btn.disabled = true; }
-    try {
-        const resp = await fetch(`${baseUrl}/api/surprise-day`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                day,
-                destination: tripDetails?.destination,
-                preferences: tripDetails?.preferences || [],
-                tripStyle: tripDetails?.tripStyle || 'balanced',
-                itinerary: itineraryData
-            })
-        });
-        const data = await resp.json();
-        if (!data.activities?.length) throw new Error('No activities returned');
-        // Remove existing activities for this day, insert new ones
-        const dayActivities = data.activities.map(a => sanitizeActivityObj(a, day));
-        itineraryData = itineraryData.filter(a => a.day !== day);
-        itineraryData.push(...dayActivities);
-        normalizeDayLabels(itineraryData);
-        renderItineraryCards(itineraryData);
-        await displayMapAndMarkers(itineraryData);
-        populateDaySelectors(itineraryData);
-        showNotification(`✨ Day "${day}" refreshed with new surprises!`);
-    } catch (err) {
-        showNotification('Could not generate surprises. Try again.');
-    } finally {
-        const newBtn = document.querySelector(`.surprise-day-btn[data-day="${day}"]`);
-        if (newBtn) { newBtn.textContent = origText || '🎲 Surprise me'; newBtn.disabled = false; }
-    }
-}
-
-function sanitizeActivityObj(a, day) {
-    return {
-        day: day,
-        time: (a.time && typeof a.time === 'string' && a.time.trim()) ? a.time : '10:00 AM',
-        activity: (a.activity && typeof a.activity === 'string' && a.activity.trim()) ? a.activity : 'Local experience',
-        location: (a.location && typeof a.location === 'string' && a.location.trim()) ? a.location : day
-    };
-}
 
 // Add flatpickr library and CSS for date pickers if not already present
 (function ensureFlatpickrLoaded() {
@@ -2046,92 +1989,8 @@ function exportToCalendar() {
     URL.revokeObjectURL(url);
 }
 
-// =====================================================================
-// AI CHAT PANEL
-// =====================================================================
-let chatHistory = [];
-
-function initChatPanel() {
-    const btn = document.getElementById('chat-fab');
-    const panel = document.getElementById('chat-panel');
-    const closeBtn = document.getElementById('chat-close');
-    const form = document.getElementById('chat-form');
-    const input = document.getElementById('chat-input');
-
-    if (!btn || !panel) return;
-
-    btn.addEventListener('click', () => {
-        panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
-        if (panel.style.display === 'flex' && input) input.focus();
-    });
-    if (closeBtn) closeBtn.addEventListener('click', () => { panel.style.display = 'none'; });
-
-    if (form) {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const message = input?.value?.trim();
-            if (!message) return;
-            input.value = '';
-            await sendChatMessage(message);
-        });
-    }
-}
-
-function appendChatMessage(role, text) {
-    const messages = document.getElementById('chat-messages');
-    if (!messages) return;
-    const div = document.createElement('div');
-    div.className = `chat-msg chat-msg-${role}`;
-    div.textContent = text;
-    messages.appendChild(div);
-    messages.scrollTop = messages.scrollHeight;
-}
-
-async function sendChatMessage(message) {
-    appendChatMessage('user', message);
-    appendChatMessage('assistant', '...');
-
-    const tripDetails = getTripDetailsFromStorage();
-    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-        ? 'http://localhost:10000' : window.location.origin;
-
-    try {
-        const resp = await fetch(`${baseUrl}/api/chat-refine`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                message,
-                itinerary: itineraryData,
-                destination: tripDetails?.destination,
-                tripStyle: tripDetails?.tripStyle
-            })
-        });
-        const data = await resp.json();
-
-        // Remove the "..." placeholder
-        const messages = document.getElementById('chat-messages');
-        if (messages) messages.lastChild?.remove();
-
-        if (data.type === 'update' && Array.isArray(data.itinerary)) {
-            itineraryData = enhanceAndFixItinerary(data.itinerary, tripDetails);
-            renderItineraryCards(itineraryData);
-            populateItineraryTable(itineraryData);
-            displayMapAndMarkers(itineraryData);
-            appendChatMessage('assistant', data.content || 'Itinerary updated!');
-            showNotification('Itinerary updated by AI assistant');
-        } else {
-            appendChatMessage('assistant', data.content || 'Done!');
-        }
-    } catch (err) {
-        const messages = document.getElementById('chat-messages');
-        if (messages) messages.lastChild?.remove();
-        appendChatMessage('assistant', 'Sorry, something went wrong. Please try again.');
-    }
-}
-
-// Initialize chat panel when DOM is ready
+// Initialize share/misc event listeners when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    initChatPanel();
     // Share button
     document.getElementById('share-btn')?.addEventListener('click', shareItinerary);
     document.getElementById('copy-link-btn')?.addEventListener('click', copyShareLink);
@@ -2180,8 +2039,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('my-trips-close')?.addEventListener('click', () => {
         document.getElementById('my-trips-modal').style.display = 'none';
     });
-    // Init Clerk
-    initClerk();
+    // Init Supabase Auth
+    setupAuthModal();
+    initAuth();
     // Register service worker
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/service-worker.js').catch(() => {});
@@ -2213,21 +2073,12 @@ function loadFlightPrices() {
         : `hotels in ${dest}`;
     const hotelsUrl = `https://www.google.com/travel/hotels?q=${encodeURIComponent(hotelsQuery)}`;
 
-    // Skyscanner supports city names (not IATA codes) and date ranges
-    const skyOrigin = (originCity || 'anywhere').split(',')[0].trim();
-    const skyDest = dest.split(',')[0].trim();
-    const skyUrl = `https://www.skyscanner.com/transport/flights/${encodeURIComponent(skyOrigin)}/${encodeURIComponent(skyDest)}/${departure.replace(/-/g, '')}/${arrival.replace(/-/g, '')}`;
-
     panel.innerHTML = `
         <div class="travel-links-header">✈️ Plan the rest of your trip</div>
         <div class="travel-links-grid">
             <a href="${flightsUrl}" target="_blank" rel="noopener" class="travel-link-btn">
-                <span class="tl-icon">🔍</span>
-                <span class="tl-label">Search flights<br><small>on Google Flights</small></span>
-            </a>
-            <a href="${skyUrl}" target="_blank" rel="noopener" class="travel-link-btn">
                 <span class="tl-icon">✈️</span>
-                <span class="tl-label">Compare prices<br><small>on Skyscanner</small></span>
+                <span class="tl-label">Search flights<br><small>on Google Flights</small></span>
             </a>
             <a href="${hotelsUrl}" target="_blank" rel="noopener" class="travel-link-btn">
                 <span class="tl-icon">🏨</span>
@@ -2315,36 +2166,169 @@ function initDragAndDrop() {
 }
 
 // =====================================================================
-// CLERK AUTH + SAVED TRIPS
+// SUPABASE AUTH
 // =====================================================================
-let clerkInstance = null;
-let clerkSessionToken = null;
+let _supabase = null;
+let _authSession = null;
 
-async function initClerk() {
-    const publishableKey = window.__CLERK_PUBLISHABLE_KEY__;
-    if (!publishableKey || typeof Clerk === 'undefined') return;
+function getSupabaseClient() {
+    if (_supabase) return _supabase;
+    const url = window.__SUPABASE_URL__;
+    const key = window.__SUPABASE_ANON_KEY__;
+    if (!url || !key || url.startsWith('__')) return null;
+    _supabase = window.supabase.createClient(url, key);
+    return _supabase;
+}
+
+async function initAuth() {
+    const sb = getSupabaseClient();
+    if (!sb) {
+        renderAuthNav(null);
+        return;
+    }
     try {
-        clerkInstance = window.Clerk;
-        await clerkInstance.load({ publishableKey });
+        const { data: { session } } = await sb.auth.getSession();
+        _authSession = session;
+        renderAuthNav(session?.user || null);
 
-        const userBtn = document.getElementById('clerk-user-btn');
-        if (userBtn && clerkInstance.user) {
-            clerkInstance.mountUserButton(userBtn);
-            clerkSessionToken = await clerkInstance.session?.getToken();
-            document.getElementById('save-trip-btn')?.removeAttribute('hidden');
-            document.getElementById('my-trips-btn')?.removeAttribute('hidden');
-        } else if (userBtn) {
-            clerkInstance.mountSignInButton(userBtn, { mode: 'modal' });
-        }
+        sb.auth.onAuthStateChange((_event, session) => {
+            _authSession = session;
+            renderAuthNav(session?.user || null);
+            if (session) {
+                const m = document.getElementById('auth-modal');
+                if (m) m.style.display = 'none';
+            }
+        });
     } catch (e) {
-        console.warn('[Clerk] Init error:', e.message);
+        console.warn('[Auth] Init error:', e.message);
+        renderAuthNav(null);
     }
 }
 
+function renderAuthNav(user) {
+    const container = document.getElementById('auth-user-btn');
+    if (!container) return;
+    if (user) {
+        const initials = (user.user_metadata?.full_name || user.email || 'U').slice(0, 2).toUpperCase();
+        const avatarSrc = user.user_metadata?.avatar_url;
+        container.innerHTML = `
+            <button class="auth-nav-btn" id="auth-nav-signed-in" title="Account">
+                <div class="auth-avatar">${avatarSrc ? `<img src="${avatarSrc}" alt="avatar">` : initials}</div>
+                <span>${(user.user_metadata?.full_name || user.email || '').split(' ')[0]}</span>
+            </button>`;
+        document.getElementById('save-trip-btn')?.removeAttribute('hidden');
+        document.getElementById('my-trips-btn')?.removeAttribute('hidden');
+        document.getElementById('auth-nav-signed-in')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const dd = document.getElementById('auth-user-dropdown');
+            if (!dd) return;
+            document.getElementById('auth-dropdown-name').textContent = user.user_metadata?.full_name || '';
+            document.getElementById('auth-dropdown-email').textContent = user.email || '';
+            const av = document.getElementById('auth-avatar-dropdown');
+            av.innerHTML = avatarSrc ? `<img src="${avatarSrc}" alt="">` : initials;
+            dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+        });
+    } else {
+        container.innerHTML = `<button class="auth-nav-btn" id="auth-nav-sign-in">Sign in</button>`;
+        document.getElementById('save-trip-btn')?.setAttribute('hidden', '');
+        document.getElementById('my-trips-btn')?.setAttribute('hidden', '');
+        document.getElementById('auth-nav-sign-in')?.addEventListener('click', openAuthModal);
+    }
+}
+
+function openAuthModal() {
+    const modal = document.getElementById('auth-modal');
+    if (modal) modal.style.display = 'flex';
+}
+
+function setupAuthModal() {
+    const modal = document.getElementById('auth-modal');
+    if (!modal) return;
+
+    document.getElementById('auth-modal-close')?.addEventListener('click', () => { modal.style.display = 'none'; });
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+
+    // Tabs
+    let currentTab = 'signin';
+    document.querySelectorAll('.auth-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            currentTab = tab.dataset.tab;
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === currentTab));
+            const nameRow = document.getElementById('auth-signup-name-row');
+            if (nameRow) nameRow.style.display = currentTab === 'signup' ? 'block' : 'none';
+            const pwField = document.getElementById('auth-password');
+            if (pwField) pwField.setAttribute('autocomplete', currentTab === 'signup' ? 'new-password' : 'current-password');
+            const submitBtn = document.getElementById('auth-submit-btn');
+            if (submitBtn) submitBtn.textContent = currentTab === 'signup' ? 'Create Account' : 'Sign In';
+        });
+    });
+
+    // Google OAuth
+    document.getElementById('auth-google-btn')?.addEventListener('click', async () => {
+        const sb = getSupabaseClient();
+        if (!sb) { alert('Auth not configured'); return; }
+        await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } });
+    });
+
+    // Email form
+    document.getElementById('auth-email-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const sb = getSupabaseClient();
+        if (!sb) { alert('Auth not configured'); return; }
+        const email = document.getElementById('auth-email').value.trim();
+        const password = document.getElementById('auth-password').value;
+        const errorDiv = document.getElementById('auth-error');
+        const submitBtn = document.getElementById('auth-submit-btn');
+        errorDiv.style.display = 'none';
+        submitBtn.disabled = true;
+        try {
+            let result;
+            if (currentTab === 'signup') {
+                const name = document.getElementById('auth-name')?.value?.trim() || '';
+                result = await sb.auth.signUp({ email, password, options: { data: { full_name: name } } });
+                if (!result.error && result.data?.user && !result.data.session) {
+                    errorDiv.style.display = 'block';
+                    errorDiv.style.background = '#f0fdf4';
+                    errorDiv.style.color = '#166534';
+                    errorDiv.textContent = 'Check your email for a confirmation link!';
+                    submitBtn.disabled = false;
+                    return;
+                }
+            } else {
+                result = await sb.auth.signInWithPassword({ email, password });
+            }
+            if (result.error) throw result.error;
+            modal.style.display = 'none';
+        } catch (err) {
+            errorDiv.style.display = 'block';
+            errorDiv.style.background = '';
+            errorDiv.style.color = '';
+            errorDiv.textContent = err.message || 'Sign in failed. Please try again.';
+        } finally {
+            submitBtn.disabled = false;
+        }
+    });
+
+    // User dropdown close and sign out
+    document.getElementById('auth-dropdown-close')?.addEventListener('click', () => {
+        document.getElementById('auth-user-dropdown').style.display = 'none';
+    });
+    document.getElementById('auth-signout-btn')?.addEventListener('click', async () => {
+        const sb = getSupabaseClient();
+        if (sb) await sb.auth.signOut();
+        document.getElementById('auth-user-dropdown').style.display = 'none';
+    });
+    document.addEventListener('click', (e) => {
+        const dd = document.getElementById('auth-user-dropdown');
+        if (dd && dd.style.display !== 'none' && !dd.contains(e.target) && !e.target.closest('#auth-nav-signed-in')) {
+            dd.style.display = 'none';
+        }
+    });
+}
+
 async function getAuthHeader() {
-    if (!clerkInstance?.session) return {};
-    const token = await clerkInstance.session.getToken();
-    return { Authorization: `Bearer ${token}` };
+    if (!_authSession?.access_token) return {};
+    return { Authorization: `Bearer ${_authSession.access_token}` };
 }
 
 async function saveTrip() {
