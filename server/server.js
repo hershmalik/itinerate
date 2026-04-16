@@ -940,7 +940,9 @@ app.get('/service-worker.js', (req, res) => {
 // Serve the main page
 app.get('/', (req, res) => {
     let html = fs.readFileSync(path.join(__dirname, '../src/index.html'), 'utf8');
-    html = html.replace('__GOOGLE_MAPS_API_KEY__', process.env.GOOGLE_MAPS_API_KEY || '');
+    html = html.replace(/__GOOGLE_MAPS_API_KEY__/g, process.env.GOOGLE_MAPS_API_KEY || '');
+    html = html.replace(/__SUPABASE_URL__/g, process.env.SUPABASE_URL || '');
+    html = html.replace(/__SUPABASE_ANON_KEY__/g, process.env.SUPABASE_ANON_KEY || '');
     res.send(html);
 });
 
@@ -973,7 +975,9 @@ app.get('*', (req, res) => {
     // Only serve index.html for non-file requests
     if (!req.path.includes('.')) {
         let html = fs.readFileSync(path.join(__dirname, '../src/index.html'), 'utf8');
-        html = html.replace('__GOOGLE_MAPS_API_KEY__', process.env.GOOGLE_MAPS_API_KEY || '');
+        html = html.replace(/__GOOGLE_MAPS_API_KEY__/g, process.env.GOOGLE_MAPS_API_KEY || '');
+        html = html.replace(/__SUPABASE_URL__/g, process.env.SUPABASE_URL || '');
+        html = html.replace(/__SUPABASE_ANON_KEY__/g, process.env.SUPABASE_ANON_KEY || '');
         res.send(html);
     } else {
         // For file requests that aren't handled by static middleware, return 404

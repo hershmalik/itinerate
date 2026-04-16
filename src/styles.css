@@ -2,6 +2,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded');
 
+/* Ensure hidden attribute always wins regardless of CSS specificity */
+[hidden] { display: none !important; }
+
 /* Reset and base styles */
 * {
   margin: 0;

@@ -10,6 +10,11 @@
     <link rel="manifest" href="/manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script>
+      window.__SUPABASE_URL__ = '__SUPABASE_URL__';
+      window.__SUPABASE_ANON_KEY__ = '__SUPABASE_ANON_KEY__';
+    </script>
     <script src="https://maps.googleapis.com/maps/api/js?key=__GOOGLE_MAPS_API_KEY__&libraries=places&callback=initMap" async defer></script>
 </head>
 <body>
@@ -24,8 +29,7 @@
             </div>
             <div class="nav-menu">
                 <div class="nav-actions">
-                    <button class="nav-btn">Login</button>
-                    <button class="nav-btn primary">Sign Up</button>
+                    <div id="auth-user-btn"></div>
                 </div>
             </div>
         </div>
@@ -371,7 +375,159 @@
         </div>
     </section>
 
+    <!-- Auth Modal -->
+    <div id="auth-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(34,34,34,0.5); z-index:3000; align-items:center; justify-content:center; padding:1rem;">
+      <div style="background:#fff; border-radius:1.25rem; padding:2rem; max-width:420px; width:100%; box-shadow:0 12px 40px rgba(0,0,0,0.18); position:relative;">
+        <button id="auth-modal-close" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#717171;">✕</button>
+        <div style="font-size:2rem;text-align:center;margin-bottom:0.5rem;">✈️</div>
+        <h2 style="font-size:1.3rem;font-weight:700;text-align:center;margin:0 0 0.4rem;color:#222;">Sign in to AItinerate</h2>
+        <p style="font-size:0.88rem;color:#717171;text-align:center;margin:0 0 1.5rem;line-height:1.5;">Save trips, collaborate with others, and access your itineraries anywhere.</p>
+        <button id="auth-google-btn" style="width:100%;display:flex;align-items:center;justify-content:center;gap:0.65rem;padding:0.7rem 1rem;border:1.5px solid #e0e0e0;border-radius:0.6rem;background:#fff;font-size:0.92rem;font-weight:600;cursor:pointer;margin-bottom:0.5rem;">
+          <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+          Continue with Google
+        </button>
+        <div style="display:flex;align-items:center;gap:0.75rem;margin:1rem 0;color:#bbb;font-size:0.82rem;">
+          <div style="flex:1;height:1px;background:#e0e0e0;"></div><span>or</span><div style="flex:1;height:1px;background:#e0e0e0;"></div>
+        </div>
+        <div style="display:flex;border-bottom:2px solid #e0e0e0;margin-bottom:1rem;">
+          <button class="auth-tab-btn active" data-tab="signin" style="flex:1;background:none;border:none;border-bottom:2px solid #2563eb;margin-bottom:-2px;padding:0.5rem;font-size:0.9rem;font-weight:600;cursor:pointer;color:#2563eb;">Sign In</button>
+          <button class="auth-tab-btn" data-tab="signup" style="flex:1;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;padding:0.5rem;font-size:0.9rem;font-weight:600;cursor:pointer;color:#717171;">Create Account</button>
+        </div>
+        <form id="auth-email-form">
+          <div id="auth-signup-name-row" style="display:none;"><input type="text" id="auth-name" placeholder="Your name" style="width:100%;padding:0.65rem 0.9rem;border:1.5px solid #e0e0e0;border-radius:0.6rem;font-size:0.92rem;margin-bottom:0.7rem;box-sizing:border-box;" /></div>
+          <input type="email" id="auth-email" placeholder="Email address" required style="width:100%;padding:0.65rem 0.9rem;border:1.5px solid #e0e0e0;border-radius:0.6rem;font-size:0.92rem;margin-bottom:0.7rem;box-sizing:border-box;" />
+          <input type="password" id="auth-password" placeholder="Password" required style="width:100%;padding:0.65rem 0.9rem;border:1.5px solid #e0e0e0;border-radius:0.6rem;font-size:0.92rem;margin-bottom:0.7rem;box-sizing:border-box;" />
+          <div id="auth-error" style="display:none;background:#fef2f2;color:#dc2626;padding:0.5rem 0.75rem;border-radius:0.5rem;font-size:0.85rem;margin-bottom:0.7rem;"></div>
+          <button type="submit" id="auth-submit-btn" style="width:100%;padding:0.75rem;background:#2563eb;color:#fff;border:none;border-radius:0.6rem;font-size:0.95rem;font-weight:700;cursor:pointer;">Sign In</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- User dropdown -->
+    <div id="auth-user-dropdown" style="display:none;position:fixed;top:3.5rem;right:1.5rem;background:#fff;border:1px solid #e0e0e0;border-radius:0.85rem;padding:1rem;min-width:220px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:2000;">
+      <button id="auth-dropdown-close" style="position:absolute;top:0.6rem;right:0.7rem;background:none;border:none;font-size:1.1rem;cursor:pointer;color:#aaa;">✕</button>
+      <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem;">
+        <div id="auth-avatar-dropdown" style="width:30px;height:30px;border-radius:50%;background:#2563eb;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem;flex-shrink:0;overflow:hidden;"></div>
+        <div>
+          <div id="auth-dropdown-name" style="font-weight:700;font-size:0.9rem;color:#222;"></div>
+          <div id="auth-dropdown-email" style="font-size:0.78rem;color:#717171;"></div>
+        </div>
+      </div>
+      <hr style="border:none;border-top:1px solid #f0f0f0;margin:0.75rem 0;">
+      <button id="auth-signout-btn" style="width:100%;padding:0.5rem;background:none;border:1px solid #e0e0e0;border-radius:0.5rem;cursor:pointer;font-size:0.85rem;color:#555;font-weight:600;">Sign out</button>
+    </div>
+
     <script src="app.js"></script>
     <script src="index.js"></script>
+    <script>
+    // Auth for index page
+    (function() {
+        function getSB() {
+            const url = window.__SUPABASE_URL__, key = window.__SUPABASE_ANON_KEY__;
+            if (!url || url.startsWith('__') || !key) return null;
+            return window.supabase.createClient(url, key);
+        }
+        const sb = getSB();
+        let session = null;
+
+        function renderNav(user) {
+            const c = document.getElementById('auth-user-btn');
+            if (!c) return;
+            if (user) {
+                const initials = (user.user_metadata?.full_name || user.email || 'U').slice(0,2).toUpperCase();
+                const avatar = user.user_metadata?.avatar_url;
+                c.innerHTML = `<button id="auth-nav-btn" style="display:flex;align-items:center;gap:0.4rem;padding:0.4rem 0.9rem;border:1px solid rgba(255,255,255,0.3);border-radius:2rem;background:rgba(255,255,255,0.1);cursor:pointer;font-size:0.85rem;font-weight:600;color:#fff;">
+                    <div style="width:26px;height:26px;border-radius:50%;background:#2563eb;color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;overflow:hidden;">${avatar ? `<img src="${avatar}" style="width:100%;height:100%;object-fit:cover;">` : initials}</div>
+                    <span>${(user.user_metadata?.full_name || user.email || '').split(' ')[0]}</span>
+                </button>`;
+                document.getElementById('auth-nav-btn')?.addEventListener('click', e => {
+                    e.stopPropagation();
+                    const dd = document.getElementById('auth-user-dropdown');
+                    document.getElementById('auth-dropdown-name').textContent = user.user_metadata?.full_name || '';
+                    document.getElementById('auth-dropdown-email').textContent = user.email || '';
+                    const av = document.getElementById('auth-avatar-dropdown');
+                    av.innerHTML = avatar ? `<img src="${avatar}" style="width:100%;height:100%;object-fit:cover;">` : initials;
+                    dd.style.display = dd.style.display === 'none' ? 'flex' : 'none';
+                    dd.style.flexDirection = 'column';
+                });
+            } else {
+                c.innerHTML = `<button id="auth-nav-btn" class="nav-btn primary" style="">Sign in</button>`;
+                document.getElementById('auth-nav-btn')?.addEventListener('click', () => {
+                    const m = document.getElementById('auth-modal');
+                    if (m) m.style.display = 'flex';
+                });
+            }
+        }
+
+        // Modal setup
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('auth-modal');
+            document.getElementById('auth-modal-close')?.addEventListener('click', () => modal.style.display = 'none');
+            modal?.addEventListener('click', e => { if (e.target === modal) modal.style.display = 'none'; });
+
+            let tab = 'signin';
+            document.querySelectorAll('.auth-tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    tab = btn.dataset.tab;
+                    document.querySelectorAll('.auth-tab-btn').forEach(b => {
+                        b.style.color = b.dataset.tab === tab ? '#2563eb' : '#717171';
+                        b.style.borderBottomColor = b.dataset.tab === tab ? '#2563eb' : 'transparent';
+                    });
+                    document.getElementById('auth-signup-name-row').style.display = tab === 'signup' ? 'block' : 'none';
+                    document.getElementById('auth-submit-btn').textContent = tab === 'signup' ? 'Create Account' : 'Sign In';
+                });
+            });
+
+            document.getElementById('auth-google-btn')?.addEventListener('click', async () => {
+                if (!sb) return;
+                await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
+            });
+
+            document.getElementById('auth-email-form')?.addEventListener('submit', async e => {
+                e.preventDefault();
+                if (!sb) return;
+                const email = document.getElementById('auth-email').value.trim();
+                const password = document.getElementById('auth-password').value;
+                const errDiv = document.getElementById('auth-error');
+                const btn = document.getElementById('auth-submit-btn');
+                errDiv.style.display = 'none'; btn.disabled = true;
+                try {
+                    let r;
+                    if (tab === 'signup') {
+                        const name = document.getElementById('auth-name')?.value?.trim() || '';
+                        r = await sb.auth.signUp({ email, password, options: { data: { full_name: name } } });
+                        if (!r.error && r.data?.user && !r.data.session) {
+                            errDiv.style.display = 'block'; errDiv.style.background = '#f0fdf4'; errDiv.style.color = '#166534';
+                            errDiv.textContent = 'Check your email for a confirmation link!';
+                            btn.disabled = false; return;
+                        }
+                    } else {
+                        r = await sb.auth.signInWithPassword({ email, password });
+                    }
+                    if (r.error) throw r.error;
+                    modal.style.display = 'none';
+                } catch(err) {
+                    errDiv.style.display = 'block'; errDiv.style.background = '#fef2f2'; errDiv.style.color = '#dc2626';
+                    errDiv.textContent = err.message || 'Sign in failed';
+                } finally { btn.disabled = false; }
+            });
+
+            document.getElementById('auth-dropdown-close')?.addEventListener('click', () => { document.getElementById('auth-user-dropdown').style.display = 'none'; });
+            document.getElementById('auth-signout-btn')?.addEventListener('click', async () => { if (sb) await sb.auth.signOut(); document.getElementById('auth-user-dropdown').style.display = 'none'; });
+            document.addEventListener('click', e => {
+                const dd = document.getElementById('auth-user-dropdown');
+                if (dd && dd.style.display !== 'none' && !dd.contains(e.target) && !e.target.closest('#auth-nav-btn')) dd.style.display = 'none';
+            });
+
+            // Init session
+            if (sb) {
+                sb.auth.getSession().then(({ data: { session: s } }) => { session = s; renderNav(s?.user || null); });
+                sb.auth.onAuthStateChange((_, s) => { session = s; renderNav(s?.user || null); if (s) modal.style.display = 'none'; });
+            } else {
+                renderNav(null);
+            }
+        });
+    })();
+    </script>
 </body>
 </html>
