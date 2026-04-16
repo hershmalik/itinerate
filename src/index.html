@@ -29,7 +29,7 @@
             </div>
             <div class="nav-menu">
                 <div class="nav-actions">
-                    <div id="auth-user-btn"><button class="nav-btn primary" onclick="openAuthModal()">Sign in</button></div>
+                    <div id="auth-user-btn"><button class="nav-btn primary" onclick="document.getElementById('auth-modal').style.display='flex'">Sign in</button></div>
                 </div>
             </div>
         </div>
@@ -378,7 +378,7 @@
     <!-- Auth Modal -->
     <div id="auth-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(34,34,34,0.5); z-index:3000; align-items:center; justify-content:center; padding:1rem;">
       <div style="background:#fff; border-radius:1.25rem; padding:2rem; max-width:420px; width:100%; box-shadow:0 12px 40px rgba(0,0,0,0.18); position:relative;">
-        <button id="auth-modal-close" onclick="closeAuthModal()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#717171;">✕</button>
+        <button id="auth-modal-close" onclick="document.getElementById('auth-modal').style.display='none'" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#717171;">✕</button>
         <div style="font-size:2rem;text-align:center;margin-bottom:0.5rem;">✈️</div>
         <h2 style="font-size:1.3rem;font-weight:700;text-align:center;margin:0 0 0.4rem;color:#222;">Sign in to AItinerate</h2>
         <p style="font-size:0.88rem;color:#717171;text-align:center;margin:0 0 1.5rem;line-height:1.5;">Save trips, collaborate with others, and access your itineraries anywhere.</p>
@@ -449,7 +449,7 @@
                     if (dd) { dd.style.display = dd.style.display === 'none' ? 'block' : 'none'; }
                 };
             } else {
-                c.innerHTML = '<button class="nav-btn primary" onclick="openAuthModal()">Sign in</button>';
+                c.innerHTML = '<button class="nav-btn primary" onclick="document.getElementById(\'auth-modal\').style.display=\'flex\'">Sign in</button>';
             }
         }
 
