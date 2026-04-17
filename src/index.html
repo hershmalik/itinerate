@@ -568,7 +568,7 @@
                         var dname = document.getElementById('auth-dropdown-name'); if (dname) dname.textContent = name;
                         var dmail = document.getElementById('auth-dropdown-email'); if (dmail) dmail.textContent = user.email || '';
                     }
-                    sb.auth.onAuthStateChange(function(_, s){ if (!s) location.reload(); });
+                    sb.auth.onAuthStateChange(function(event, s){ if (event === 'SIGNED_OUT') location.reload(); });
                 }).catch(function(){});
             });
         }
