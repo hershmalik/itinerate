@@ -398,7 +398,7 @@
           <input type="email" id="auth-email" placeholder="Email address" required style="width:100%;padding:0.65rem 0.9rem;border:1.5px solid #e0e0e0;border-radius:0.6rem;font-size:0.92rem;margin-bottom:0.7rem;box-sizing:border-box;" />
           <input type="password" id="auth-password" placeholder="Password" required style="width:100%;padding:0.65rem 0.9rem;border:1.5px solid #e0e0e0;border-radius:0.6rem;font-size:0.92rem;margin-bottom:0.7rem;box-sizing:border-box;" />
           <div id="auth-error" style="display:none;background:#fef2f2;color:#dc2626;padding:0.5rem 0.75rem;border-radius:0.5rem;font-size:0.85rem;margin-bottom:0.7rem;"></div>
-          <button type="submit" id="auth-submit-btn" style="width:100%;padding:0.75rem;background:#2563eb;color:#fff;border:none;border-radius:0.6rem;font-size:0.95rem;font-weight:700;cursor:pointer;">Sign In</button>
+          <button type="button" id="auth-submit-btn" onclick="authSignIn()" style="width:100%;padding:0.75rem;background:#2563eb;color:#fff;border:none;border-radius:0.6rem;font-size:0.95rem;font-weight:700;cursor:pointer;">Sign In</button>
         </form>
       </div>
     </div>
@@ -420,149 +420,88 @@
     <script src="app.js?v=7"></script>
     <script src="index.js?v=7"></script>
     <script>
-    // Auth for index page — runs at bottom of body so DOM is already ready
-    (function() {
-        var sb = null;
-        var session = null;
+    // Global auth functions — called directly from inline onclick attributes in HTML
+    var _authSB = null;
 
-        function getSB() {
-            try {
-                var url = window.__SUPABASE_URL__, key = window.__SUPABASE_ANON_KEY__;
-                if (!url || url.startsWith('__') || url === '' || !key || !window.supabase) return null;
-                return window.supabase.createClient(url, key);
-            } catch(e) { return null; }
-        }
-
-        function renderNav(user) {
-            var c = document.getElementById('auth-user-btn');
-            if (!c) return;
-            if (user) {
-                var initials = (user.user_metadata && user.user_metadata.full_name ? user.user_metadata.full_name : user.email || 'U').slice(0,2).toUpperCase();
-                var avatar = user.user_metadata && user.user_metadata.avatar_url;
-                c.innerHTML = '<button id="auth-nav-btn" style="display:flex;align-items:center;gap:0.4rem;padding:0.4rem 0.9rem;border:1px solid rgba(255,255,255,0.3);border-radius:2rem;background:rgba(255,255,255,0.1);cursor:pointer;font-size:0.85rem;font-weight:600;color:#fff;">'
-                    + '<div style="width:26px;height:26px;border-radius:50%;background:#2563eb;color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;overflow:hidden;">' + (avatar ? '<img src="'+avatar+'" style="width:100%;height:100%;object-fit:cover;">' : initials) + '</div>'
-                    + '</button>';
-                var navBtn = document.getElementById('auth-nav-btn');
-                if (navBtn) navBtn.onclick = function(e) {
-                    e.stopPropagation();
-                    var dd = document.getElementById('auth-user-dropdown');
-                    if (dd) { dd.style.display = dd.style.display === 'none' ? 'block' : 'none'; }
-                };
-            } else {
-                c.innerHTML = '<button class="nav-btn primary" onclick="document.getElementById(\'auth-modal\').style.display=\'flex\'">Sign in</button>';
+    function _getSB() {
+        if (_authSB) return _authSB;
+        try {
+            var url = window.__SUPABASE_URL__, key = window.__SUPABASE_ANON_KEY__;
+            if (url && !url.startsWith('__') && url !== '' && key && window.supabase) {
+                _authSB = window.supabase.createClient(url, key);
+                return _authSB;
             }
-        }
+        } catch(e) {}
+        return null;
+    }
 
-        window.openAuthModal = function() {
-            var m = document.getElementById('auth-modal');
-            if (m) m.style.display = 'flex';
-        };
-
-        window.closeAuthModal = function() {
-            var m = document.getElementById('auth-modal');
-            if (m) m.style.display = 'none';
-        };
-
-        window.googleSignIn = function() {
-            ensureSB(function(client) {
-                if (!client) { alert('Auth not ready, please try again'); return; }
-                client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
-            });
-        };
-
-        function ensureSB(cb) {
-            if (sb) { cb(sb); return; }
-            sb = getSB();
-            if (sb) { cb(sb); return; }
+    function googleSignIn() {
+        var sb = _getSB();
+        if (sb) {
+            sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
+        } else {
             fetch('/api/config').then(function(r){ return r.json(); }).then(function(cfg){
                 if (cfg.supabaseUrl && cfg.supabaseAnonKey && window.supabase) {
-                    sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+                    _authSB = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+                    _authSB.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
+                } else {
+                    alert('Unable to connect to auth service. Please try again.');
                 }
-                cb(sb);
-            }).catch(function(){ cb(null); });
+            }).catch(function(){ alert('Unable to connect. Please try again.'); });
         }
+    }
 
-        // Wire modal close
-        var modalClose = document.getElementById('auth-modal-close');
-        if (modalClose) modalClose.onclick = window.closeAuthModal;
+    function authSignIn() {
+        var email = document.getElementById('auth-email').value.trim();
+        var password = document.getElementById('auth-password').value;
+        var errDiv = document.getElementById('auth-error');
+        var btn = document.getElementById('auth-submit-btn');
+        if (!email || !password) { if(errDiv){errDiv.style.display='block';errDiv.textContent='Please enter email and password.';} return; }
+        if(errDiv) errDiv.style.display='none';
+        if(btn) btn.disabled = true;
+        function doAuth(sb) {
+            if (!sb) { if(errDiv){errDiv.style.display='block';errDiv.textContent='Auth not available.';} if(btn)btn.disabled=false; return; }
+            sb.auth.signInWithPassword({ email: email, password: password }).then(function(r){
+                if (r.error) { if(errDiv){errDiv.style.display='block';errDiv.style.background='#fef2f2';errDiv.style.color='#dc2626';errDiv.textContent=r.error.message;} }
+                else { document.getElementById('auth-modal').style.display='none'; location.reload(); }
+            }).catch(function(e){ if(errDiv){errDiv.style.display='block';errDiv.textContent=e.message||'Sign in failed';} }).finally(function(){ if(btn)btn.disabled=false; });
+        }
+        var sb = _getSB();
+        if (sb) { doAuth(sb); return; }
+        fetch('/api/config').then(function(r){return r.json();}).then(function(cfg){
+            if(cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase){_authSB=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);}
+            doAuth(_authSB);
+        }).catch(function(){ if(errDiv){errDiv.style.display='block';errDiv.textContent='Connection error.';} if(btn)btn.disabled=false; });
+    }
 
-        var modal = document.getElementById('auth-modal');
-        if (modal) modal.onclick = function(e) { if (e.target === modal) window.closeAuthModal(); };
-
-        // Wire Google button
-        var googleBtn = document.getElementById('auth-google-btn');
-        if (googleBtn) googleBtn.onclick = window.googleSignIn;
-
-        // Wire tabs
-        var tabs = document.querySelectorAll('.auth-tab-btn');
-        var currentTab = 'signin';
-        tabs.forEach(function(btn) {
-            btn.onclick = function() {
-                currentTab = btn.dataset.tab;
-                tabs.forEach(function(b) {
-                    b.style.color = b.dataset.tab === currentTab ? '#2563eb' : '#717171';
-                    b.style.borderBottomColor = b.dataset.tab === currentTab ? '#2563eb' : 'transparent';
-                });
-                var nameRow = document.getElementById('auth-signup-name-row');
-                var submitBtn = document.getElementById('auth-submit-btn');
-                if (nameRow) nameRow.style.display = currentTab === 'signup' ? 'block' : 'none';
-                if (submitBtn) submitBtn.textContent = currentTab === 'signup' ? 'Create Account' : 'Sign In';
-            };
-        });
-
-        // Wire email form
-        var emailForm = document.getElementById('auth-email-form');
-        if (emailForm) emailForm.onsubmit = function(e) {
-            e.preventDefault();
-            ensureSB(function(client) {
-                if (!client) { alert('Auth not ready, please try again'); return; }
-                var email = document.getElementById('auth-email').value.trim();
-                var password = document.getElementById('auth-password').value;
-                var errDiv = document.getElementById('auth-error');
-                var submitBtn = document.getElementById('auth-submit-btn');
-                if (errDiv) errDiv.style.display = 'none';
-                if (submitBtn) submitBtn.disabled = true;
-                var promise = currentTab === 'signup'
-                    ? client.auth.signUp({ email: email, password: password, options: { data: { full_name: (document.getElementById('auth-name') || {}).value || '' } } })
-                    : client.auth.signInWithPassword({ email: email, password: password });
-                promise.then(function(r) {
-                    if (r.error) throw r.error;
-                    if (currentTab === 'signup' && r.data && r.data.user && !r.data.session) {
-                        if (errDiv) { errDiv.style.display = 'block'; errDiv.style.background = '#f0fdf4'; errDiv.style.color = '#166534'; errDiv.textContent = 'Check your email for a confirmation link!'; }
-                    } else {
-                        window.closeAuthModal();
+    // Check auth state on load and update nav if logged in
+    (function() {
+        function tryInit() {
+            var sb = _getSB();
+            if (!sb) {
+                fetch('/api/config').then(function(r){return r.json();}).then(function(cfg){
+                    if(cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase){
+                        _authSB=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
+                        checkSession(_authSB);
                     }
-                }).catch(function(err) {
-                    if (errDiv) { errDiv.style.display = 'block'; errDiv.style.background = '#fef2f2'; errDiv.style.color = '#dc2626'; errDiv.textContent = err.message || 'Sign in failed'; }
-                }).finally(function() {
-                    if (submitBtn) submitBtn.disabled = false;
+                }).catch(function(){});
+                return;
+            }
+            checkSession(sb);
+        }
+        function checkSession(sb) {
+            sb.auth.getSession().then(function(res){
+                var user = res.data && res.data.session && res.data.session.user;
+                if (user) {
+                    var c = document.getElementById('auth-user-btn');
+                    if (c) c.innerHTML = '<button onclick="document.getElementById(\'auth-user-dropdown\').style.display=\'block\'" style="padding:0.4rem 0.9rem;border:1px solid rgba(255,255,255,0.3);border-radius:2rem;background:rgba(255,255,255,0.1);cursor:pointer;font-size:0.85rem;font-weight:600;color:#fff;">' + ((user.user_metadata&&user.user_metadata.full_name)||user.email||'Account').split(' ')[0] + '</button>';
+                }
+                sb.auth.onAuthStateChange(function(_,s){
+                    if (!s) { location.reload(); }
                 });
-            });
-        };
-
-        // Wire signout
-        var signoutBtn = document.getElementById('auth-signout-btn');
-        if (signoutBtn) signoutBtn.onclick = function() {
-            if (sb) sb.auth.signOut();
-            var dd = document.getElementById('auth-user-dropdown');
-            if (dd) dd.style.display = 'none';
-            renderNav(null);
-        };
-
-        // Init — show Sign in immediately, update when auth resolves
-        renderNav(null);
-        ensureSB(function(client) {
-            if (!client) return;
-            client.auth.getSession().then(function(res) {
-                session = res.data && res.data.session;
-                renderNav(session && session.user || null);
-                client.auth.onAuthStateChange(function(_, s) {
-                    session = s;
-                    renderNav(s && s.user || null);
-                    if (s) window.closeAuthModal();
-                });
-            });
-        });
+            }).catch(function(){});
+        }
+        tryInit();
     })();
     </script>
 </body>
