@@ -11,7 +11,15 @@ const markerData = new WeakMap();
 let weatherForecasts = [];
 let _itineraryInitStarted = false;
 
-const API_BASE_URL = "http://localhost:10000";
+// Collaboration state
+let _activeTripId = null;
+let _userRole = null;
+let _realtimeChannel = null;
+let _localChangeVersion = 0;
+let _saveDebounceTimer = null;
+
+const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:10000' : window.location.origin;
 
 window.addEventListener('DOMContentLoaded', () => {
   console.log('[DEBUG] DOMContentLoaded fired');
@@ -872,6 +880,7 @@ function handleDeleteActivity(e) {
     populateItineraryTable(itineraryData);
     displayMapAndMarkers(itineraryData);
     populateDaySelectors(itineraryData);
+    scheduleAutoSave();
 }
 
 
@@ -1824,32 +1833,54 @@ if (openBtn2) {
 // =====================================================================
 async function shareItinerary() {
     if (!itineraryData || itineraryData.length === 0) return;
-    const tripDetails = getTripDetailsFromStorage();
-    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-        ? 'http://localhost:10000' : window.location.origin;
+    if (!_authSession) { openAuthModal(); return; }
+    // Ensure trip is saved first so we have a trip ID
+    if (!_activeTripId) {
+        await saveTrip();
+        if (!_activeTripId) { showNotification('Please save your trip first.', 'error'); return; }
+    }
     try {
-        const resp = await fetch(`${baseUrl}/api/share`, {
+        const resp = await fetch(`${API_BASE_URL}/api/trips/${_activeTripId}/invite`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                itinerary: itineraryData,
-                destination: tripDetails?.destination,
-                departureDate: tripDetails?.departureDate,
-                arrivalDate: tripDetails?.arrivalDate,
-                preferences: tripDetails?.preferences,
-                tripStyle: tripDetails?.tripStyle
-            })
+            headers: { 'Content-Type': 'application/json', ...await getAuthHeader() }
         });
-        const { shareUrl } = await resp.json();
+        if (!resp.ok) throw new Error((await resp.json()).error || 'Failed');
+        const { inviteUrl } = await resp.json();
         const modal = document.getElementById('share-modal');
         const input = document.getElementById('share-url-input');
-        if (modal && input) {
-            input.value = shareUrl;
-            modal.style.display = 'flex';
-        }
+        if (modal && input) { input.value = inviteUrl; modal.style.display = 'flex'; }
+        // Load collaborator list into modal
+        loadCollaboratorList();
     } catch (err) {
-        alert('Could not generate share link: ' + err.message);
+        alert('Could not generate invite link: ' + err.message);
     }
+}
+
+async function loadCollaboratorList() {
+    if (!_activeTripId || _userRole !== 'owner') return;
+    const list = document.getElementById('collaborators-list');
+    if (!list) return;
+    try {
+        const resp = await fetch(`${API_BASE_URL}/api/trips/${_activeTripId}/collaborators`, {
+            headers: await getAuthHeader()
+        });
+        const collabs = await resp.json();
+        if (!collabs.length) { list.innerHTML = ''; return; }
+        list.innerHTML = `<p style="font-size:0.8rem;font-weight:600;color:#555;margin:0 0 0.5rem;">People with access</p>` +
+            collabs.map(c => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid #f0f0f0;font-size:0.85rem;">
+              <span>${c.invited_email || c.user_id || 'Invited user'}${!c.accepted_at ? ' <em style="color:#999;font-size:0.78rem;">(pending)</em>' : ''}</span>
+              <button onclick="removeCollaborator('${c.id}')" style="background:none;border:none;color:#e53e3e;cursor:pointer;font-size:0.8rem;">Remove</button>
+            </div>`).join('');
+    } catch { /* silent */ }
+}
+
+async function removeCollaborator(collabId) {
+    if (!_activeTripId) return;
+    await fetch(`${API_BASE_URL}/api/trips/${_activeTripId}/collaborators/${collabId}`, {
+        method: 'DELETE', headers: await getAuthHeader()
+    });
+    loadCollaboratorList();
 }
 
 function copyShareLink() {
@@ -1861,24 +1892,129 @@ function copyShareLink() {
     if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy'; }, 2000); }
 }
 
-// On load: check for ?share=ID in URL and pre-load that itinerary
-(async function checkSharedItinerary() {
-    const shareId = new URLSearchParams(window.location.search).get('share');
-    if (!shareId) return;
-    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-        ? 'http://localhost:10000' : window.location.origin;
-    try {
-        const resp = await fetch(`${baseUrl}/api/share/${shareId}`);
-        if (!resp.ok) return;
-        const data = await resp.json();
-        localStorage.setItem('tripDestination', data.destination || '');
-        localStorage.setItem('tripDepartureDate', data.departureDate || '');
-        localStorage.setItem('tripArrivalDate', data.arrivalDate || '');
-        localStorage.setItem('tripPreferences', JSON.stringify(data.preferences || []));
-        localStorage.setItem('tripStyle', data.tripStyle || 'balanced');
-        localStorage.setItem('sharedItinerary', JSON.stringify(data.itinerary));
-    } catch (err) {
-        console.warn('Could not load shared itinerary:', err);
+// =====================================================================
+// REALTIME COLLABORATION
+// =====================================================================
+function subscribeToTripRealtime(tripId) {
+    const sb = getSupabaseClient();
+    if (!sb || !tripId) return;
+    if (_realtimeChannel) { try { sb.removeChannel(_realtimeChannel); } catch(e) {} _realtimeChannel = null; }
+
+    _realtimeChannel = sb.channel(`trip-${tripId}`)
+        .on('presence', { event: 'sync' }, () => {
+            renderOnlineAvatars(_realtimeChannel.presenceState());
+        })
+        .on('presence', { event: 'join' }, ({ newPresences }) => {
+            showNotification(`${newPresences[0]?.name || 'Someone'} joined`);
+        })
+        .on('postgres_changes', {
+            event: 'UPDATE', schema: 'public', table: 'trips', filter: `id=eq.${tripId}`
+        }, (payload) => {
+            if (_localChangeVersion > 0) { _localChangeVersion--; return; }
+            const newItinerary = payload.new?.itinerary;
+            if (!newItinerary) return;
+            itineraryData = newItinerary;
+            renderItineraryCards(itineraryData);
+            populateItineraryTable(itineraryData);
+            displayMapAndMarkers(itineraryData);
+            populateDaySelectors(itineraryData);
+            showNotification('Itinerary updated by collaborator');
+        })
+        .subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                const user = _authSession?.user;
+                await _realtimeChannel.track({
+                    user_id: user?.id,
+                    name: user?.user_metadata?.full_name || user?.email || 'Collaborator',
+                    avatar_url: user?.user_metadata?.avatar_url || null
+                });
+            }
+        });
+}
+
+function renderOnlineAvatars(presenceState) {
+    const bar = document.getElementById('collab-presence-bar');
+    const container = document.getElementById('collab-avatars');
+    if (!bar || !container) return;
+    const others = Object.values(presenceState).flat()
+        .filter(p => p.user_id !== _authSession?.user?.id);
+    if (!others.length) { bar.style.display = 'none'; return; }
+    bar.style.display = 'flex';
+    container.innerHTML = others.map(p => {
+        const initials = (p.name || 'C').slice(0, 2).toUpperCase();
+        return `<div class="collab-avatar" data-name="${p.name || 'Collaborator'}">${
+            p.avatar_url ? `<img src="${p.avatar_url}" alt="${initials}">` : initials
+        }</div>`;
+    }).join('');
+}
+
+function renderCollaboratorBadge() {
+    const badge = document.getElementById('collab-role-badge');
+    if (!badge) return;
+    if (_userRole === 'editor') { badge.textContent = 'Editor'; badge.style.display = 'inline'; }
+    else { badge.style.display = 'none'; }
+}
+
+function scheduleAutoSave() {
+    if (!_activeTripId) return;
+    clearTimeout(_saveDebounceTimer);
+    _saveDebounceTimer = setTimeout(() => {
+        _localChangeVersion++;
+        saveTrip();
+    }, 1500);
+}
+
+// On load: check for ?share=, ?invite=, or ?trip= params
+(async function checkUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    const inviteToken = params.get('invite');
+    const tripId = params.get('trip');
+    const shareId = params.get('share');
+
+    if (inviteToken && tripId) {
+        // Wait for auth to initialize
+        await initAuth();
+        if (!_authSession) {
+            sessionStorage.setItem('pendingInviteToken', inviteToken);
+            openAuthModal();
+            return;
+        }
+        const resp = await fetch(`${API_BASE_URL}/api/trips/${tripId}/accept`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...await getAuthHeader() },
+            body: JSON.stringify({ token: inviteToken })
+        });
+        if (resp.ok) {
+            await loadTripById(tripId);
+        } else {
+            const err = await resp.json();
+            showNotification(err.error || 'Could not join trip', 'error');
+        }
+        return;
+    }
+
+    if (tripId && !inviteToken) {
+        await initAuth();
+        await loadTripById(tripId);
+        return;
+    }
+
+    if (shareId) {
+        // Existing read-only share flow
+        const baseUrl = API_BASE_URL;
+        try {
+            const resp = await fetch(`${baseUrl}/api/share/${shareId}`);
+            if (!resp.ok) return;
+            const data = await resp.json();
+            localStorage.setItem('tripDestination', data.destination || '');
+            localStorage.setItem('tripDepartureDate', data.departureDate || '');
+            localStorage.setItem('tripArrivalDate', data.arrivalDate || '');
+            localStorage.setItem('tripPreferences', JSON.stringify(data.preferences || []));
+            localStorage.setItem('tripStyle', data.tripStyle || 'balanced');
+            localStorage.setItem('sharedItinerary', JSON.stringify(data.itinerary));
+        } catch (err) {
+            console.warn('Could not load shared itinerary:', err);
+        }
     }
 })();
 
@@ -2160,6 +2296,7 @@ function initDragAndDrop() {
                     .map(card => dayItems.find(i => i.activity === card.getAttribute('data-activity') && i.time === card.getAttribute('data-time')))
                     .filter(Boolean);
                 itineraryData = [...otherItems, ...newOrder];
+                scheduleAutoSave();
             }
         });
     });
@@ -2173,8 +2310,8 @@ let _authSession = null;
 
 function getSupabaseClient() {
     if (_supabase) return _supabase;
-    const url = window.__SUPABASE_URL__;
-    const key = window.__SUPABASE_ANON_KEY__;
+    const url = window._SB_URL;
+    const key = window._SB_KEY;
     if (!url || !key || url.startsWith('__') || url === '') return null;
     _supabase = window.supabase.createClient(url, key);
     return _supabase;
@@ -2188,8 +2325,8 @@ async function initAuth() {
             const r = await fetch('/api/config');
             const cfg = await r.json();
             if (cfg.supabaseUrl && cfg.supabaseAnonKey) {
-                window.__SUPABASE_URL__ = cfg.supabaseUrl;
-                window.__SUPABASE_ANON_KEY__ = cfg.supabaseAnonKey;
+                window._SB_URL = cfg.supabaseUrl;
+                window._SB_KEY = cfg.supabaseAnonKey;
                 _supabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
                 sb = _supabase;
             }
@@ -2204,12 +2341,25 @@ async function initAuth() {
         _authSession = session;
         renderAuthNav(session?.user || null);
 
-        sb.auth.onAuthStateChange((_event, session) => {
+        sb.auth.onAuthStateChange(async (_event, session) => {
             _authSession = session;
             renderAuthNav(session?.user || null);
             if (session) {
                 const m = document.getElementById('auth-modal');
                 if (m) m.style.display = 'none';
+                // Resume a pending invite if user just signed in
+                const pendingToken = sessionStorage.getItem('pendingInviteToken');
+                const params = new URLSearchParams(window.location.search);
+                const tripId = params.get('trip');
+                if (pendingToken && tripId) {
+                    sessionStorage.removeItem('pendingInviteToken');
+                    const resp = await fetch(`${API_BASE_URL}/api/trips/${tripId}/accept`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', ...await getAuthHeader() },
+                        body: JSON.stringify({ token: pendingToken })
+                    });
+                    if (resp.ok) await loadTripById(tripId);
+                }
             }
         });
     } catch (e) {
@@ -2347,16 +2497,27 @@ async function getAuthHeader() {
 async function saveTrip() {
     const tripDetails = getTripDetailsFromStorage();
     if (!itineraryData?.length || !tripDetails) return;
-    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-        ? 'http://localhost:10000' : window.location.origin;
+    const headers = { 'Content-Type': 'application/json', ...await getAuthHeader() };
     try {
-        const headers = { 'Content-Type': 'application/json', ...await getAuthHeader() };
-        const resp = await fetch(`${baseUrl}/api/trips`, {
+        if (_activeTripId) {
+            const resp = await fetch(`${API_BASE_URL}/api/trips/${_activeTripId}`, {
+                method: 'PUT', headers,
+                body: JSON.stringify({ ...tripDetails, itinerary: itineraryData, name: tripDetails.destination })
+            });
+            if (!resp.ok) throw new Error('Save failed');
+            showNotification('Trip saved!');
+            return;
+        }
+        const resp = await fetch(`${API_BASE_URL}/api/trips`, {
             method: 'POST', headers,
             body: JSON.stringify({ ...tripDetails, itinerary: itineraryData, name: tripDetails.destination })
         });
         if (!resp.ok) throw new Error('Save failed');
+        const data = await resp.json();
+        _activeTripId = data.id;
+        _userRole = 'owner';
         showNotification('Trip saved to your account!');
+        subscribeToTripRealtime(_activeTripId);
     } catch (e) {
         alert('Could not save trip: ' + e.message);
     }
@@ -2369,8 +2530,7 @@ async function openMyTrips() {
     modal.style.display = 'flex';
     list.innerHTML = '<p style="color:#999;">Loading...</p>';
 
-    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-        ? 'http://localhost:10000' : window.location.origin;
+    const baseUrl = API_BASE_URL;
     try {
         const headers = await getAuthHeader();
         const resp = await fetch(`${baseUrl}/api/trips`, { headers });
@@ -2391,30 +2551,35 @@ async function openMyTrips() {
 }
 
 async function loadSavedTrip(id) {
-    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-        ? 'http://localhost:10000' : window.location.origin;
+    await loadTripById(id);
+    document.getElementById('my-trips-modal').style.display = 'none';
+}
+
+async function loadTripById(id) {
     const headers = await getAuthHeader();
-    const resp = await fetch(`${baseUrl}/api/trips/${id}`, { headers });
-    const trip = await resp.json();
-    localStorage.setItem('tripDestination', trip.destination);
-    localStorage.setItem('tripDepartureDate', trip.departure_date);
-    localStorage.setItem('tripArrivalDate', trip.arrival_date);
+    const resp = await fetch(`${API_BASE_URL}/api/trips/${id}/access`, { headers });
+    if (!resp.ok) { showNotification('Could not load trip', 'error'); return; }
+    const { role, trip } = await resp.json();
+    _activeTripId = id;
+    _userRole = role;
+    localStorage.setItem('tripDestination', trip.destination || '');
+    localStorage.setItem('tripDepartureDate', trip.departure_date || '');
+    localStorage.setItem('tripArrivalDate', trip.arrival_date || '');
     localStorage.setItem('tripPreferences', JSON.stringify(trip.preferences || []));
     localStorage.setItem('tripStyle', trip.trip_style || 'balanced');
-    document.getElementById('my-trips-modal').style.display = 'none';
-    itineraryData = trip.itinerary;
-    const tripDetails = getTripDetailsFromStorage();
+    itineraryData = trip.itinerary || [];
     renderItineraryCards(itineraryData);
     populateItineraryTable(itineraryData);
     displayMapAndMarkers(itineraryData);
+    populateDaySelectors(itineraryData);
     showNotification(`Loaded: ${trip.name || trip.destination}`);
+    subscribeToTripRealtime(id);
+    renderCollaboratorBadge();
 }
 
 async function deleteSavedTrip(id, btn) {
-    const baseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-        ? 'http://localhost:10000' : window.location.origin;
     const headers = await getAuthHeader();
-    await fetch(`${baseUrl}/api/trips/${id}`, { method: 'DELETE', headers });
+    await fetch(`${API_BASE_URL}/api/trips/${id}`, { method: 'DELETE', headers });
     btn.closest('.saved-trip-row').remove();
 }
 

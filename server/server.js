@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
+import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -40,6 +41,19 @@ async function requireAuth(req, res, next) {
     }
 }
 
+
+// Middleware — checks owner OR accepted collaborator, attaches req.tripRole
+async function requireTripAccess(req, res, next) {
+    if (!supabase) return res.status(503).json({ error: 'Database not configured' });
+    const tripId = req.params.id;
+    const { data: trip } = await supabase.from('trips').select('id, user_id').eq('id', tripId).single();
+    if (!trip) return res.status(404).json({ error: 'Trip not found' });
+    if (trip.user_id === req.userId) { req.tripRole = 'owner'; return next(); }
+    const { data: collab } = await supabase.from('trip_collaborators')
+        .select('role, accepted_at').eq('trip_id', tripId).eq('user_id', req.userId).single();
+    if (collab?.accepted_at) { req.tripRole = collab.role; return next(); }
+    return res.status(403).json({ error: 'Access denied' });
+}
 
 if (!process.env.OPENAI_API_KEY) {
     console.error("OpenAI API key is missing. Please check your .env file.");
@@ -761,6 +775,84 @@ app.delete('/api/trips/:id', requireAuth, async (req, res) => {
     if (!supabase) return res.status(503).json({ error: 'Database not configured' });
     const { error } = await supabase.from('trips')
         .delete().eq('id', req.params.id).eq('user_id', req.userId);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
+});
+
+// PUT /api/trips/:id — update itinerary (owner or accepted editor)
+app.put('/api/trips/:id', requireAuth, requireTripAccess, async (req, res) => {
+    const { itinerary, name, destination, departureDate, arrivalDate, preferences, tripStyle } = req.body;
+    const payload = { itinerary, updated_at: new Date().toISOString() };
+    if (req.tripRole === 'owner') Object.assign(payload, {
+        name, destination, departure_date: departureDate,
+        arrival_date: arrivalDate, preferences, trip_style: tripStyle
+    });
+    const { data, error } = await supabase.from('trips').update(payload)
+        .eq('id', req.params.id).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+// GET /api/trips/:id/access — returns role + full trip for owner or accepted collaborator
+app.get('/api/trips/:id/access', requireAuth, requireTripAccess, async (req, res) => {
+    const { data: trip, error } = await supabase.from('trips').select('*').eq('id', req.params.id).single();
+    if (error) return res.status(404).json({ error: 'Trip not found' });
+    res.json({ role: req.tripRole, trip });
+});
+
+// POST /api/trips/:id/invite — create a collaborator invite link (owner only)
+app.post('/api/trips/:id/invite', requireAuth, async (req, res) => {
+    if (!supabase) return res.status(503).json({ error: 'Database not configured' });
+    const { data: trip } = await supabase.from('trips').select('id').eq('id', req.params.id).eq('user_id', req.userId).single();
+    if (!trip) return res.status(403).json({ error: 'Not your trip' });
+    const token = crypto.randomBytes(24).toString('hex');
+    const { data, error } = await supabase.from('trip_collaborators').insert({
+        trip_id: req.params.id, invite_token: token,
+        invited_email: req.body.invited_email || null, role: 'editor'
+    }).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    const inviteUrl = `${req.protocol}://${req.get('host')}/second-page.html?invite=${token}&trip=${req.params.id}`;
+    res.json({ inviteUrl, collaboratorId: data.id });
+});
+
+// POST /api/trips/:id/accept — claim invite token and become a collaborator
+app.post('/api/trips/:id/accept', requireAuth, async (req, res) => {
+    if (!supabase) return res.status(503).json({ error: 'Database not configured' });
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ error: 'Token required' });
+    const { data: collab, error } = await supabase.from('trip_collaborators')
+        .select('*').eq('trip_id', req.params.id).eq('invite_token', token).is('accepted_at', null).single();
+    if (error || !collab) return res.status(404).json({ error: 'Invalid or already used invite' });
+    const { data: trip } = await supabase.from('trips').select('user_id').eq('id', req.params.id).single();
+    if (trip?.user_id === req.userId) return res.status(400).json({ error: 'You are already the owner' });
+    // Check if this user already accepted a different token for this trip
+    const { data: existing } = await supabase.from('trip_collaborators')
+        .select('id').eq('trip_id', req.params.id).eq('user_id', req.userId).not('accepted_at', 'is', null).single();
+    if (existing) return res.json({ success: true, tripId: req.params.id, role: collab.role, alreadyMember: true });
+    const { error: updateErr } = await supabase.from('trip_collaborators')
+        .update({ user_id: req.userId, accepted_at: new Date().toISOString() }).eq('id', collab.id);
+    if (updateErr) return res.status(500).json({ error: updateErr.message });
+    res.json({ success: true, tripId: req.params.id, role: collab.role });
+});
+
+// GET /api/trips/:id/collaborators — list collaborators (owner only)
+app.get('/api/trips/:id/collaborators', requireAuth, async (req, res) => {
+    if (!supabase) return res.status(503).json({ error: 'Database not configured' });
+    const { data: trip } = await supabase.from('trips').select('user_id').eq('id', req.params.id).single();
+    if (!trip || trip.user_id !== req.userId) return res.status(403).json({ error: 'Not your trip' });
+    const { data, error } = await supabase.from('trip_collaborators')
+        .select('id, user_id, invited_email, role, accepted_at, created_at')
+        .eq('trip_id', req.params.id).order('created_at', { ascending: true });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+// DELETE /api/trips/:id/collaborators/:collabId — remove a collaborator (owner only)
+app.delete('/api/trips/:id/collaborators/:collabId', requireAuth, async (req, res) => {
+    if (!supabase) return res.status(503).json({ error: 'Database not configured' });
+    const { data: trip } = await supabase.from('trips').select('user_id').eq('id', req.params.id).single();
+    if (!trip || trip.user_id !== req.userId) return res.status(403).json({ error: 'Not your trip' });
+    const { error } = await supabase.from('trip_collaborators').delete().eq('id', req.params.collabId).eq('trip_id', req.params.id);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ success: true });
 });

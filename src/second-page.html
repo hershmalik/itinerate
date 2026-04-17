@@ -12,8 +12,8 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <script>
-      window.__SUPABASE_URL__ = '__SUPABASE_URL__';
-      window.__SUPABASE_ANON_KEY__ = '__SUPABASE_ANON_KEY__';
+      window._SB_URL = '__SUPABASE_URL__';
+      window._SB_KEY = '__SUPABASE_ANON_KEY__';
     </script>
     <style>
         /* Professional Design System - Matching Page 1 */
@@ -1235,10 +1235,15 @@
 
                 <!-- Action bar: Share + Export -->
                 <div class="itinerary-action-bar">
-                  <button id="share-btn" class="action-bar-btn" title="Share itinerary">🔗 Share</button>
+                  <button id="share-btn" class="action-bar-btn" title="Invite collaborator">🔗 Share</button>
                   <button id="export-pdf-btn" class="action-bar-btn" title="Export to PDF">🖨️ Print / PDF</button>
                   <button id="export-cal-btn" class="action-bar-btn" title="Export to calendar">📅 Add to Calendar</button>
                   <button id="packing-list-btn" class="action-bar-btn" title="Generate packing list">🧳 Packing List</button>
+                  <div id="collab-presence-bar" style="display:none;align-items:center;gap:0.5rem;margin-left:auto;">
+                    <span style="font-size:0.75rem;color:#717171;">Online:</span>
+                    <div id="collab-avatars" style="display:flex;"></div>
+                  </div>
+                  <span id="collab-role-badge" style="display:none;font-size:0.72rem;padding:2px 8px;border-radius:2rem;background:#e0edff;color:#2563eb;font-weight:600;margin-left:0.5rem;"></span>
                 </div>
 
                 <!-- Flights Panel -->
@@ -1555,16 +1560,17 @@
             </div>
         </div>
 
-        <!-- Share Modal -->
+        <!-- Share / Invite Modal -->
         <div id="share-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(34,34,34,0.4); z-index:2000; align-items:center; justify-content:center;">
-          <div style="background:#fff; border-radius:1rem; padding:2rem; max-width:480px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18); position:relative;">
+          <div style="background:#fff; border-radius:1rem; padding:2rem; max-width:520px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18); position:relative;">
             <button id="share-modal-close" style="position:absolute; top:1rem; right:1rem; background:none; border:none; font-size:1.4rem; cursor:pointer; color:#717171;">✕</button>
-            <h3 style="margin:0 0 0.5rem; font-size:1.2rem; font-weight:700;">Share Your Itinerary</h3>
-            <p style="color:#717171; margin:0 0 1rem; font-size:0.9rem;">Anyone with this link can view your itinerary.</p>
-            <div style="display:flex; gap:0.5rem;">
-              <input id="share-url-input" type="text" readonly style="flex:1; padding:0.6rem 0.8rem; border:1px solid #e0e0e0; border-radius:0.5rem; font-size:0.9rem; background:#f8f9fa;" />
+            <h3 style="margin:0 0 0.25rem; font-size:1.15rem; font-weight:700;">Invite a Collaborator</h3>
+            <p style="color:#717171; margin:0 0 1rem; font-size:0.85rem;">Anyone with this link can view and edit your itinerary after signing in.</p>
+            <div style="display:flex; gap:0.5rem; margin-bottom:1.25rem;">
+              <input id="share-url-input" type="text" readonly style="flex:1; padding:0.6rem 0.8rem; border:1px solid #e0e0e0; border-radius:0.5rem; font-size:0.82rem; background:#f8f9fa;" />
               <button id="copy-link-btn" style="padding:0.6rem 1.2rem; background:#2563eb; color:#fff; border:none; border-radius:0.5rem; cursor:pointer; font-weight:600; white-space:nowrap;">Copy</button>
             </div>
+            <div id="collaborators-list"></div>
           </div>
         </div>
 
@@ -1704,6 +1710,13 @@
           .neighborhood-tip { font-size:0.78rem; color:#444; border-top:1px solid #f0f0f0; padding-top:0.4rem; margin-top:0.1rem; line-height:1.4; }
           .neighborhood-hotels-link { font-size:0.8rem; color:#2563eb; text-decoration:none; font-weight:600; margin-top:auto; padding-top:0.3rem; }
           .neighborhood-hotels-link:hover { text-decoration:underline; }
+
+          /* Collaborator avatars */
+          .collab-avatar { width:28px;height:28px;border-radius:50%;border:2px solid #fff;background:#2563eb;color:#fff;font-size:0.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;position:relative;cursor:default;margin-left:-6px;flex-shrink:0; }
+          .collab-avatar:first-child { margin-left:0; }
+          .collab-avatar img { width:100%;height:100%;border-radius:50%;object-fit:cover; }
+          .collab-avatar::after { content:attr(data-name);position:absolute;bottom:110%;left:50%;transform:translateX(-50%);background:#222;color:#fff;font-size:0.7rem;padding:2px 6px;border-radius:4px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity 0.15s; }
+          .collab-avatar:hover::after { opacity:1; }
 
           /* Print styles - only show itinerary cards */
           @media print {
