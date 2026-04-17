@@ -1,4 +1,4 @@
-const CACHE = 'aitinerate-v7';
+const CACHE = 'aitinerate-v8';
 const STATIC = [
   '/',
   '/styles.css',

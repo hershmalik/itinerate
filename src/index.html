@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AItinerate - Plan Your Perfect Trip</title>
-    <link rel="stylesheet" href="styles.css?v=1734637800">
+    <link rel="stylesheet" href="styles.css?v=8">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
     <link rel="manifest" href="/manifest.json">
@@ -29,7 +29,7 @@
             </div>
             <div class="nav-menu">
                 <div class="nav-actions">
-                    <div id="auth-user-btn"><button class="nav-btn primary" onclick="document.getElementById('auth-modal').style.display='flex'">Sign in</button></div>
+                    <div id="auth-user-btn"><button class="nav-btn primary" data-auth-action="open">Sign in</button></div>
                 </div>
             </div>
         </div>
@@ -376,29 +376,29 @@
     </section>
 
     <!-- Auth Modal -->
-    <div id="auth-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(34,34,34,0.5); z-index:3000; align-items:center; justify-content:center; padding:1rem;">
+    <div id="auth-modal" data-auth-action="backdrop" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(34,34,34,0.5); z-index:3000; align-items:center; justify-content:center; padding:1rem;">
       <div style="background:#fff; border-radius:1.25rem; padding:2rem; max-width:420px; width:100%; box-shadow:0 12px 40px rgba(0,0,0,0.18); position:relative;">
-        <button id="auth-modal-close" onclick="document.getElementById('auth-modal').style.display='none'" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#717171;">✕</button>
+        <button type="button" id="auth-modal-close" data-auth-action="close" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#717171;">✕</button>
         <div style="font-size:2rem;text-align:center;margin-bottom:0.5rem;">✈️</div>
         <h2 style="font-size:1.3rem;font-weight:700;text-align:center;margin:0 0 0.4rem;color:#222;">Sign in to AItinerate</h2>
         <p style="font-size:0.88rem;color:#717171;text-align:center;margin:0 0 1.5rem;line-height:1.5;">Save trips, collaborate with others, and access your itineraries anywhere.</p>
-        <button id="auth-google-btn" onclick="googleSignIn()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:0.65rem;padding:0.7rem 1rem;border:1.5px solid #e0e0e0;border-radius:0.6rem;background:#fff;font-size:0.92rem;font-weight:600;cursor:pointer;margin-bottom:0.5rem;">
-          <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+        <button type="button" id="auth-google-btn" data-auth-action="google" style="width:100%;display:flex;align-items:center;justify-content:center;gap:0.65rem;padding:0.7rem 1rem;border:1.5px solid #e0e0e0;border-radius:0.6rem;background:#fff;font-size:0.92rem;font-weight:600;cursor:pointer;margin-bottom:0.5rem;">
+          <svg width="18" height="18" viewBox="0 0 18 18" style="pointer-events:none;"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
           Continue with Google
         </button>
         <div style="display:flex;align-items:center;gap:0.75rem;margin:1rem 0;color:#bbb;font-size:0.82rem;">
           <div style="flex:1;height:1px;background:#e0e0e0;"></div><span>or</span><div style="flex:1;height:1px;background:#e0e0e0;"></div>
         </div>
         <div style="display:flex;border-bottom:2px solid #e0e0e0;margin-bottom:1rem;">
-          <button class="auth-tab-btn active" data-tab="signin" style="flex:1;background:none;border:none;border-bottom:2px solid #2563eb;margin-bottom:-2px;padding:0.5rem;font-size:0.9rem;font-weight:600;cursor:pointer;color:#2563eb;">Sign In</button>
-          <button class="auth-tab-btn" data-tab="signup" style="flex:1;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;padding:0.5rem;font-size:0.9rem;font-weight:600;cursor:pointer;color:#717171;">Create Account</button>
+          <button type="button" class="auth-tab-btn active" data-auth-action="tab" data-tab="signin" style="flex:1;background:none;border:none;border-bottom:2px solid #2563eb;margin-bottom:-2px;padding:0.5rem;font-size:0.9rem;font-weight:600;cursor:pointer;color:#2563eb;">Sign In</button>
+          <button type="button" class="auth-tab-btn" data-auth-action="tab" data-tab="signup" style="flex:1;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;padding:0.5rem;font-size:0.9rem;font-weight:600;cursor:pointer;color:#717171;">Create Account</button>
         </div>
         <form id="auth-email-form">
           <div id="auth-signup-name-row" style="display:none;"><input type="text" id="auth-name" placeholder="Your name" style="width:100%;padding:0.65rem 0.9rem;border:1.5px solid #e0e0e0;border-radius:0.6rem;font-size:0.92rem;margin-bottom:0.7rem;box-sizing:border-box;" /></div>
           <input type="email" id="auth-email" placeholder="Email address" required style="width:100%;padding:0.65rem 0.9rem;border:1.5px solid #e0e0e0;border-radius:0.6rem;font-size:0.92rem;margin-bottom:0.7rem;box-sizing:border-box;" />
           <input type="password" id="auth-password" placeholder="Password" required style="width:100%;padding:0.65rem 0.9rem;border:1.5px solid #e0e0e0;border-radius:0.6rem;font-size:0.92rem;margin-bottom:0.7rem;box-sizing:border-box;" />
           <div id="auth-error" style="display:none;background:#fef2f2;color:#dc2626;padding:0.5rem 0.75rem;border-radius:0.5rem;font-size:0.85rem;margin-bottom:0.7rem;"></div>
-          <button type="button" id="auth-submit-btn" onclick="authSignIn()" style="width:100%;padding:0.75rem;background:#2563eb;color:#fff;border:none;border-radius:0.6rem;font-size:0.95rem;font-weight:700;cursor:pointer;">Sign In</button>
+          <button type="button" id="auth-submit-btn" data-auth-action="submit" style="width:100%;padding:0.75rem;background:#2563eb;color:#fff;border:none;border-radius:0.6rem;font-size:0.95rem;font-weight:700;cursor:pointer;">Sign In</button>
         </form>
       </div>
     </div>
@@ -417,91 +417,169 @@
       <button id="auth-signout-btn" style="width:100%;padding:0.5rem;background:none;border:1px solid #e0e0e0;border-radius:0.5rem;cursor:pointer;font-size:0.85rem;color:#555;font-weight:600;">Sign out</button>
     </div>
 
-    <script src="app.js?v=7"></script>
-    <script src="index.js?v=7"></script>
+    <script src="app.js?v=8"></script>
+    <script src="index.js?v=8"></script>
     <script>
-    // Global auth functions — called directly from inline onclick attributes in HTML
-    var _authSB = null;
-
-    function _getSB() {
-        if (_authSB) return _authSB;
-        try {
-            var url = window.__SUPABASE_URL__, key = window.__SUPABASE_ANON_KEY__;
-            if (url && !url.startsWith('__') && url !== '' && key && window.supabase) {
-                _authSB = window.supabase.createClient(url, key);
-                return _authSB;
-            }
-        } catch(e) {}
-        return null;
-    }
-
-    function googleSignIn() {
-        var sb = _getSB();
-        if (sb) {
-            sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
-        } else {
-            fetch('/api/config').then(function(r){ return r.json(); }).then(function(cfg){
-                if (cfg.supabaseUrl && cfg.supabaseAnonKey && window.supabase) {
-                    _authSB = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
-                    _authSB.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
-                } else {
-                    alert('Unable to connect to auth service. Please try again.');
-                }
-            }).catch(function(){ alert('Unable to connect. Please try again.'); });
-        }
-    }
-
-    function authSignIn() {
-        var email = document.getElementById('auth-email').value.trim();
-        var password = document.getElementById('auth-password').value;
-        var errDiv = document.getElementById('auth-error');
-        var btn = document.getElementById('auth-submit-btn');
-        if (!email || !password) { if(errDiv){errDiv.style.display='block';errDiv.textContent='Please enter email and password.';} return; }
-        if(errDiv) errDiv.style.display='none';
-        if(btn) btn.disabled = true;
-        function doAuth(sb) {
-            if (!sb) { if(errDiv){errDiv.style.display='block';errDiv.textContent='Auth not available.';} if(btn)btn.disabled=false; return; }
-            sb.auth.signInWithPassword({ email: email, password: password }).then(function(r){
-                if (r.error) { if(errDiv){errDiv.style.display='block';errDiv.style.background='#fef2f2';errDiv.style.color='#dc2626';errDiv.textContent=r.error.message;} }
-                else { document.getElementById('auth-modal').style.display='none'; location.reload(); }
-            }).catch(function(e){ if(errDiv){errDiv.style.display='block';errDiv.textContent=e.message||'Sign in failed';} }).finally(function(){ if(btn)btn.disabled=false; });
-        }
-        var sb = _getSB();
-        if (sb) { doAuth(sb); return; }
-        fetch('/api/config').then(function(r){return r.json();}).then(function(cfg){
-            if(cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase){_authSB=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);}
-            doAuth(_authSB);
-        }).catch(function(){ if(errDiv){errDiv.style.display='block';errDiv.textContent='Connection error.';} if(btn)btn.disabled=false; });
-    }
-
-    // Check auth state on load and update nav if logged in
     (function() {
-        function tryInit() {
-            var sb = _getSB();
-            if (!sb) {
-                fetch('/api/config').then(function(r){return r.json();}).then(function(cfg){
-                    if(cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase){
-                        _authSB=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
-                        checkSession(_authSB);
-                    }
-                }).catch(function(){});
-                return;
+        var _sb = null;
+        var _sbReady = false;
+        var _currentTab = 'signin';
+
+        function getModal() { return document.getElementById('auth-modal'); }
+        function openModal() { var m = getModal(); if (m) m.style.display = 'flex'; }
+        function closeModal() { var m = getModal(); if (m) m.style.display = 'none'; }
+
+        function initSB(url, key) {
+            if (_sb || !url || !key || !window.supabase) return _sb;
+            try { _sb = window.supabase.createClient(url, key); } catch(e) {}
+            return _sb;
+        }
+
+        function getSBSync() {
+            if (_sb) return _sb;
+            var url = window.__SUPABASE_URL__, key = window.__SUPABASE_ANON_KEY__;
+            if (url && typeof url === 'string' && url.indexOf('__') !== 0) {
+                return initSB(url, key);
             }
-            checkSession(sb);
+            return null;
         }
-        function checkSession(sb) {
-            sb.auth.getSession().then(function(res){
-                var user = res.data && res.data.session && res.data.session.user;
-                if (user) {
-                    var c = document.getElementById('auth-user-btn');
-                    if (c) c.innerHTML = '<button onclick="document.getElementById(\'auth-user-dropdown\').style.display=\'block\'" style="padding:0.4rem 0.9rem;border:1px solid rgba(255,255,255,0.3);border-radius:2rem;background:rgba(255,255,255,0.1);cursor:pointer;font-size:0.85rem;font-weight:600;color:#fff;">' + ((user.user_metadata&&user.user_metadata.full_name)||user.email||'Account').split(' ')[0] + '</button>';
+
+        function getSB(callback) {
+            var sb = getSBSync();
+            if (sb) { callback(sb); return; }
+            fetch('/api/config').then(function(r){return r.json();}).then(function(cfg){
+                callback(initSB(cfg.supabaseUrl, cfg.supabaseAnonKey));
+            }).catch(function(){ callback(null); });
+        }
+
+        function showError(msg, isSuccess) {
+            var err = document.getElementById('auth-error');
+            if (!err) return;
+            err.style.display = 'block';
+            err.style.background = isSuccess ? '#f0fdf4' : '#fef2f2';
+            err.style.color = isSuccess ? '#166534' : '#dc2626';
+            err.textContent = msg;
+        }
+
+        function switchTab(tab) {
+            _currentTab = tab;
+            var tabs = document.querySelectorAll('.auth-tab-btn');
+            for (var i = 0; i < tabs.length; i++) {
+                var t = tabs[i];
+                var active = t.getAttribute('data-tab') === tab;
+                t.classList.toggle('active', active);
+                t.style.borderBottomColor = active ? '#2563eb' : 'transparent';
+                t.style.color = active ? '#2563eb' : '#717171';
+            }
+            var nameRow = document.getElementById('auth-signup-name-row');
+            if (nameRow) nameRow.style.display = tab === 'signup' ? 'block' : 'none';
+            var submitBtn = document.getElementById('auth-submit-btn');
+            if (submitBtn) submitBtn.textContent = tab === 'signup' ? 'Create Account' : 'Sign In';
+        }
+
+        function doGoogle() {
+            getSB(function(sb) {
+                if (!sb) { showError('Auth service unavailable. Please try again.'); return; }
+                sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
+            });
+        }
+
+        function doSubmit() {
+            var email = (document.getElementById('auth-email').value || '').trim();
+            var password = document.getElementById('auth-password').value || '';
+            var btn = document.getElementById('auth-submit-btn');
+            if (!email || !password) { showError('Please enter email and password.'); return; }
+            var errDiv = document.getElementById('auth-error'); if (errDiv) errDiv.style.display = 'none';
+            if (btn) btn.disabled = true;
+            getSB(function(sb) {
+                if (!sb) { showError('Auth service unavailable.'); if (btn) btn.disabled = false; return; }
+                var action;
+                if (_currentTab === 'signup') {
+                    var name = (document.getElementById('auth-name') && document.getElementById('auth-name').value || '').trim();
+                    action = sb.auth.signUp({ email: email, password: password, options: { data: { full_name: name } } });
+                } else {
+                    action = sb.auth.signInWithPassword({ email: email, password: password });
                 }
-                sb.auth.onAuthStateChange(function(_,s){
-                    if (!s) { location.reload(); }
-                });
-            }).catch(function(){});
+                action.then(function(r){
+                    if (r.error) { showError(r.error.message); return; }
+                    if (_currentTab === 'signup' && r.data && r.data.user && !r.data.session) {
+                        showError('Check your email for a confirmation link!', true);
+                        return;
+                    }
+                    closeModal(); location.reload();
+                }).catch(function(e){ showError(e.message || 'Sign in failed.'); })
+                .then(function(){ if (btn) btn.disabled = false; });
+            });
         }
-        tryInit();
+
+        // Single document-level click delegation — immune to DOM timing issues
+        document.addEventListener('click', function(e) {
+            var el = e.target;
+            while (el && el !== document) {
+                var action = el.getAttribute && el.getAttribute('data-auth-action');
+                if (action) {
+                    if (action === 'open') { openModal(); return; }
+                    if (action === 'close') { closeModal(); return; }
+                    if (action === 'backdrop') {
+                        if (e.target === getModal()) closeModal();
+                        return;
+                    }
+                    if (action === 'google') { doGoogle(); return; }
+                    if (action === 'submit') { doSubmit(); return; }
+                    if (action === 'tab') { switchTab(el.getAttribute('data-tab') || 'signin'); return; }
+                    if (action === 'dropdown') {
+                        var dd = document.getElementById('auth-user-dropdown');
+                        if (dd) dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+                        return;
+                    }
+                    if (action === 'dropdown-close') {
+                        var dd2 = document.getElementById('auth-user-dropdown');
+                        if (dd2) dd2.style.display = 'none';
+                        return;
+                    }
+                    if (action === 'signout') {
+                        getSB(function(sb){ if (sb) sb.auth.signOut().then(function(){ location.reload(); }); });
+                        return;
+                    }
+                }
+                el = el.parentNode;
+            }
+        }, true);
+
+        // Enter key in email form
+        document.addEventListener('keydown', function(e) {
+            if (e.key !== 'Enter') return;
+            var form = document.getElementById('auth-email-form');
+            if (!form || !form.contains(e.target)) return;
+            e.preventDefault();
+            doSubmit();
+        });
+
+        // Check session and update nav
+        function checkSession() {
+            getSB(function(sb) {
+                if (!sb) return;
+                sb.auth.getSession().then(function(res){
+                    var user = res.data && res.data.session && res.data.session.user;
+                    if (user) {
+                        var c = document.getElementById('auth-user-btn');
+                        var name = ((user.user_metadata && user.user_metadata.full_name) || user.email || 'Account').split(' ')[0];
+                        if (c) c.innerHTML = '<button type="button" data-auth-action="dropdown" style="padding:0.4rem 0.9rem;border:1px solid rgba(255,255,255,0.3);border-radius:2rem;background:rgba(255,255,255,0.1);cursor:pointer;font-size:0.85rem;font-weight:600;color:#fff;">' + name + '</button>';
+                        var dname = document.getElementById('auth-dropdown-name'); if (dname) dname.textContent = name;
+                        var dmail = document.getElementById('auth-dropdown-email'); if (dmail) dmail.textContent = user.email || '';
+                    }
+                    sb.auth.onAuthStateChange(function(_, s){ if (!s) location.reload(); });
+                }).catch(function(){});
+            });
+        }
+
+        // Wire dropdown close + signout via data attributes
+        var closeBtn = document.getElementById('auth-dropdown-close');
+        if (closeBtn) closeBtn.setAttribute('data-auth-action', 'dropdown-close');
+        var signoutBtn = document.getElementById('auth-signout-btn');
+        if (signoutBtn) signoutBtn.setAttribute('data-auth-action', 'signout');
+
+        checkSession();
     })();
     </script>
 </body>
