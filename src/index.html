@@ -12,8 +12,8 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <script>
-      window.__SUPABASE_URL__ = '__SUPABASE_URL__';
-      window.__SUPABASE_ANON_KEY__ = '__SUPABASE_ANON_KEY__';
+      window._SB_URL = '__SUPABASE_URL__';
+      window._SB_KEY = '__SUPABASE_ANON_KEY__';
     </script>
     <script src="https://maps.googleapis.com/maps/api/js?key=__GOOGLE_MAPS_API_KEY__&libraries=places&callback=initMap" async defer></script>
 </head>
@@ -437,7 +437,7 @@
 
         function getSBSync() {
             if (_sb) return _sb;
-            var url = window.__SUPABASE_URL__, key = window.__SUPABASE_ANON_KEY__;
+            var url = window._SB_URL, key = window._SB_KEY;
             if (url && typeof url === 'string' && url.indexOf('__') !== 0) {
                 return initSB(url, key);
             }
