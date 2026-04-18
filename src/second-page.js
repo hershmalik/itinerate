@@ -2317,7 +2317,10 @@ function getSupabaseClient() {
     return _supabase;
 }
 
+let _authInitialized = false;
 async function initAuth() {
+    if (_authInitialized) return;
+    _authInitialized = true;
     // Try inline config first; fall back to /api/config (bypasses any caching issues)
     let sb = getSupabaseClient();
     console.log('[Auth] getSupabaseClient =>', sb ? 'ok' : 'null', '| _SB_URL =>', window._SB_URL?.slice(0,30));
