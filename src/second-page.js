@@ -2445,7 +2445,7 @@ function setupAuthModal() {
     document.getElementById('auth-google-btn')?.addEventListener('click', async () => {
         const sb = getSupabaseClient();
         if (!sb) { alert('Auth not configured'); return; }
-        await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } });
+        await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href, queryParams: { prompt: 'select_account' } } });
     });
 
     // Email form

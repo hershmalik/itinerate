@@ -480,7 +480,7 @@
         function doGoogle() {
             getSB(function(sb) {
                 if (!sb) { showError('Auth service unavailable. Please try again.'); return; }
-                sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
+                sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin, queryParams: { prompt: 'select_account' } } });
             });
         }
 
