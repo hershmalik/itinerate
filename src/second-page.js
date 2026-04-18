@@ -2337,11 +2337,8 @@ async function initAuth() {
         return;
     }
     try {
-        const { data: { session } } = await sb.auth.getSession();
-        _authSession = session;
-        renderAuthNav(session?.user || null);
-
-        sb.auth.onAuthStateChange(async (_event, session) => {
+        // Set up listener FIRST so SIGNED_IN after OAuth redirect is never missed
+        sb.auth.onAuthStateChange(async (event, session) => {
             _authSession = session;
             renderAuthNav(session?.user || null);
             if (session) {
@@ -2362,6 +2359,10 @@ async function initAuth() {
                 }
             }
         });
+        // Also check existing session (covers page loads where no OAuth event fires)
+        const { data: { session } } = await sb.auth.getSession();
+        _authSession = session;
+        renderAuthNav(session?.user || null);
     } catch (e) {
         console.warn('[Auth] Init error:', e.message);
         renderAuthNav(null);
