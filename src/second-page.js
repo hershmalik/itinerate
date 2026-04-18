@@ -2320,25 +2320,29 @@ function getSupabaseClient() {
 async function initAuth() {
     // Try inline config first; fall back to /api/config (bypasses any caching issues)
     let sb = getSupabaseClient();
+    console.log('[Auth] getSupabaseClient =>', sb ? 'ok' : 'null', '| _SB_URL =>', window._SB_URL?.slice(0,30));
     if (!sb) {
         try {
             const r = await fetch('/api/config');
             const cfg = await r.json();
+            console.log('[Auth] /api/config =>', cfg.supabaseUrl ? 'ok' : 'empty');
             if (cfg.supabaseUrl && cfg.supabaseAnonKey) {
                 window._SB_URL = cfg.supabaseUrl;
                 window._SB_KEY = cfg.supabaseAnonKey;
                 _supabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
                 sb = _supabase;
             }
-        } catch (e) { /* ignore */ }
+        } catch (e) { console.warn('[Auth] /api/config failed:', e.message); }
     }
     if (!sb) {
+        console.warn('[Auth] no supabase client, rendering signed-out');
         renderAuthNav(null);
         return;
     }
     try {
         // Set up listener FIRST so SIGNED_IN after OAuth redirect is never missed
         sb.auth.onAuthStateChange(async (event, session) => {
+            console.log('[Auth] onAuthStateChange =>', event, session?.user?.email);
             _authSession = session;
             renderAuthNav(session?.user || null);
             if (session) {
@@ -2361,6 +2365,7 @@ async function initAuth() {
         });
         // Also check existing session (covers page loads where no OAuth event fires)
         const { data: { session } } = await sb.auth.getSession();
+        console.log('[Auth] getSession =>', session?.user?.email || 'no session');
         _authSession = session;
         renderAuthNav(session?.user || null);
     } catch (e) {
