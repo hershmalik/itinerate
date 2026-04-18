@@ -2343,15 +2343,19 @@ async function initAuth() {
         return;
     }
     try {
-        // Set up listener FIRST so SIGNED_IN after OAuth redirect is never missed
         sb.auth.onAuthStateChange(async (event, session) => {
             console.log('[Auth] onAuthStateChange =>', event, session?.user?.email);
-            _authSession = session;
-            renderAuthNav(session?.user || null);
-            if (session) {
+            if (event === 'SIGNED_OUT') {
+                _authSession = null;
+                renderAuthNav(null);
+                return;
+            }
+            // Only update if we actually have a user — ignore null INITIAL_SESSION
+            if (session?.user) {
+                _authSession = session;
+                renderAuthNav(session.user);
                 const m = document.getElementById('auth-modal');
                 if (m) m.style.display = 'none';
-                // Resume a pending invite if user just signed in
                 const pendingToken = sessionStorage.getItem('pendingInviteToken');
                 const params = new URLSearchParams(window.location.search);
                 const tripId = params.get('trip');
@@ -2366,11 +2370,13 @@ async function initAuth() {
                 }
             }
         });
-        // Also check existing session (covers page loads where no OAuth event fires)
+        // Also check existing session directly
         const { data: { session } } = await sb.auth.getSession();
         console.log('[Auth] getSession =>', session?.user?.email || 'no session');
-        _authSession = session;
-        renderAuthNav(session?.user || null);
+        if (session?.user) {
+            _authSession = session;
+            renderAuthNav(session.user);
+        }
     } catch (e) {
         console.warn('[Auth] Init error:', e.message);
         renderAuthNav(null);
