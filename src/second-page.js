@@ -286,6 +286,10 @@ function getTripDetailsFromStorage() {
 
 // Initialize map and generate itinerary
 async function initMapAndItinerary() {
+    // If URL has ?trip= or ?invite=, let checkUrlParams() handle loading — skip normal init
+    const _urlParams = new URLSearchParams(window.location.search);
+    if (_urlParams.get('trip') || _urlParams.get('invite') || _urlParams.get('share')) return;
+
     const mapsReady = typeof google !== 'undefined' && google.maps;
 
     // Second call: Maps just loaded after itinerary was already generated without it.
