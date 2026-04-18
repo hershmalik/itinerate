@@ -1976,30 +1976,37 @@ function scheduleAutoSave() {
     const shareId = params.get('share');
 
     if (inviteToken && tripId) {
-        // Wait for auth to initialize
+        sessionStorage.setItem('pendingInviteToken', inviteToken);
         await initAuth();
-        if (!_authSession) {
-            sessionStorage.setItem('pendingInviteToken', inviteToken);
+        // If returning from OAuth redirect, hash is present — onAuthStateChange will handle it
+        if (!_authSession && !window.location.hash) {
             openAuthModal();
             return;
         }
-        const resp = await fetch(`${API_BASE_URL}/api/trips/${tripId}/accept`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...await getAuthHeader() },
-            body: JSON.stringify({ token: inviteToken })
-        });
-        if (resp.ok) {
-            await loadTripById(tripId);
-        } else {
-            const err = await resp.json();
-            showNotification(err.error || 'Could not join trip', 'error');
+        if (_authSession) {
+            sessionStorage.removeItem('pendingInviteToken');
+            const resp = await fetch(`${API_BASE_URL}/api/trips/${tripId}/accept`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...await getAuthHeader() },
+                body: JSON.stringify({ token: inviteToken })
+            });
+            if (resp.ok) {
+                await loadTripById(tripId);
+            } else {
+                const err = await resp.json();
+                showNotification(err.error || 'Could not join trip', 'error');
+            }
         }
         return;
     }
 
     if (tripId && !inviteToken) {
         await initAuth();
-        await loadTripById(tripId);
+        if (_authSession) {
+            await loadTripById(tripId);
+        } else if (!window.location.hash) {
+            openAuthModal();
+        }
         return;
     }
 
