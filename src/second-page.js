@@ -2377,17 +2377,21 @@ async function initAuth() {
                 renderAuthNav(session.user);
                 const m = document.getElementById('auth-modal');
                 if (m) m.style.display = 'none';
-                const pendingToken = sessionStorage.getItem('pendingInviteToken');
-                const params = new URLSearchParams(window.location.search);
-                const tripId = params.get('trip');
-                if (pendingToken && tripId) {
+                // Read invite token from URL first (survives OAuth redirect on mobile),
+                // fall back to sessionStorage
+                const _ap = new URLSearchParams(window.location.search);
+                const tripId = _ap.get('trip');
+                const inviteToken = _ap.get('invite') || sessionStorage.getItem('pendingInviteToken');
+                if (inviteToken && tripId) {
                     sessionStorage.removeItem('pendingInviteToken');
                     const resp = await fetch(`${API_BASE_URL}/api/trips/${tripId}/accept`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', ...await getAuthHeader() },
-                        body: JSON.stringify({ token: pendingToken })
+                        body: JSON.stringify({ token: inviteToken })
                     });
                     if (resp.ok) await loadTripById(tripId);
+                } else if (tripId && !inviteToken) {
+                    await loadTripById(tripId);
                 }
             }
         });
