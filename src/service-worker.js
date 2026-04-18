@@ -1,4 +1,4 @@
-const CACHE = 'aitinerate-v9';
+const CACHE = 'aitinerate-v10';
 const STATIC = [
   '/',
   '/styles.css',
@@ -26,25 +26,26 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Never cache API calls or external CDNs
+  // Never intercept API calls or cross-origin requests
   if (url.pathname.startsWith('/api/') ||
       url.pathname.startsWith('/generate-itinerary') ||
-      url.hostname.includes('googleapis') ||
-      url.hostname.includes('openai') ||
-      url.hostname.includes('clerk') ||
-      url.hostname.includes('jsdelivr') ||
       url.hostname !== self.location.hostname) {
     return;
   }
 
-  // Cache-first for static assets, network-first for HTML
-  if (e.request.destination === 'document') {
-    e.respondWith(
-      fetch(e.request).catch(() => caches.match(e.request) || new Response('Offline', { status: 503 }))
-    );
-  } else {
+  // Only serve cache-first for the explicitly pre-cached STATIC list
+  const isPreCached = STATIC.some(s => {
+    try { return new URL(s, self.location.origin).href === url.href; } catch { return s === url.pathname; }
+  });
+
+  if (isPreCached) {
     e.respondWith(
       caches.match(e.request).then(cached => cached || fetch(e.request).catch(() => new Response('', { status: 503 })))
+    );
+  } else {
+    // Network-first for everything else (HTML, JS, CSS with version strings)
+    e.respondWith(
+      fetch(e.request).catch(() => caches.match(e.request) || new Response('Offline', { status: 503 }))
     );
   }
 });
