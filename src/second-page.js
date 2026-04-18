@@ -447,6 +447,10 @@ async function regenerateItineraryWithUpdatedPreferences() {
 
 // generateItinerary: uses SSE streaming so cards appear as each chunk completes
 async function generateItinerary() {
+    // If loading via invite/trip URL param, loadTripById() handles rendering — skip
+    const _gp = new URLSearchParams(window.location.search);
+    if (_gp.get('trip') || _gp.get('invite') || _gp.get('share')) return;
+
     console.log('[DEBUG] generateItinerary called');
     const errorMessageDiv = document.getElementById("error-message");
     const itineraryDisplayDiv = document.getElementById("itinerary-display");
@@ -1974,6 +1978,12 @@ function scheduleAutoSave() {
     const inviteToken = params.get('invite');
     const tripId = params.get('trip');
     const shareId = params.get('share');
+
+    // Ensure DOM is ready before any rendering
+    await new Promise(r => {
+        if (document.readyState !== 'loading') r();
+        else document.addEventListener('DOMContentLoaded', r, { once: true });
+    });
 
     if (inviteToken && tripId) {
         sessionStorage.setItem('pendingInviteToken', inviteToken);
